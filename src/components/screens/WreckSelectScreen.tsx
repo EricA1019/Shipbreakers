@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { useGameStore } from '../../stores/gameStore';
 
 export default function WreckSelectScreen({ onNavigate }: { onNavigate: (s: any) => void }) {
@@ -19,8 +19,8 @@ export default function WreckSelectScreen({ onNavigate }: { onNavigate: (s: any)
           <div key={w.id} className={`bg-zinc-800 border border-amber-600/20 p-4 ${w.stripped ? 'opacity-50' : ''}`}>
             <div className="flex justify-between items-center">
               <div>
-                <div className="text-amber-100 font-bold">{w.name}</div>
-                <div className="text-zinc-400 text-xs">Distance: {w.distance} AU • Rooms: {w.rooms.length}</div>
+                <div className="text-amber-100 font-bold">{w.name} <span className="text-zinc-400 text-xs">• {w.type.toUpperCase()}</span></div>
+                <div className="text-zinc-400 text-xs">Distance: {w.distance} AU • Rooms: {w.rooms.length} • Tier: {Array.from({ length: w.tier }).map(() => '★').join('')}</div>
               </div>
               <div className="flex gap-2">
                 <button className="bg-amber-500 text-zinc-900 px-3 py-1 text-xs" onClick={() => { startRun(w.id); onNavigate('travel'); }}>Select</button>

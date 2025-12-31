@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { useGameStore } from '../../stores/gameStore';
 
 export default function SellScreen({ onNavigate }: { onNavigate: (s: any) => void }) {

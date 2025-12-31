@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useGameStore } from '../../stores/gameStore';
 
 export default function TravelScreen({ onNavigate }: { onNavigate: (s: any) => void }) {
-  const { currentRun, travelToWreck, availableWrecks } = useGameStore((s) => ({ currentRun: s.currentRun, travelToWreck: s.travelToWreck, availableWrecks: s.availableWrecks }));
+  const { currentRun, travelToWreck } = useGameStore((s) => ({ currentRun: s.currentRun, travelToWreck: s.travelToWreck }));
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {

@@ -146,13 +146,46 @@ export interface Room {
   looted: boolean;
 }
 
+// Grid system types for Phase 6
+export interface GridPosition {
+  x: number;
+  y: number;
+}
+
+export type Direction = 'north' | 'south' | 'east' | 'west';
+
+export interface GridRoom extends Room {
+  position: GridPosition;
+  connections: Direction[]; // Adjacent doors
+}
+
+export interface Ship {
+  id?: string;
+  name: string; // Procedural name for wrecks; player-editable for PlayerShip
+  width: number;
+  height: number;
+  grid: GridRoom[][];
+  entryPosition: GridPosition;
+}
+
+export interface PlayerShip extends Ship {
+  // Player-specific ship fields
+  cargoCapacity: number;
+  cargoUsed: number;
+  hp: number;
+  maxHp: number;
+}
+
 export interface Wreck {
   id: string;
-  name: string;
+  name: string; // Procedural name - may be hidden until arrival
   type: WreckType;
   tier: number; // 1-5
   distance: number; // AU
+  // Backwards-compatible: legacy flat rooms array (populated by TS prototype)
   rooms: Room[];
+  // New: spatial ship/grid representation (populated by Ship class / Rust procgen)
+  ship?: Ship;
   stripped: boolean;
 }
 
@@ -231,4 +264,7 @@ export interface GameState {
   lastUnlockedZone?: GraveyardZone | null;
   stats: PlayerStats;
   settings: GameSettings;
+
+  // Phase 6: player ship state
+  playerShip?: PlayerShip;
 }

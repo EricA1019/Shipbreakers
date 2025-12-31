@@ -1,8 +1,45 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useGameStore } from '../../stores/gameStore';
 import { FUEL_COST_PER_AU, SKILL_HAZARD_MAP, MISMATCH_PENALTY_THRESHOLD, RARITY_TIME_COST, XP_BASE_SUCCESS, XP_BASE_FAIL, XP_PER_HAZARD_LEVEL, XP_PER_TIER } from '../../game/constants';
 import ItemCard from '../ui/ItemCard';
 import InventoryViewer from '../ui/InventoryViewer';
+import ShipGrid from '../game/ShipGrid';
+import CyberPanel from '../ui/CyberPanel';
+import { RadarDisplay, TerminalOutput, DataStream, HazardWarning } from '../ui/VisualEffects';
+import { logDebug, logError, logInfo, logWarn, downloadLogs } from '../../utils/debug/logger';
+
+// Helper: movement check on raw ship data (methods are lost after store serialization)
+function canMoveOnGrid(ship: any, from: any, to: any) {
+  const room = ship?.grid?.[from?.y]?.[from?.x];
+  if (!room) return false;
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  let dir: 'north' | 'south' | 'east' | 'west' | null = null;
+  if (dx === 1 && dy === 0) dir = 'east';
+  if (dx === -1 && dy === 0) dir = 'west';
+  if (dx === 0 && dy === 1) dir = 'south';
+  if (dx === 0 && dy === -1) dir = 'north';
+  if (!dir) return false;
+  return room.connections?.includes(dir);
+}
+
+// Helper: list neighbors from raw grid data
+function getConnectedRoomsFromGrid(ship: any, pos: any) {
+  const base = ship?.grid?.[pos?.y]?.[pos?.x];
+  if (!base) return [];
+  const out: Array<{ room: any; dir: string }> = [];
+  for (const dir of base.connections ?? []) {
+    let nx = pos.x;
+    let ny = pos.y;
+    if (dir === 'north') ny -= 1;
+    if (dir === 'south') ny += 1;
+    if (dir === 'east') nx += 1;
+    if (dir === 'west') nx -= 1;
+    const r = ship?.grid?.[ny]?.[nx];
+    if (r) out.push({ room: r, dir });
+  }
+  return out;
+}
 // import { useSalvageNotifications } from '../../hooks/useSalvageNotifications';
 
 export default function SalvageScreen({ onNavigate }: { onNavigate: (s: any) => void }) {
@@ -13,6 +50,7 @@ export default function SalvageScreen({ onNavigate }: { onNavigate: (s: any) => 
   const [log, setLog] = useState<string[]>([]);
   const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
   const [showInventory, setShowInventory] = useState(false);
+  const [currentPosition, setCurrentPosition] = useState<any | null>(null);
 
   // Setup salvage item notifications
   // useSalvageNotifications(); // Temporarily disabled for debugging
@@ -24,7 +62,50 @@ export default function SalvageScreen({ onNavigate }: { onNavigate: (s: any) => 
     return <div>Error: Wreck not found. <button onClick={() => onNavigate('hub')}>Back</button></div>;
   }
   
+  // Display name from wreck (WASM populated) or ship, or fallback
+  const displayName = wreck.name !== 'Unknown Vessel' ? wreck.name : ((wreck as any).ship?.name || 'Unknown Vessel');
+  const shipObj: any = (wreck as any).ship;
+  
+  // Memoize to prevent re-render loops
+  const allowedRoomIds = useMemo(() => new Set(wreck.rooms.map((r) => r.id)), [wreck.rooms.length]);
+  
   const currentRoom = currentRoomId ? wreck.rooms.find((r) => r.id === currentRoomId) : null;
+  
+  // Debug: log current state
+  useEffect(() => {
+    logDebug('[SalvageScreen] State update', { currentRoomId, currentRoomFound: !!currentRoom });
+    if (currentRoomId && !currentRoom) {
+      logWarn('[SalvageScreen] Room ID set but room not found in wreck.rooms', { roomId: currentRoomId, available: wreck.rooms.map((r) => r.id) });
+    }
+  }, [currentRoomId, currentRoom]);
+
+  // Initialize position to entry point when ship data is available, but ensure it's a valid mapped room
+  useEffect(() => {
+    if (!shipObj) {
+      console.warn('[SalvageScreen] No ship object available');
+      return;
+    }
+    
+    try {
+      // If the entry position is not mapped to a real room, fall back to the first mapped room
+      const entryRoom = shipObj.grid.flat().find((r: any) => r.position.x === shipObj.entryPosition.x && r.position.y === shipObj.entryPosition.y);
+      const entryIsValid = entryRoom && allowedRoomIds.has(entryRoom.id);
+      if (entryIsValid) {
+        logInfo('[SalvageScreen] Setting entry position', { entry: shipObj.entryPosition, entryRoomId: entryRoom?.id });
+        setCurrentPosition(shipObj.entryPosition);
+      } else {
+        const firstMapped = shipObj.grid.flat().find((r: any) => allowedRoomIds.has(r.id));
+        if (firstMapped) {
+          logWarn('[SalvageScreen] Entry invalid, using first mapped room', { entry: shipObj.entryPosition, fallback: firstMapped.position });
+          setCurrentPosition(firstMapped.position);
+        } else {
+          logError('[SalvageScreen] No valid rooms found', { entry: shipObj.entryPosition });
+        }
+      }
+    } catch (error) {
+      logError('[SalvageScreen] Error in position init', error);
+    }
+  }, [wreck.id, wreck.rooms.length]);
 
   const calculateXpRewards = (hazardLevel: number, tier: number) => {
     const xpSuccess = XP_BASE_SUCCESS + (hazardLevel * XP_PER_HAZARD_LEVEL) + (tier * XP_PER_TIER);
@@ -118,7 +199,7 @@ export default function SalvageScreen({ onNavigate }: { onNavigate: (s: any) => 
       <div className="bg-zinc-950 border-b-2 border-amber-600/30 p-3 mb-4 flex justify-between items-center">
         <div className="text-amber-500 font-bold">SALVAGE OP</div>
         <div className="flex items-center gap-3">
-          <div className="text-zinc-400 text-xs">{wreck.name} • Dist: {wreck.distance} AU</div>
+          <div className="text-zinc-400 text-xs">{displayName} • Dist: {wreck.distance} AU</div>
           <button className="bg-amber-600 text-zinc-900 px-2 py-1 text-xs font-bold hover:bg-amber-500" onClick={() => setShowInventory(true)}>📦 Inventory</button>
         </div>
       </div>
@@ -146,54 +227,112 @@ export default function SalvageScreen({ onNavigate }: { onNavigate: (s: any) => 
           </div>
 
           {!currentRoom ? (
-            // Room list view
-            <div className="space-y-3">
-              {wreck.rooms.map((room, index) => {
-                const skillKey = SKILL_HAZARD_MAP[room.hazardType as any] as keyof typeof crew.skills;
-                const matchingSkillValue = (crew.skills as any)[skillKey];
-                const highestSkillValue = Math.max(crew.skills.technical, crew.skills.combat, crew.skills.salvage, crew.skills.piloting);
-                const activeSkillValue = Math.max(matchingSkillValue, highestSkillValue);
-                
-                // Determine which skill is actually being used
-                let activeSkillName = skillKey;
-                if (activeSkillValue === highestSkillValue && highestSkillValue > matchingSkillValue) {
-                  // Find which skill has the highest value
-                  if (highestSkillValue === crew.skills.technical) activeSkillName = 'technical';
-                  else if (highestSkillValue === crew.skills.combat) activeSkillName = 'combat';
-                  else if (highestSkillValue === crew.skills.salvage) activeSkillName = 'salvage';
-                  else if (highestSkillValue === crew.skills.piloting) activeSkillName = 'piloting';
-                }
-                
-                const isMismatch = wreck.tier >= MISMATCH_PENALTY_THRESHOLD && matchingSkillValue < 3;
-                const hasSpecializationBonus = matchingSkillValue === highestSkillValue && matchingSkillValue >= 3;
-                const { xpSuccess, xpFail } = calculateXpRewards(room.hazardLevel, wreck.tier);
-                
-                return (
-                  <div key={room.id} className={`p-3 border ${room.looted ? 'opacity-50 border-zinc-700' : 'border-amber-600/20'}`}>
-                    <div className="flex justify-between items-center">
-                      <div className="flex-1">
-                        <div className="font-bold text-amber-100 flex items-center gap-2">
-                          {room.name}
-                          {!room.looted && index < 6 && <span className="text-amber-600 text-xs bg-zinc-900 px-2 py-0.5 rounded">[{index + 1}]</span>}
+            // If ship grid exists, show spatial grid; otherwise fall back to list view
+            (wreck as any).ship ? (
+              <div className="">
+                <div className="mb-2 p-2 bg-zinc-900 border border-amber-600/20 rounded">
+                  <div className="text-amber-400 text-xs font-semibold mb-1">🗺️ SHIP GRID NAVIGATION</div>
+                  <div className="text-zinc-400 text-xs">Click rooms to move (only adjacent connected rooms are accessible)</div>
+                  <div className="text-zinc-500 text-[10px] mt-1">Yellow doors = connected • Orange border = current location • Entry marked ENT</div>
+                </div>
+                <div>
+                  {/* ShipGrid component displays the ship layout */}
+                  <ShipGrid
+                    ship={(wreck as any).ship}
+                    currentRoom={currentPosition}
+                    allowedRoomIds={allowedRoomIds}
+                    onRoomClick={(room) => {
+                      try {
+                        logDebug('[SalvageScreen] Room click', { roomId: room.id, roomPos: room.position, currentPosition });
+
+                        if (!allowedRoomIds.has(room.id)) {
+                          logWarn('[SalvageScreen] Clicked sealed room', { roomId: room.id });
+                          setLog((l) => ['🔒 Sealed compartment — cannot enter'].concat(l));
+                          return;
+                        }
+
+                        if (currentPosition && currentPosition.x === room.position.x && currentPosition.y === room.position.y) {
+                          logInfo('[SalvageScreen] Entering current room', { roomId: room.id });
+                          setCurrentRoomId(room.id);
+                          setLog((l) => [`🚪 Entered ${room.name}`].concat(l));
+                          return;
+                        }
+
+                        if (!currentPosition) {
+                          logInfo('[SalvageScreen] No position set, moving directly', { roomId: room.id });
+                          setCurrentPosition(room.position);
+                          setCurrentRoomId(room.id);
+                          setLog((l) => [`🚪 Entered ${room.name}`].concat(l));
+                          return;
+                        }
+
+                        const canMove = canMoveOnGrid(shipObj, currentPosition, room.position);
+                        logDebug('[SalvageScreen] Movement check', { from: currentPosition, to: room.position, canMove });
+
+                        if (canMove) {
+                          setCurrentPosition(room.position);
+                          setCurrentRoomId(room.id);
+                          setLog((l) => [`🚪 Moved to ${room.name}`].concat(l));
+                        } else {
+                          setLog((l) => ['🚫 Room not accessible from your current position'].concat(l));
+                        }
+                      } catch (error) {
+                        logError('[SalvageScreen] Error handling room click', error);
+                        setLog((l) => ['❌ Error handling room click'].concat(l));
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {wreck.rooms.map((room, index) => {
+                  const skillKey = SKILL_HAZARD_MAP[room.hazardType as any] as keyof typeof crew.skills;
+                  const matchingSkillValue = (crew.skills as any)[skillKey];
+                  const highestSkillValue = Math.max(crew.skills.technical, crew.skills.combat, crew.skills.salvage, crew.skills.piloting);
+                  const activeSkillValue = Math.max(matchingSkillValue, highestSkillValue);
+                  
+                  // Determine which skill is actually being used
+                  let activeSkillName = skillKey;
+                  if (activeSkillValue === highestSkillValue && highestSkillValue > matchingSkillValue) {
+                    // Find which skill has the highest value
+                    if (highestSkillValue === crew.skills.technical) activeSkillName = 'technical';
+                    else if (highestSkillValue === crew.skills.combat) activeSkillName = 'combat';
+                    else if (highestSkillValue === crew.skills.salvage) activeSkillName = 'salvage';
+                    else if (highestSkillValue === crew.skills.piloting) activeSkillName = 'piloting';
+                  }
+                  
+                  const isMismatch = wreck.tier >= MISMATCH_PENALTY_THRESHOLD && matchingSkillValue < 3;
+                  const hasSpecializationBonus = matchingSkillValue === highestSkillValue && matchingSkillValue >= 3;
+                  const { xpSuccess, xpFail } = calculateXpRewards(room.hazardLevel, wreck.tier);
+                  
+                  return (
+                    <div key={room.id} className={`p-3 border ${room.looted ? 'opacity-50 border-zinc-700' : 'border-amber-600/20'}`}>
+                      <div className="flex justify-between items-center">
+                        <div className="flex-1">
+                          <div className="font-bold text-amber-100 flex items-center gap-2">
+                            {room.name}
+                            {!room.looted && index < 6 && <span className="text-amber-600 text-xs bg-zinc-900 px-2 py-0.5 rounded">[{index + 1}]</span>}
+                          </div>
+                          <div className="text-zinc-400 text-xs">Hazard: {room.hazardType.toUpperCase()} Lv.{room.hazardLevel}</div>
+                          <div className="text-zinc-300 text-xs">
+                            Using: {activeSkillName.toUpperCase()} {activeSkillValue}
+                            {hasSpecializationBonus && <span className="text-green-400 ml-1">✓ Specialized</span>}
+                            {activeSkillName !== skillKey && <span className="text-cyan-400 ml-1">(Adapted from best skill)</span>}
+                            {isMismatch && <span className="text-orange-400 ml-1">⚠ Penalty</span>}
+                          </div>
+                          <div className="text-zinc-400 text-xs mt-1">Items: {room.loot.length}</div>
+                          <div className="text-emerald-400 text-xs mt-1" title={`Success: +${xpSuccess} XP | Fail: +${xpFail} XP`}>💡 {xpSuccess} / {xpFail} XP</div>
                         </div>
-                        <div className="text-zinc-400 text-xs">Hazard: {room.hazardType.toUpperCase()} Lv.{room.hazardLevel}</div>
-                        <div className="text-zinc-300 text-xs">
-                          Using: {activeSkillName.toUpperCase()} {activeSkillValue}
-                          {hasSpecializationBonus && <span className="text-green-400 ml-1">✓ Specialized</span>}
-                          {activeSkillName !== skillKey && <span className="text-cyan-400 ml-1">(Adapted from best skill)</span>}
-                          {isMismatch && <span className="text-orange-400 ml-1">⚠ Penalty</span>}
+                        <div>
+                          <button className="bg-amber-500 text-zinc-900 px-3 py-1 text-xs font-semibold" onClick={() => onEnterRoom(room.id)} disabled={room.looted}>Enter Room</button>
                         </div>
-                        <div className="text-zinc-400 text-xs mt-1">Items: {room.loot.length}</div>
-                        <div className="text-emerald-400 text-xs mt-1" title={`Success: +${xpSuccess} XP | Fail: +${xpFail} XP`}>💡 {xpSuccess} / {xpFail} XP</div>
-                      </div>
-                      <div>
-                        <button className="bg-amber-500 text-zinc-900 px-3 py-1 text-xs font-semibold" onClick={() => onEnterRoom(room.id)} disabled={room.looted}>Enter Room</button>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )
           ) : (
             // Item selection view
             <div>
@@ -205,6 +344,31 @@ export default function SalvageScreen({ onNavigate }: { onNavigate: (s: any) => 
                 </div>
                 <button className="bg-zinc-700 px-3 py-1 text-xs border border-amber-600/30" onClick={onLeaveRoom}>⬅️ Leave Room</button>
               </div>
+
+              {/* Adjacent rooms for movement without returning to grid */}
+              {shipObj && currentPosition && (
+                <div className="mb-3 bg-zinc-900 border border-amber-600/20 rounded p-2">
+                  <div className="text-amber-400 text-xs font-semibold mb-1">Adjacent Rooms</div>
+                  <div className="flex flex-wrap gap-2 text-xs">
+                    {getConnectedRoomsFromGrid(shipObj, currentPosition)
+                      .filter(({ room }: any) => allowedRoomIds.has(room.id))
+                      .map(({ room, dir }: any) => (
+                        <button
+                          key={room.id}
+                          className="px-2 py-1 bg-zinc-800 border border-amber-600/30 rounded hover:border-amber-400"
+                          onClick={() => {
+                            logInfo('[SalvageScreen] Adjacent move', { from: currentPosition, to: room.position, dir, roomId: room.id });
+                            setCurrentPosition(room.position);
+                            setCurrentRoomId(room.id);
+                            setLog((l) => [`🚪 Moved ${dir.toUpperCase()} to ${room.name}`].concat(l));
+                          }}
+                        >
+                          {room.name} <span className="text-amber-400">({dir})</span>
+                        </button>
+                      ))}
+                  </div>
+                </div>
+              )}
 
               {currentRoom.loot.length === 0 ? (
                 <div className="text-center text-zinc-400 py-8">Room cleared — no items remaining</div>
@@ -241,14 +405,33 @@ export default function SalvageScreen({ onNavigate }: { onNavigate: (s: any) => 
             <button className="bg-zinc-700 px-3 py-1 text-xs border border-amber-600/30" onClick={() => onNavigate('hub')}>Abort Run</button>
           </div>
         </div>
-        <div className="bg-zinc-800 border border-amber-600/20 p-4">
-          <div className="text-amber-500 text-xs font-semibold tracking-wider mb-3">LOG</div>
-          <div className="text-sm space-y-2">
-            {log.map((l, i) => (
-              <div key={i} className="text-zinc-200">{l}</div>
-            ))}
+        <CyberPanel title="SENSORS & LOG">
+          <div className="grid gap-4">
+            <RadarDisplay contacts={3} size={192} />
+
+            {currentRun.timeRemaining <= 5 && (
+              <HazardWarning title="OXYGEN LOW" level="critical" />
+            )}
+
+            <div className="flex justify-between items-center mb-2">
+              <div className="text-amber-500 text-xs font-semibold tracking-wider">EVENT LOG</div>
+              <button className="bg-zinc-700 px-2 py-1 text-[11px] border border-amber-600/30 hover:bg-zinc-600" onClick={() => downloadLogs()}>Export Log</button>
+            </div>
+
+            <TerminalOutput
+              lines={log.map((l) => {
+                if (l.startsWith('✅') || l.includes('SUCCESS')) return { text: l, type: 'success' };
+                if (l.startsWith('⚠️') || l.includes('Warning') || l.startsWith('🔒')) return { text: l, type: 'warning' };
+                if (l.startsWith('❌') || l.includes('ERROR') || l.includes('FAIL')) return { text: l, type: 'error' };
+                if (l.startsWith('🚪') || l.includes('Moved') || l.includes('Entered')) return { text: l, type: 'info' };
+                if (l.includes('💰') || l.includes('CR')) return { text: l, type: 'info' };
+                return { text: l };
+              })}
+            />
+
+            <DataStream lines={12} />
           </div>
-        </div>
+        </CyberPanel>
       </div>
 
       <InventoryViewer isOpen={showInventory} onClose={() => setShowInventory(false)} />

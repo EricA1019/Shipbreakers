@@ -86,3 +86,175 @@ button:focus-visible {
 .animate-slide-in {
   animation: slide-in 0.3s ease-out;
 }
+
+/* TravelScreen star layers */
+@keyframes stars-far {
+  from { background-position: 0 0; }
+  to { background-position: -200% 0; }
+}
+@keyframes stars-mid {
+  from { background-position: 0 0; }
+  to { background-position: -100% 0; }
+}
+@keyframes stars-near {
+  from { background-position: 0 0; }
+  to { background-position: -50% 0; }
+}
+
+.animate-stars-far { animation: stars-far 8s linear infinite; }
+.animate-stars-mid { animation: stars-mid 6s linear infinite; }
+.animate-stars-near { animation: stars-near 4s linear infinite; }
+
+@keyframes engine-pulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(251,191,36,0.8); }
+  50% { box-shadow: 0 0 40px rgba(251,191,36,1); }
+}
+.animate-engine-pulse { animation: engine-pulse 1.2s ease-in-out infinite; }
+
+/* CRT/Cyberpunk Effects */
+@keyframes crt-flicker {
+  0%, 100% { opacity: 0.1; }
+  50% { opacity: 0.15; }
+}
+
+@keyframes text-glow-pulse {
+  0%, 100% { text-shadow: 0 0 5px currentColor; }
+  50% { text-shadow: 0 0 10px currentColor, 0 0 15px currentColor; }
+}
+
+@keyframes scan-sweep {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes radar-sweep {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes data-stream {
+  0% { transform: translateY(-10px); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translateY(300px); opacity: 0; }
+}
+
+@keyframes pulse-border {
+  0%, 100% { border-color: rgba(239, 68, 68, 0.5); }
+  50% { border-color: rgba(239, 68, 68, 1); }
+}
+
+/* Accessibility: disable animations for users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .crt-flicker,
+  .animate-pulse,
+  .animate-slide-in,
+  .animate-stars-far,
+  .animate-stars-mid,
+  .animate-stars-near,
+  .animate-engine-pulse {
+    animation: none !important;
+  }
+  
+  .text-glow-amber,
+  .text-glow-green,
+  .text-glow-red,
+  .text-glow-cyan {
+    text-shadow: none !important;
+  }
+}
+
+@layer utilities {
+  /* Phosphor bloom text effects */
+  .text-glow-amber {
+    text-shadow: 0 0 5px rgba(251, 191, 36, 0.5);
+  }
+  .text-glow-green {
+    text-shadow: 0 0 5px rgba(34, 197, 94, 0.5);
+  }
+  .text-glow-red {
+    text-shadow: 0 0 5px rgba(239, 68, 68, 0.5);
+  }
+  .text-glow-cyan {
+    text-shadow: 0 0 5px rgba(6, 182, 212, 0.5);
+  }
+  
+  /* Stronger glow variants */
+  .text-glow-amber-strong {
+    text-shadow: 0 0 10px rgba(251, 191, 36, 0.8), 0 0 20px rgba(251, 191, 36, 0.4);
+  }
+  .text-glow-green-strong {
+    text-shadow: 0 0 10px rgba(34, 197, 94, 0.8), 0 0 20px rgba(34, 197, 94, 0.4);
+  }
+  .text-glow-red-strong {
+    text-shadow: 0 0 10px rgba(239, 68, 68, 0.8), 0 0 20px rgba(239, 68, 68, 0.4);
+  }
+  
+  /* Screen noise texture overlay */
+  .noise-overlay {
+    position: relative;
+  }
+  .noise-overlay::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0.05;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' /%3E%3C/svg%3E");
+    background-size: 100px 100px;
+  }
+  
+  /* Terminal-style panel */
+  .panel-terminal {
+    background-color: #000;
+    color: rgb(34, 197, 94);
+    position: relative;
+  }
+  .panel-terminal::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      0deg,
+      rgba(34, 197, 94, 0.03) 0px,
+      rgba(34, 197, 94, 0.03) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+  }
+  
+  /* Glitch effect (chromatic aberration) */
+  .glitch {
+    position: relative;
+    text-shadow: 
+      2px 0 rgba(255, 0, 0, 0.5),
+      -2px 0 rgba(0, 255, 255, 0.5),
+      0 0 10px currentColor;
+  }
+
+  .scan-line {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(34, 211, 238, 0.1) 45%, rgba(34, 211, 238, 0.5) 50%, rgba(34, 211, 238, 0.1) 55%, transparent 100%);
+    animation: scan-sweep 2s ease-in-out;
+    pointer-events: none;
+  }
+
+  .radar-sweep {
+    transform-origin: center;
+    animation: radar-sweep 4s linear infinite;
+  }
+
+  .data-stream-char {
+    animation: data-stream 3s ease-in infinite;
+  }
+
+  .pulse-glow {
+    animation: text-glow-pulse 2s ease-in-out infinite;
+  }
+
+  .animate-pulse-border {
+    animation: pulse-border 1.5s ease-in-out infinite;
+  }
+}

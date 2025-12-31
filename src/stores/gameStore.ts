@@ -4,6 +4,7 @@ import type { GameState, Loot, CrewMember, GraveyardZone, HireCandidate } from '
 import type { LicenseTier } from '../types';
 import { LICENSE_TIERS } from '../types';
 import { generateWreck, generateAvailableWrecks } from '../game/wreckGenerator';
+import { Ship } from '../game/ship';
 import {
   STARTING_CREDITS,
   STARTING_FUEL,
@@ -45,6 +46,7 @@ interface GameActions {
   selectCrew: (crewId: string) => void;
   dailyMarketRefresh: () => void;
   updateSettings: (settings: Partial<GameState['settings']>) => void;
+  renameShip: (name: string) => void;
 }
 
 export const useGameStore = create<GameState & GameActions>()(
@@ -94,6 +96,15 @@ export const useGameStore = create<GameState & GameActions>()(
         showKeyboardHints: true,
       },
 
+      // Phase 6: player ship
+      playerShip: {
+        ...Ship.fromMass('player-ship', 'small', 'SS BREAKER-01'),
+        cargoCapacity: 10,
+        cargoUsed: 0,
+        hp: STARTING_HP,
+        maxHp: STARTING_HP,
+      },
+
       initializeGame: () => {
         set({
           credits: STARTING_CREDITS,
@@ -138,6 +149,14 @@ export const useGameStore = create<GameState & GameActions>()(
             showTooltips: true,
             showKeyboardHints: true,
           },
+
+          playerShip: {
+            ...Ship.fromMass('player-ship', 'small', 'SS BREAKER-01'),
+            cargoCapacity: 10,
+            cargoUsed: 0,
+            hp: STARTING_HP,
+            maxHp: STARTING_HP,
+          },
         });
 
         // Generate initial crew market
@@ -153,6 +172,16 @@ export const useGameStore = create<GameState & GameActions>()(
           arr[0] = tut;
           return { availableWrecks: arr };
         });
+
+        // Attempt to populate wreck names asynchronously via WASM
+        (async () => {
+          try {
+            const populated = await (await import('../game/wreckGenerator')).populateWreckNames(get().availableWrecks);
+            set({ availableWrecks: populated });
+          } catch (e) {
+            console.warn('Failed to populate wreck names', e);
+          }
+        })();
       },
 
 
@@ -191,6 +220,14 @@ export const useGameStore = create<GameState & GameActions>()(
       travelToWreck: (wreckId: string) => {
         const wreck = get().availableWrecks.find((w) => w.id === wreckId);
         if (!wreck) return;
+        // If the wreck name has not been populated yet, fall back to ship name when arriving
+        if (wreck.name === 'Unknown Vessel' && (wreck as any).ship?.name && (wreck as any).ship.name !== 'Unknown Vessel') {
+          set((state) => ({
+            availableWrecks: state.availableWrecks.map((w) =>
+              w.id === wreck.id ? { ...w, name: (wreck as any).ship.name } : w
+            ),
+          }));
+        }
         const getActiveCrew = () => {
           const roster = get().crewRoster || [];
           const selected = get().selectedCrewId;
@@ -213,6 +250,15 @@ export const useGameStore = create<GameState & GameActions>()(
         const wreck = get().availableWrecks.find((w) => w.id === run.wreckId)!;
         const room = wreck.rooms.find((r) => r.id === roomId);
         if (!room || room.looted) return { success: false, damage: 0 };
+
+        // Cargo capacity check (simple slot-based, 1 item = 1 slot)
+        const ship = get().playerShip;
+        const capacity = ship?.cargoCapacity ?? 10;
+        const currentLoaded = run.collectedLoot.length;
+        if (currentLoaded + room.loot.length > capacity) {
+          // Not enough space to salvage the whole room
+          return { success: false, damage: 0 };
+        }
 
         // Deduct time
         const newTime = run.timeRemaining - 2;
@@ -244,8 +290,7 @@ export const useGameStore = create<GameState & GameActions>()(
           }));
           // Award XP to matching skill for active crew
           get().gainSkillXp(matchingSkill, 10);
-        } else {
-          // fail
+        } else {          // fail
           damageTaken = damageOnFail(room.hazardLevel);
           set((state) => {
             const updated = state.crewRoster.map((c) => (c.id === activeCrew.id ? { ...c, hp: Math.max(0, c.hp - damageTaken) } : c));
@@ -288,6 +333,15 @@ export const useGameStore = create<GameState & GameActions>()(
         const item = room.loot.find((l) => l.id === itemId);
         if (!item) return { success: false, damage: 0, timeCost: 0 };
         
+        // Check cargo capacity (1 item = 1 slot)
+        const ship = get().playerShip;
+        const capacity = ship?.cargoCapacity ?? 10;
+        const currentLoaded = run.collectedLoot.length;
+        if (currentLoaded + 1 > capacity) {
+          // No room for this item
+          return { success: false, damage: 0, timeCost: 0 };
+        }
+
         // Increment rooms attempted at start
         set((state) => ({
           currentRun: state.currentRun
@@ -462,6 +516,24 @@ export const useGameStore = create<GameState & GameActions>()(
           credits: Math.max(0, state.credits - SCAN_COST),
           availableWrecks: generateAvailableWrecks(state.unlockedZones),
         }));
+
+        // Try to populate names via WASM in background
+        (async () => {
+          try {
+            const populated = await (await import('../game/wreckGenerator')).populateWreckNames(get().availableWrecks);
+            set({ availableWrecks: populated });
+          } catch (e) {
+            console.warn('Failed to populate wreck names', e);
+          }
+        })();
+      },
+
+      renameShip: (name: string) => {
+        set((state) => ({
+          playerShip: state.playerShip
+            ? { ...state.playerShip, name }
+            : { ...Ship.fromMass('player-ship', 'small', name), cargoCapacity: 10, cargoUsed: 0, hp: STARTING_HP, maxHp: STARTING_HP },
+        }));
       },
 
       resetGame: () => {
@@ -484,6 +556,13 @@ export const useGameStore = create<GameState & GameActions>()(
           hireCandidates: [],
           availableWrecks: generateAvailableWrecks(['near']),
           currentRun: null,
+          playerShip: {
+            ...Ship.fromMass('player-ship', 'small', 'SS BREAKER-01'),
+            cargoCapacity: 10,
+            cargoUsed: 0,
+            hp: STARTING_HP,
+            maxHp: STARTING_HP,
+          },
         });
 
         // Seed tutorial wreck
@@ -496,6 +575,16 @@ export const useGameStore = create<GameState & GameActions>()(
           arr[0] = tut;
           return { availableWrecks: arr };
         });
+
+        // Try to populate names via WASM in background
+        (async () => {
+          try {
+            const populated = await (await import('../game/wreckGenerator')).populateWreckNames(get().availableWrecks);
+            set({ availableWrecks: populated });
+          } catch (e) {
+            console.warn('Failed to populate wreck names', e);
+          }
+        })();
       },
 
 

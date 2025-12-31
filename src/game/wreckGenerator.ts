@@ -4,6 +4,7 @@ import { SeededRandom } from './random';
 import { getLootPool, generateLoot } from './lootTables';
 import { ZONES } from '../types';
 import { FUEL_COST_PER_AU } from './constants';
+import { Ship } from './ship';
 
 let idCounter = 1;
 
@@ -89,13 +90,48 @@ export function generateWreck(seed?: string): Wreck {
 
   const rooms: Room[] = Array.from({ length: roomsCount }, () => generateRoom(rnd, type, hazardFloor));
 
+  const id = `wreck_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+
+  // estimate mass based on rooms and create a spatial Ship grid
+  const estimatedMass = generateEstimatedMass(rnd, rooms);
+  const ship = Ship.fromMass(id, estimatedMass, 'Unknown Vessel');
+
+  // map generated rooms into grid cells (row-major)
+  let k = 0;
+  for (let y = 0; y < ship.height; y++) {
+    for (let x = 0; x < ship.width; x++) {
+      if (k < rooms.length) {
+        const src = rooms[k++];
+        const cell = ship.grid[y][x];
+        cell.id = src.id;
+        cell.name = src.name;
+        cell.hazardLevel = src.hazardLevel;
+        cell.hazardType = src.hazardType;
+        cell.loot = src.loot;
+        cell.looted = src.looted;
+      }
+    }
+  }
+
+  // Ensure entryPosition points to a mapped room (not a sealed/empty cell)
+  const entryRoom = ship.grid[ship.entryPosition.y][ship.entryPosition.x];
+  const entryIsMapped = rooms.some((r) => r.id === entryRoom.id);
+  if (!entryIsMapped) {
+    // Entry landed on unmapped cell, use first mapped room instead
+    const firstMapped = ship.grid.flat().find((cell) => rooms.some((r) => r.id === cell.id));
+    if (firstMapped) {
+      ship.entryPosition = firstMapped.position;
+    }
+  }
+
   return {
-    id: `wreck_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-    name: `Wreck ${Math.random().toString(36).slice(2, 5).toUpperCase()}`,
+    id,
+    name: `Unknown Vessel`, // reveal on arrival
     type,
     tier,
     distance,
     rooms,
+    ship,
     stripped: false,
   };
 }
@@ -119,6 +155,26 @@ export function getWreckPreview(wreck: Wreck) {
   };
 }
 
+// Async helper to populate wreck names using WASM (if available)
+import { wasmBridge } from './wasm/WasmBridge';
+
+export async function populateWreckNames(wrecks: Wreck[]) {
+  await wasmBridge.init();
+  const results = await Promise.all(wrecks.map(async (w) => {
+    try {
+      const name = await wasmBridge.generateShipName(w.id);
+      const newW = { ...w, name };
+      if ((newW as any).ship) {
+        (newW as any).ship.name = name;
+      }
+      return newW;
+    } catch (e) {
+      return w;
+    }
+  }));
+  return results;
+}
+
 export function generateAvailableWrecks(unlockedZones: GraveyardZone[], seed?: string): Wreck[] {
   const rnd = new SeededRandom(seed ?? Date.now());
   const types: WreckType[] = ['military', 'science', 'industrial', 'civilian'];
@@ -140,14 +196,36 @@ export function generateAvailableWrecks(unlockedZones: GraveyardZone[], seed?: s
       const roomsCount = TIER_ROOM_BASE + tier;
       const hazardFloor = Math.max(0, tier - 1);
       const rooms: Room[] = Array.from({ length: roomsCount }, () => generateRoom(rnd, type as WreckType, hazardFloor));
+      const id = `wreck_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+
+      const estimatedMass = generateEstimatedMass(rnd, rooms);
+      const ship = Ship.fromMass(id, estimatedMass, 'Unknown Vessel');
+
+      // map generated rooms into ship grid cells
+      let k = 0;
+      for (let y = 0; y < ship.height; y++) {
+        for (let x = 0; x < ship.width; x++) {
+          if (k < rooms.length) {
+            const src = rooms[k++];
+            const cell = ship.grid[y][x];
+            cell.id = src.id;
+            cell.name = src.name;
+            cell.hazardLevel = src.hazardLevel;
+            cell.hazardType = src.hazardType;
+            cell.loot = src.loot;
+            cell.looted = src.looted;
+          }
+        }
+      }
 
       wrecks.push({
-        id: `wreck_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-        name: `Wreck ${Math.random().toString(36).slice(2, 5).toUpperCase()}`,
+        id,
+        name: `Unknown Vessel`,
         type: type as WreckType,
         tier,
         distance,
         rooms,
+        ship,
         stripped: false,
       });
     }

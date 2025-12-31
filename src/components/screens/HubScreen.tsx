@@ -10,6 +10,9 @@ import ConfirmationModal from '../ui/ConfirmationModal';
 import CrewRosterPanel from '../ui/CrewRosterPanel';
 import HireCrewModal from '../ui/HireCrewModal';
 import CrewSelectionModal from '../ui/CrewSelectionModal';
+import ShipStatusPanel from '../game/ShipStatusPanel';
+import CyberPanel from '../ui/CyberPanel';
+import CyberButton from '../ui/CyberButton';
 import { LICENSE_TIERS } from '../../types';
 
 export default function HubScreen({ onNavigate }: { onNavigate: (s: any) => void }) {
@@ -80,97 +83,112 @@ export default function HubScreen({ onNavigate }: { onNavigate: (s: any) => void
 
   return (
     <div className="max-w-4xl mx-auto">
-      <div className="bg-zinc-950 border-b-2 border-amber-600/30 p-3 mb-4">
+      <CyberPanel title="[SHIPBREAKERS] CINDER STATION // HUD" className="mb-4">
         <div className="flex justify-between items-center">
-          <div>
-            <div className="text-amber-500 font-bold text-xl tracking-wider">[SHIPBREAKERS]</div>
-            <div className="text-amber-600/50 text-sm">CINDER STATION // HUD</div>
+          <div className="text-amber-100 font-bold text-xl tracking-wider text-glow-amber">
+            STATION STATUS: <span className="text-green-400 text-glow-green">[NOMINAL]</span>
           </div>
           <div className="flex gap-6 text-sm">
-            <div>💰 <span className="text-amber-100">{credits} CR</span></div>
-            <div>⛽ <span className="text-orange-100">{fuel}</span></div>
+            <div>💰 <span className="text-amber-100 text-glow-amber">{credits} CR</span></div>
+            <div>⛽ <span className="text-orange-100 text-glow-amber">{fuel}</span></div>
           </div>
         </div>
-      </div>
+      </CyberPanel>
 
       {/* Sell Loot Banner */}
       {hasLootToSell && (
-        <div className="bg-amber-500/10 border-2 border-amber-500 p-4 mb-4 animate-pulse">
-          <div className="text-amber-500 text-xs font-semibold tracking-wider mb-2">💰 LOOT READY TO SELL</div>
+        <CyberPanel variant="warning" title="💰 LOOT READY TO SELL" className="mb-4 animate-pulse">
           <div className="text-amber-100 mb-3">
             You have {currentRun.collectedLoot.length} items worth {lootValue} CR from your last run.
           </div>
-          <button 
-            className="bg-amber-500 text-zinc-900 px-4 py-2 font-bold hover:bg-amber-400"
+          <CyberButton 
+            variant="primary"
+            glowColor="amber"
             onClick={handleSellLoot}
           >
             Sell All Loot ({lootValue} CR)
-          </button>
-        </div>
+          </CyberButton>
+        </CyberPanel>
       )}
 
       <div className="grid grid-cols-3 gap-4">
-        <div className="col-span-1">
-          <div className="mb-3 flex justify-between items-center">
-            <div className="text-amber-500 text-xs font-semibold tracking-wider">CREW ROSTER</div>
-            <button
-              className="text-amber-500 text-xs hover:text-amber-400 border border-amber-600/30 px-2 py-1 rounded"
-              onClick={() => onNavigate('crew')}
-              title="View detailed crew stats"
-            >
-              📋 View All
-            </button>
-          </div>
-          <div className="mb-2">
-            {/* Crew roster panel */}
-            <CrewRosterPanel />
-          </div>
-          <div className="mt-3 flex gap-2">
-            <HireCrewModal />
-            <CrewSelectionModal />
-          </div>
-
-          <div className="mt-4 pt-3 border-t border-zinc-700 space-y-2">
-            <div className="text-zinc-400 text-xs">Day: {day}</div>
-            <div className="text-amber-400 text-xs font-bold">License: {licenseTier.toUpperCase()}</div>
-            <div className="text-zinc-400 text-xs">{licenseDaysRemaining} days remaining</div>
-            
-            {/* License upgrade section */}
-            {nextTier && (
-              <div className="bg-amber-900/20 border border-amber-600/30 p-2 rounded mt-2">
-                <div className="text-amber-400 text-xs font-bold mb-1">Upgrade Available</div>
-                <div className="text-zinc-400 text-xs mb-1">
-                  {LICENSE_TIERS[nextTier].label}
-                </div>
-                <button
-                  onClick={() => upgradeLicense(nextTier)}
-                  disabled={credits < LICENSE_TIERS[nextTier].cost}
-                  className="w-full bg-amber-600 text-zinc-900 px-2 py-1 text-xs font-bold hover:bg-amber-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Upgrade ({LICENSE_TIERS[nextTier].cost} CR)
-                </button>
-              </div>
-            )}
-            
-            {/* Renewal section */}
-            {licenseDaysRemaining <= 2 && licenseDaysRemaining > 0 && (
-              <button 
-                onClick={payLicense}
-                disabled={credits < licenseFee}
-                className="w-full mt-2 bg-orange-600 text-zinc-900 px-2 py-1 text-xs font-bold hover:bg-orange-500 disabled:opacity-50"
+        <div className="col-span-1 space-y-4">
+          <CyberPanel title="CREW ROSTER">
+            <div className="mb-2 flex justify-end">
+              <button
+                className="text-amber-500 text-xs hover:text-amber-400 border border-amber-600/30 px-2 py-1 rounded"
+                onClick={() => onNavigate('crew')}
+                title="View detailed crew stats"
               >
-                Renew License ({licenseFee} CR)
+                📋 View All
               </button>
-            )}
-            
-            {licenseDaysRemaining <= 0 && (
-              <div className="mt-2 text-red-500 text-xs font-bold">⚠️ LICENSE EXPIRED!</div>
-            )}
-          </div>
+            </div>
+            <CrewRosterPanel />
+            <div className="mt-3 flex gap-2">
+              <HireCrewModal />
+              <CrewSelectionModal />
+            </div>
+          </CyberPanel>
+
+          <CyberPanel title="SHIP STATUS">
+            <ShipStatusPanel />
+          </CyberPanel>
+
+          <CyberPanel 
+            title="LICENSE STATUS" 
+            variant={licenseDaysRemaining <= 0 ? 'warning' : 'default'}
+          >
+            <div className="space-y-2 text-sm">
+              <div className="text-zinc-400">
+                DAY__________ <span className="text-amber-400 text-glow-amber">{day}</span>
+              </div>
+              <div className="text-zinc-400">
+                TIER_________ <span className="text-amber-400 text-glow-amber font-bold">{licenseTier.toUpperCase()}</span>
+              </div>
+              <div className="text-zinc-400">
+                DAYS_LEFT____ <span className={licenseDaysRemaining <= 2 ? 'text-red-400 text-glow-red' : 'text-green-400 text-glow-green'}>{licenseDaysRemaining}</span>
+              </div>
+              
+              {/* License upgrade section */}
+              {nextTier && (
+                <div className="bg-amber-900/20 border border-amber-600/30 p-2 rounded mt-2">
+                  <div className="text-amber-400 text-xs font-bold mb-1 text-glow-amber">Upgrade Available</div>
+                  <div className="text-zinc-400 text-xs mb-1">
+                    {LICENSE_TIERS[nextTier].label}
+                  </div>
+                  <CyberButton
+                    onClick={() => upgradeLicense(nextTier)}
+                    disabled={credits < LICENSE_TIERS[nextTier].cost}
+                    variant="primary"
+                    glowColor="amber"
+                    className="w-full text-xs"
+                  >
+                    Upgrade ({LICENSE_TIERS[nextTier].cost} CR)
+                  </CyberButton>
+                </div>
+              )}
+              
+              {/* Renewal section */}
+              {licenseDaysRemaining <= 2 && licenseDaysRemaining > 0 && (
+                <CyberButton 
+                  onClick={payLicense}
+                  disabled={credits < licenseFee}
+                  variant="danger"
+                  glowColor="amber"
+                  className="w-full mt-2 text-xs"
+                >
+                  Renew License ({licenseFee} CR)
+                </CyberButton>
+              )}
+              
+              {licenseDaysRemaining <= 0 && (
+                <div className="mt-2 text-red-500 text-xs font-bold text-glow-red-strong">⚠️ LICENSE EXPIRED!</div>
+              )}
+            </div>
+          </CyberPanel>
         </div>
 
-        <div className="col-span-2 bg-zinc-800 border border-amber-600/20 p-4">
-          <div className="text-amber-500 text-xs font-semibold tracking-wider mb-3">INVENTORY ({inventory.length} items)</div>
+        <CyberPanel title={`INVENTORY (${inventory.length} items)`} className="col-span-2">
           {inventory.length > 0 ? (
             <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto">
               {inventory.map((item) => (
@@ -180,28 +198,44 @@ export default function HubScreen({ onNavigate }: { onNavigate: (s: any) => void
           ) : (
             <div className="text-zinc-500 text-sm">No items in inventory</div>
           )}
-        </div>
+        </CyberPanel>
       </div>
 
-      <div className="mt-4 bg-zinc-800 border border-amber-600/20 p-4">
+      <CyberPanel title="MISSION OBJECTIVE" className="mt-4">
         <div className="flex justify-between items-center">
           <div>
-            <div className="text-amber-500 text-xs font-semibold tracking-wider mb-1">GOAL</div>
-            <div className="text-amber-100 font-bold">10,000 CR (Prototype)</div>
+            <div className="text-amber-100 font-bold text-glow-amber">TARGET: 10,000 CR (Prototype)</div>
           </div>
-          <div className="flex gap-2">
-            <button className="bg-amber-600 text-zinc-900 px-3 py-1 text-xs font-bold hover:bg-amber-500 relative group" onClick={() => setShowFuelDepot(true)}>⛽ Fuel Depot<span className="hidden group-hover:inline absolute -top-6 left-0 bg-amber-800 px-1 py-0.5 rounded text-[10px] text-amber-100 whitespace-nowrap">(F)</span></button>
-            <button className="bg-amber-600 text-zinc-900 px-3 py-1 text-xs font-bold hover:bg-amber-500 relative group" onClick={() => setShowMedicalBay(true)}>🏥 Medical Bay<span className="hidden group-hover:inline absolute -top-6 left-0 bg-amber-800 px-1 py-0.5 rounded text-[10px] text-amber-100 whitespace-nowrap">(M)</span></button>
-            <button className="bg-amber-600 text-zinc-900 px-3 py-1 text-xs font-bold hover:bg-amber-500 relative group" onClick={() => setShowStats(true)}>📊 Stats<span className="hidden group-hover:inline absolute -top-6 left-0 bg-amber-800 px-1 py-0.5 rounded text-[10px] text-amber-100 whitespace-nowrap">(S)</span></button>
-            <button className="bg-amber-600 text-zinc-900 px-3 py-1 text-xs font-bold hover:bg-amber-500" onClick={() => setShowSettings(true)}>⚙️ Settings</button>
-            <button className="bg-zinc-700 px-3 py-1 text-xs border border-amber-600/30" onClick={() => onNavigate('select')}>🚀 Select Wreck</button>
-            <button className="bg-zinc-700 px-3 py-1 text-xs border border-amber-600/30" onClick={handleReset}>🔄 Reset</button>
+          <div className="flex gap-2 flex-wrap">
+            <CyberButton variant="primary" glowColor="amber" onClick={() => setShowFuelDepot(true)} className="text-xs relative group">
+              ⛽ Fuel Depot
+              <span className="hidden group-hover:inline absolute -top-6 left-0 bg-amber-800 px-1 py-0.5 rounded text-[10px] text-amber-100 whitespace-nowrap">(F)</span>
+            </CyberButton>
+            <CyberButton variant="primary" glowColor="green" onClick={() => setShowMedicalBay(true)} className="text-xs relative group">
+              🏥 Medical Bay
+              <span className="hidden group-hover:inline absolute -top-6 left-0 bg-amber-800 px-1 py-0.5 rounded text-[10px] text-amber-100 whitespace-nowrap">(M)</span>
+            </CyberButton>
+            <CyberButton variant="primary" glowColor="cyan" onClick={() => setShowStats(true)} className="text-xs relative group">
+              📊 Stats
+              <span className="hidden group-hover:inline absolute -top-6 left-0 bg-amber-800 px-1 py-0.5 rounded text-[10px] text-amber-100 whitespace-nowrap">(S)</span>
+            </CyberButton>
+            <CyberButton variant="secondary" onClick={() => setShowSettings(true)} className="text-xs">
+              ⚙️ Settings
+            </CyberButton>
+            <CyberButton variant="primary" glowColor="amber" onClick={() => onNavigate('select')} className="text-xs">
+              🚀 Select Wreck
+            </CyberButton>
+            <CyberButton variant="danger" onClick={handleReset} className="text-xs">
+              🔄 Reset
+            </CyberButton>
           </div>
         </div>
-      </div>
+      </CyberPanel>
 
       <div className="mt-4">
-        <button className="bg-amber-500 text-zinc-900 px-4 py-2 rounded" onClick={() => onNavigate('sell')}>Sell Loot</button>
+        <CyberButton variant="primary" glowColor="amber" onClick={() => onNavigate('sell')}>
+          Sell Loot
+        </CyberButton>
       </div>
 
       <FuelDepotModal isOpen={showFuelDepot} onClose={() => setShowFuelDepot(false)} />

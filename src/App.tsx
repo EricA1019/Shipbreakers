@@ -9,6 +9,7 @@ import RunSummaryScreen from './components/screens/RunSummaryScreen';
 import SellScreen from './components/screens/SellScreen';
 import GameOverScreen from './components/screens/GameOverScreen';
 import CrewScreen from './components/screens/CrewScreen';
+import DevTools from './components/debug/DevTools';
 import { NotificationProvider, useNotifications, setGlobalNotificationHandler } from './components/ui/NotificationSystem';
 // import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 // import { useGameNotifications } from './hooks/useGameNotifications';
@@ -26,15 +27,15 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-zinc-900 text-amber-50 font-mono p-4">
-      {screen === 'hub' && <HubScreen onNavigate={setScreen} />}
-      {screen === 'select' && <WreckSelectScreen onNavigate={setScreen} />}
-      {screen === 'travel' && <TravelScreen onNavigate={setScreen} />}
-      {screen === 'salvage' && <SalvageScreen onNavigate={setScreen} />}
-      {screen === 'summary' && <RunSummaryScreen onNavigate={setScreen} />}
-      {screen === 'sell' && <SellScreen onNavigate={setScreen} />}
-      {screen === 'gameover' && <GameOverScreen onNavigate={setScreen} />}
-      {screen === 'crew' && <CrewScreen onNavigate={setScreen} />}
-    </div>
+        {screen === 'hub' && <HubScreen onNavigate={setScreen} />}
+        {screen === 'select' && <WreckSelectScreen onNavigate={setScreen} />}
+        {screen === 'travel' && <TravelScreen onNavigate={setScreen} />}
+        {screen === 'salvage' && <SalvageScreen onNavigate={setScreen} />}
+        {screen === 'summary' && <RunSummaryScreen onNavigate={setScreen} />}
+        {screen === 'sell' && <SellScreen onNavigate={setScreen} />}
+        {screen === 'gameover' && <GameOverScreen onNavigate={setScreen} />}
+        {screen === 'crew' && <CrewScreen onNavigate={setScreen} />}
+      </div>
   );
 }
 
@@ -42,6 +43,8 @@ function App() {
   return (
     <NotificationProvider>
       <AppContent />
+      {/* Toggle with the backtick (`) key */}
+      <DevTools />
     </NotificationProvider>
   );
 }

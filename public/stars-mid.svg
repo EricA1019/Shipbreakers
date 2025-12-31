@@ -1,0 +1,29 @@
+<svg width="1920" height="1080" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1920" height="1080" fill="transparent"/>
+  <!-- Mid layer: Medium density, varied sizes -->
+  <circle cx="145" cy="234" r="1" fill="white" opacity="0.6"/>
+  <circle cx="567" cy="456" r="1.2" fill="white" opacity="0.7"/>
+  <circle cx="890" cy="123" r="0.9" fill="white" opacity="0.5"/>
+  <circle cx="1234" cy="678" r="1.1" fill="white" opacity="0.6"/>
+  <circle cx="1567" cy="345" r="1" fill="white" opacity="0.7"/>
+  <circle cx="234" cy="789" r="1.2" fill="white" opacity="0.5"/>
+  <circle cx="789" cy="234" r="0.9" fill="white" opacity="0.6"/>
+  <circle cx="1345" cy="890" r="1" fill="white" opacity="0.7"/>
+  <circle cx="456" cy="567" r="1.1" fill="white" opacity="0.5"/>
+  <circle cx="1678" cy="456" r="1.2" fill="white" opacity="0.6"/>
+  <circle cx="1023" cy="234" r="0.9" fill="white" opacity="0.7"/>
+  <circle cx="345" cy="345" r="1" fill="white" opacity="0.5"/>
+  <circle cx="1456" cy="123" r="1.1" fill="white" opacity="0.6"/>
+  <circle cx="678" cy="890" r="1.2" fill="white" opacity="0.7"/>
+  <circle cx="1789" cy="789" r="0.9" fill="white" opacity="0.5"/>
+  <circle cx="890" cy="678" r="1" fill="white" opacity="0.6"/>
+  <circle cx="1123" cy="567" r="1.1" fill="white" opacity="0.7"/>
+  <circle cx="456" cy="123" r="1.2" fill="white" opacity="0.5"/>
+  <circle cx="1567" cy="678" r="0.9" fill="white" opacity="0.6"/>
+  <circle cx="234" cy="456" r="1" fill="white" opacity="0.7"/>
+  <circle cx="1345" cy="234" r="1.1" fill="white" opacity="0.5"/>
+  <circle cx="789" cy="789" r="1.2" fill="white" opacity="0.6"/>
+  <circle cx="1678" cy="890" r="0.9" fill="white" opacity="0.7"/>
+  <circle cx="1023" cy="345" r="1" fill="white" opacity="0.5"/>
+  <circle cx="345" cy="678" r="1.1" fill="white" opacity="0.6"/>
+</svg>

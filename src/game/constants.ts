@@ -1,4 +1,4 @@
-export const STARTING_CREDITS = 500;
+export const STARTING_CREDITS = 2000;
 export const STARTING_FUEL = 100;
 export const STARTING_TIME = 20;
 export const STARTING_HP = 100;

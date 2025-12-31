@@ -6,7 +6,10 @@ import InventoryViewer from '../ui/InventoryViewer';
 // import { useSalvageNotifications } from '../../hooks/useSalvageNotifications';
 
 export default function SalvageScreen({ onNavigate }: { onNavigate: (s: any) => void }) {
-  const { currentRun, availableWrecks, crew, fuel, salvageItem, returnToStation } = useGameStore((s) => ({ currentRun: s.currentRun, availableWrecks: s.availableWrecks, crew: s.crew, fuel: s.fuel, salvageItem: s.salvageItem, returnToStation: s.returnToStation }));
+  const { currentRun, availableWrecks, crewRoster, selectedCrewId, fuel, salvageItem, returnToStation } = useGameStore((s) => ({ currentRun: s.currentRun, availableWrecks: s.availableWrecks, crewRoster: s.crewRoster, selectedCrewId: s.selectedCrewId, fuel: s.fuel, salvageItem: s.salvageItem, returnToStation: s.returnToStation }));
+  
+  // Get the selected crew member
+  const crew = crewRoster.find((c) => c.id === selectedCrewId) ?? crewRoster[0];
   const [log, setLog] = useState<string[]>([]);
   const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
   const [showInventory, setShowInventory] = useState(false);
@@ -127,15 +130,44 @@ export default function SalvageScreen({ onNavigate }: { onNavigate: (s: any) => 
             <div>❤️ HP: {crew.hp}/{crew.maxHp}</div>
             <div>⛽ Fuel: {fuel}</div>
           </div>
+          
+          {/* Crew stats summary */}
+          <div className="bg-zinc-900 border border-amber-600/20 p-2 mb-3 rounded">
+            <div className="text-amber-400 text-xs font-bold mb-1">👤 {crew.name}'s Skills</div>
+            <div className="grid grid-cols-4 gap-2 text-xs">
+              <div>🔧 Tech: <span className="text-amber-100 font-bold">{crew.skills.technical}</span></div>
+              <div>⚔️ Combat: <span className="text-amber-100 font-bold">{crew.skills.combat}</span></div>
+              <div>🔨 Salvage: <span className="text-amber-100 font-bold">{crew.skills.salvage}</span></div>
+              <div>🚀 Pilot: <span className="text-amber-100 font-bold">{crew.skills.piloting}</span></div>
+            </div>
+            <div className="text-zinc-400 text-xs mt-1">
+              Highest skill will be used when needed (with {Math.max(crew.skills.technical, crew.skills.combat, crew.skills.salvage, crew.skills.piloting)} max)
+            </div>
+          </div>
 
           {!currentRoom ? (
             // Room list view
             <div className="space-y-3">
               {wreck.rooms.map((room, index) => {
                 const skillKey = SKILL_HAZARD_MAP[room.hazardType as any] as keyof typeof crew.skills;
-                const playerSkill = (crew.skills as any)[skillKey];
-                const isMismatch = wreck.tier >= MISMATCH_PENALTY_THRESHOLD && playerSkill < 3;
+                const matchingSkillValue = (crew.skills as any)[skillKey];
+                const highestSkillValue = Math.max(crew.skills.technical, crew.skills.combat, crew.skills.salvage, crew.skills.piloting);
+                const activeSkillValue = Math.max(matchingSkillValue, highestSkillValue);
+                
+                // Determine which skill is actually being used
+                let activeSkillName = skillKey;
+                if (activeSkillValue === highestSkillValue && highestSkillValue > matchingSkillValue) {
+                  // Find which skill has the highest value
+                  if (highestSkillValue === crew.skills.technical) activeSkillName = 'technical';
+                  else if (highestSkillValue === crew.skills.combat) activeSkillName = 'combat';
+                  else if (highestSkillValue === crew.skills.salvage) activeSkillName = 'salvage';
+                  else if (highestSkillValue === crew.skills.piloting) activeSkillName = 'piloting';
+                }
+                
+                const isMismatch = wreck.tier >= MISMATCH_PENALTY_THRESHOLD && matchingSkillValue < 3;
+                const hasSpecializationBonus = matchingSkillValue === highestSkillValue && matchingSkillValue >= 3;
                 const { xpSuccess, xpFail } = calculateXpRewards(room.hazardLevel, wreck.tier);
+                
                 return (
                   <div key={room.id} className={`p-3 border ${room.looted ? 'opacity-50 border-zinc-700' : 'border-amber-600/20'}`}>
                     <div className="flex justify-between items-center">
@@ -145,7 +177,12 @@ export default function SalvageScreen({ onNavigate }: { onNavigate: (s: any) => 
                           {!room.looted && index < 6 && <span className="text-amber-600 text-xs bg-zinc-900 px-2 py-0.5 rounded">[{index + 1}]</span>}
                         </div>
                         <div className="text-zinc-400 text-xs">Hazard: {room.hazardType.toUpperCase()} Lv.{room.hazardLevel}</div>
-                        <div className="text-zinc-300 text-xs">{String(skillKey).toUpperCase()}: {playerSkill} {isMismatch ? <span className="text-red-400">• MISMATCH (penalty)</span> : <span className="text-green-400">• Match</span>}</div>
+                        <div className="text-zinc-300 text-xs">
+                          Using: {activeSkillName.toUpperCase()} {activeSkillValue}
+                          {hasSpecializationBonus && <span className="text-green-400 ml-1">✓ Specialized</span>}
+                          {activeSkillName !== skillKey && <span className="text-cyan-400 ml-1">(Adapted from best skill)</span>}
+                          {isMismatch && <span className="text-orange-400 ml-1">⚠ Penalty</span>}
+                        </div>
                         <div className="text-zinc-400 text-xs mt-1">Items: {room.loot.length}</div>
                         <div className="text-emerald-400 text-xs mt-1" title={`Success: +${xpSuccess} XP | Fail: +${xpFail} XP`}>💡 {xpSuccess} / {xpFail} XP</div>
                       </div>

@@ -8,11 +8,12 @@ import SalvageScreen from './components/screens/SalvageScreen';
 import RunSummaryScreen from './components/screens/RunSummaryScreen';
 import SellScreen from './components/screens/SellScreen';
 import GameOverScreen from './components/screens/GameOverScreen';
+import CrewScreen from './components/screens/CrewScreen';
 import { NotificationProvider, useNotifications, setGlobalNotificationHandler } from './components/ui/NotificationSystem';
 // import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 // import { useGameNotifications } from './hooks/useGameNotifications';
 
-type Screen = 'hub' | 'select' | 'travel' | 'salvage' | 'summary' | 'sell' | 'gameover';
+type Screen = 'hub' | 'select' | 'travel' | 'salvage' | 'summary' | 'sell' | 'gameover' | 'crew';
 
 function AppContent() {
   const [screen, setScreen] = useState<Screen>('hub');
@@ -32,6 +33,7 @@ function AppContent() {
       {screen === 'summary' && <RunSummaryScreen onNavigate={setScreen} />}
       {screen === 'sell' && <SellScreen onNavigate={setScreen} />}
       {screen === 'gameover' && <GameOverScreen onNavigate={setScreen} />}
+      {screen === 'crew' && <CrewScreen onNavigate={setScreen} />}
     </div>
   );
 }

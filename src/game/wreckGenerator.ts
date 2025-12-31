@@ -1,7 +1,9 @@
-import type { Wreck, Room, Loot, WreckType } from '../types';
+import type { Wreck, Room, Loot, WreckType, WreckMass, GraveyardZone } from '../types';
 import { TIER_ROOM_BASE } from './constants';
 import { SeededRandom } from './random';
 import { getLootPool, generateLoot } from './lootTables';
+import { ZONES } from '../types';
+import { FUEL_COST_PER_AU } from './constants';
 
 let idCounter = 1;
 
@@ -51,6 +53,22 @@ export function generateRoom(rnd: SeededRandom, wreckType: WreckType, tier: numb
   };
 }
 
+export function generateEstimatedMass(rnd: SeededRandom, rooms: Room[]): WreckMass {
+  const roomCount = rooms.length;
+  let base: WreckMass;
+  if (roomCount <= 3) base = 'small' as WreckMass;
+  else if (roomCount <= 5) base = 'medium' as WreckMass;
+  else if (roomCount <= 7) base = 'large' as WreckMass;
+  else base = 'massive' as WreckMass;
+
+  // 70% accurate, 30% misleading
+  if (rnd.nextFloat() < 0.7) return base as WreckMass;
+
+  const all: WreckMass[] = ['small', 'medium', 'large', 'massive'] as WreckMass[];
+  const others = all.filter((m) => m !== base);
+  return others[rnd.nextInt(0, others.length - 1)] as WreckMass;
+}
+
 export function generateWreck(seed?: string): Wreck {
   const rnd = new SeededRandom(seed ?? Date.now());
   const distance = parseFloat((rnd.nextFloat(1, 4)).toFixed(1)); // 1.0 - 4.0 AU
@@ -80,4 +98,60 @@ export function generateWreck(seed?: string): Wreck {
     rooms,
     stripped: false,
   };
+}
+
+export function getZoneForDistance(distance: number): GraveyardZone {
+  if (distance >= ZONES.deep.distanceRange[0]) return 'deep';
+  if (distance >= ZONES.mid.distanceRange[0]) return 'mid';
+  return 'near';
+}
+
+export function getWreckPreview(wreck: Wreck) {
+  const rnd = new SeededRandom(wreck.id);
+  const estimatedMass = generateEstimatedMass(rnd, wreck.rooms);
+  const fuelCost = Math.max(1, Math.ceil(wreck.distance * FUEL_COST_PER_AU));
+  return {
+    id: wreck.id,
+    distance: wreck.distance,
+    estimatedMass,
+    fuelCost,
+    zone: getZoneForDistance(wreck.distance),
+  };
+}
+
+export function generateAvailableWrecks(unlockedZones: GraveyardZone[], seed?: string): Wreck[] {
+  const rnd = new SeededRandom(seed ?? Date.now());
+  const types: WreckType[] = ['military', 'science', 'industrial', 'civilian'];
+  const wrecks: Wreck[] = [];
+
+  unlockedZones.forEach((zone) => {
+    const cfg = ZONES[zone];
+    const count = rnd.nextInt(2, 3);
+    for (let i = 0; i < count; i++) {
+      const distance = parseFloat((rnd.nextFloat(cfg.distanceRange[0], cfg.distanceRange[1])).toFixed(1));
+      // pick tier within cfg.tierRange, with slight variance
+      let tier = rnd.nextInt(cfg.tierRange[0], cfg.tierRange[1]);
+      if (rnd.nextFloat() < 0.3) tier = Math.max(1, tier - 1);
+      else if (rnd.nextFloat() > 0.7) tier = Math.min(5, tier + 1);
+
+      let type: WreckType | 'luxury' = types[rnd.nextInt(0, types.length - 1)];
+      if (rnd.nextFloat() < cfg.luxuryChance) type = 'luxury';
+
+      const roomsCount = TIER_ROOM_BASE + tier;
+      const hazardFloor = Math.max(0, tier - 1);
+      const rooms: Room[] = Array.from({ length: roomsCount }, () => generateRoom(rnd, type as WreckType, hazardFloor));
+
+      wrecks.push({
+        id: `wreck_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+        name: `Wreck ${Math.random().toString(36).slice(2, 5).toUpperCase()}`,
+        type: type as WreckType,
+        tier,
+        distance,
+        rooms,
+        stripped: false,
+      });
+    }
+  });
+
+  return wrecks;
 }

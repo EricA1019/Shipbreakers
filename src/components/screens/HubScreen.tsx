@@ -1,9 +1,28 @@
 
+import { useState, useEffect } from 'react';
 import { useGameStore } from '../../stores/gameStore';
 import ItemCard from '../ui/ItemCard';
+import FuelDepotModal from '../ui/FuelDepotModal';
+import MedicalBayModal from '../ui/MedicalBayModal';
+import StatsModal from '../ui/StatsModal';
+import SettingsModal from '../ui/SettingsModal';
+import ConfirmationModal from '../ui/ConfirmationModal';
 import { SKILL_XP_THRESHOLDS } from '../../game/constants';
 
+const SKILL_DESCRIPTIONS: Record<string, string> = {
+  technical: 'Ability to repair and analyze ship systems. Helps with mechanical hazards.',
+  combat: 'Combat prowess and weapons training. Helps with hostile encounters.',
+  salvage: 'Ability to extract valuables without damage. Determines loot quality.',
+  piloting: 'Ship navigation and evasion skills. Helps with environmental hazards.',
+};
+
 export default function HubScreen({ onNavigate }: { onNavigate: (s: any) => void }) {
+  const [showFuelDepot, setShowFuelDepot] = useState(false);
+  const [showMedicalBay, setShowMedicalBay] = useState(false);
+  const [showStats, setShowStats] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  
   const { credits, fuel, crew, initializeGame, currentRun, sellAllLoot, inventory, sellItem, day, licenseDaysRemaining, licenseFee, payLicense } = useGameStore((s) => ({ 
     credits: s.credits, 
     fuel: s.fuel, 
@@ -51,10 +70,35 @@ export default function HubScreen({ onNavigate }: { onNavigate: (s: any) => void
   };
 
   const handleReset = () => {
+    setShowResetConfirm(true);
+  };
+
+  const confirmReset = () => {
     localStorage.removeItem('ship-breakers-store');
     initializeGame();
     window.location.reload();
   };
+
+  // Keyboard shortcuts for HubScreen
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.altKey || e.ctrlKey || e.metaKey) return;
+      
+      if (e.key === 's' || e.key === 'S') {
+        e.preventDefault();
+        setShowStats(!showStats);
+      } else if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault();
+        setShowFuelDepot(!showFuelDepot);
+      } else if (e.key === 'm' || e.key === 'M') {
+        e.preventDefault();
+        setShowMedicalBay(!showMedicalBay);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showStats, showFuelDepot, showMedicalBay]);
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -98,7 +142,13 @@ export default function HubScreen({ onNavigate }: { onNavigate: (s: any) => void
               return (
                 <div key={skill}>
                   <div className="flex justify-between text-xs mb-1">
-                    <span className="text-zinc-300 capitalize font-semibold">{skill}</span>
+                    <span
+                      className="text-zinc-300 capitalize font-semibold cursor-help border-b border-dotted border-amber-600/50"
+                      data-tooltip-id="game-tooltip"
+                      data-tooltip-content={SKILL_DESCRIPTIONS[skill]}
+                    >
+                      {skill}
+                    </span>
                     <span className="text-amber-500 font-bold">Lv.{crew.skills[skill]}</span>
                   </div>
                   {!progress.isMaxLevel && (
@@ -160,6 +210,10 @@ export default function HubScreen({ onNavigate }: { onNavigate: (s: any) => void
             <div className="text-amber-100 font-bold">10,000 CR (Prototype)</div>
           </div>
           <div className="flex gap-2">
+            <button className="bg-amber-600 text-zinc-900 px-3 py-1 text-xs font-bold hover:bg-amber-500 relative group" onClick={() => setShowFuelDepot(true)}>⛽ Fuel Depot<span className="hidden group-hover:inline absolute -top-6 left-0 bg-amber-800 px-1 py-0.5 rounded text-[10px] text-amber-100 whitespace-nowrap">(F)</span></button>
+            <button className="bg-amber-600 text-zinc-900 px-3 py-1 text-xs font-bold hover:bg-amber-500 relative group" onClick={() => setShowMedicalBay(true)}>🏥 Medical Bay<span className="hidden group-hover:inline absolute -top-6 left-0 bg-amber-800 px-1 py-0.5 rounded text-[10px] text-amber-100 whitespace-nowrap">(M)</span></button>
+            <button className="bg-amber-600 text-zinc-900 px-3 py-1 text-xs font-bold hover:bg-amber-500 relative group" onClick={() => setShowStats(true)}>📊 Stats<span className="hidden group-hover:inline absolute -top-6 left-0 bg-amber-800 px-1 py-0.5 rounded text-[10px] text-amber-100 whitespace-nowrap">(S)</span></button>
+            <button className="bg-amber-600 text-zinc-900 px-3 py-1 text-xs font-bold hover:bg-amber-500" onClick={() => setShowSettings(true)}>⚙️ Settings</button>
             <button className="bg-zinc-700 px-3 py-1 text-xs border border-amber-600/30" onClick={() => onNavigate('select')}>🚀 Select Wreck</button>
             <button className="bg-zinc-700 px-3 py-1 text-xs border border-amber-600/30" onClick={handleReset}>🔄 Reset</button>
           </div>
@@ -169,6 +223,21 @@ export default function HubScreen({ onNavigate }: { onNavigate: (s: any) => void
       <div className="mt-4">
         <button className="bg-amber-500 text-zinc-900 px-4 py-2 rounded" onClick={() => onNavigate('sell')}>Sell Loot</button>
       </div>
+
+      <FuelDepotModal isOpen={showFuelDepot} onClose={() => setShowFuelDepot(false)} />
+      <MedicalBayModal isOpen={showMedicalBay} onClose={() => setShowMedicalBay(false)} />
+      <StatsModal isOpen={showStats} onClose={() => setShowStats(false)} />
+      <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} />
+      <ConfirmationModal
+        isOpen={showResetConfirm}
+        title="Reset Game"
+        message="Are you sure you want to reset the entire game? All progress will be lost permanently."
+        confirmText="Yes, Reset"
+        cancelText="Cancel"
+        isDangerous={true}
+        onConfirm={confirmReset}
+        onCancel={() => setShowResetConfirm(false)}
+      />
     </div>
   );
 }

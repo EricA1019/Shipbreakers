@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { GameState } from '../types';
+import type { GameState, Loot } from '../types';
 import { generateWreck } from '../game/wreckGenerator';
 import {
   STARTING_CREDITS,
@@ -35,6 +35,9 @@ interface GameActions {
   resetGame: () => void;
   gainSkillXp: (skill: keyof typeof STARTING_SKILLS, amount: number) => void;
   payLicense: () => void;
+  buyFuel: (amount: number) => boolean;
+  payForHealing: () => boolean;
+  updateSettings: (settings: Partial<GameState['settings']>) => void;
 }
 
 export const useGameStore = create<GameState & GameActions>()(
@@ -49,6 +52,24 @@ export const useGameStore = create<GameState & GameActions>()(
       day: 1,
       licenseDaysRemaining: 14,
       licenseFee: 5000,
+      stats: {
+        totalCreditsEarned: 0,
+        totalWrecksCleared: 0,
+        totalRoomsSalvaged: 0,
+        totalItemsCollected: 0,
+        highestSingleProfit: 0,
+        mostValuableItem: null,
+        longestWinStreak: 0,
+        deathsAvoided: 0,
+        licensesRenewed: 0,
+        daysPlayed: 0,
+      },
+      settings: {
+        autoSave: true,
+        confirmDialogs: true,
+        showTooltips: true,
+        showKeyboardHints: true,
+      },
 
       initializeGame: () => {
         set({
@@ -61,6 +82,24 @@ export const useGameStore = create<GameState & GameActions>()(
           day: 1,
           licenseDaysRemaining: 14,
           licenseFee: 5000,
+          stats: {
+            totalCreditsEarned: 0,
+            totalWrecksCleared: 0,
+            totalRoomsSalvaged: 0,
+            totalItemsCollected: 0,
+            highestSingleProfit: 0,
+            mostValuableItem: null,
+            longestWinStreak: 0,
+            deathsAvoided: 0,
+            licensesRenewed: 0,
+            daysPlayed: 0,
+          },
+          settings: {
+            autoSave: true,
+            confirmDialogs: true,
+            showTooltips: true,
+            showKeyboardHints: true,
+          },
         });
       },
 
@@ -79,6 +118,14 @@ export const useGameStore = create<GameState & GameActions>()(
             status: 'traveling',
             timeRemaining: STARTING_TIME,
             collectedLoot: [],
+            stats: {
+              roomsAttempted: 0,
+              roomsSucceeded: 0,
+              roomsFailed: 0,
+              damageTaken: 0,
+              fuelSpent: travelCost,
+              xpGained: { technical: 0, combat: 0, salvage: 0, piloting: 0 },
+            },
           },
         }));
       },
@@ -166,6 +213,18 @@ export const useGameStore = create<GameState & GameActions>()(
         const item = room.loot.find((l) => l.id === itemId);
         if (!item) return { success: false, damage: 0, timeCost: 0 };
         
+        // Increment rooms attempted at start
+        set((state) => ({
+          currentRun: state.currentRun
+            ? { ...state.currentRun, 
+                stats: {
+                  ...state.currentRun.stats,
+                  roomsAttempted: state.currentRun.stats.roomsAttempted + 1,
+                }
+              }
+            : null,
+        }));
+        
         // Calculate time cost based on rarity
         const timeCost = RARITY_TIME_COST[item.rarity];
         const newTime = run.timeRemaining - timeCost;
@@ -189,7 +248,14 @@ export const useGameStore = create<GameState & GameActions>()(
           
           set((state) => ({
             currentRun: state.currentRun
-              ? { ...state.currentRun, timeRemaining: newTime, collectedLoot: state.currentRun.collectedLoot.concat(adjustedItem) }
+              ? { ...state.currentRun, 
+                  timeRemaining: newTime, 
+                  collectedLoot: state.currentRun.collectedLoot.concat(adjustedItem),
+                  stats: {
+                    ...state.currentRun.stats,
+                    roomsSucceeded: state.currentRun.stats.roomsSucceeded + 1,
+                  }
+                }
               : null,
             // Remove item from room
             availableWrecks: state.availableWrecks.map((w) =>
@@ -210,7 +276,16 @@ export const useGameStore = create<GameState & GameActions>()(
           // Fail - take damage, waste time
           damageTaken = damageOnFail(room.hazardLevel);
           set((state) => ({
-            currentRun: state.currentRun ? { ...state.currentRun, timeRemaining: newTime } : null,
+            currentRun: state.currentRun 
+              ? { ...state.currentRun, 
+                  timeRemaining: newTime,
+                  stats: {
+                    ...state.currentRun.stats,
+                    roomsFailed: state.currentRun.stats.roomsFailed + 1,
+                    damageTaken: state.currentRun.stats.damageTaken + damageTaken,
+                  }
+                }
+              : null,
             crew: { ...state.crew, hp: Math.max(0, state.crew.hp - damageTaken) },
           }));
           
@@ -239,7 +314,17 @@ export const useGameStore = create<GameState & GameActions>()(
           fuel: Math.max(0, state.fuel - returnCost),
           day: state.day + daysSpent,
           licenseDaysRemaining: Math.max(0, state.licenseDaysRemaining - daysSpent),
-          currentRun: { ...run, status: 'completed' },
+          currentRun: { ...run, 
+            status: 'completed',
+            stats: {
+              ...run.stats,
+              fuelSpent: run.stats.fuelSpent + returnCost,
+            }
+          },
+          stats: {
+            ...state.stats,
+            daysPlayed: state.stats.daysPlayed + daysSpent,
+          },
         }));
       },
 
@@ -247,6 +332,7 @@ export const useGameStore = create<GameState & GameActions>()(
         const run = get().currentRun;
         if (!run) return;
         const value = run.collectedLoot.reduce((s, l) => s + l.value, 0);
+        const mostValuable = run.collectedLoot.reduce<Loot | null>((max, item) => (!max || item.value > max.value) ? item : max, null);
         const wreck = get().availableWrecks.find((w) => w.id === run.wreckId);
         set((state) => ({
           credits: state.credits + value,
@@ -257,6 +343,16 @@ export const useGameStore = create<GameState & GameActions>()(
                 w.id === run.wreckId ? { ...w, stripped: w.rooms.every((r) => r.looted) } : w
               )
             : state.availableWrecks,
+          stats: {
+            ...state.stats,
+            totalCreditsEarned: state.stats.totalCreditsEarned + value,
+            totalWrecksCleared: state.stats.totalWrecksCleared + 1,
+            totalItemsCollected: state.stats.totalItemsCollected + run.collectedLoot.length,
+            highestSingleProfit: Math.max(state.stats.highestSingleProfit, value),
+            mostValuableItem: mostValuable && mostValuable.value > (state.stats.mostValuableItem?.value ?? 0) 
+              ? { name: mostValuable.name, value: mostValuable.value }
+              : state.stats.mostValuableItem,
+          },
         }));
       },
 
@@ -314,6 +410,16 @@ export const useGameStore = create<GameState & GameActions>()(
             skillXp: { ...state.crew.skillXp, [skill]: newXp },
             skills: { ...state.crew.skills, [skill]: newLevel },
           },
+          currentRun: state.currentRun ? {
+            ...state.currentRun,
+            stats: {
+              ...state.currentRun.stats,
+              xpGained: {
+                ...state.currentRun.stats.xpGained,
+                [skill]: (state.currentRun.stats.xpGained[skill] ?? 0) + amount,
+              },
+            },
+          } : null,
         }));
       },
 
@@ -332,11 +438,53 @@ export const useGameStore = create<GameState & GameActions>()(
         set((state) => ({
           credits: state.credits - fee,
           licenseDaysRemaining: 14,
+          stats: {
+            ...state.stats,
+            licensesRenewed: state.stats.licensesRenewed + 1,
+          },
+        }));
+      },
+
+      buyFuel: (amount: number) => {
+        const cost = amount * 10; // FUEL_PRICE imported from constants
+        if (get().credits < cost) return false;
+        
+        set((state) => ({
+          credits: state.credits - cost,
+          fuel: state.fuel + amount,
+        }));
+        return true;
+      },
+
+      payForHealing: () => {
+        const state = get();
+        const healingCost = 50; // HEALING_COST
+        const healingAmount = 10; // HEALING_AMOUNT
+        
+        if (state.credits < healingCost) return false;
+        if (state.crew.hp >= state.crew.maxHp) return false;
+        
+        set((s) => ({
+          credits: s.credits - healingCost,
+          crew: {
+            ...s.crew,
+            hp: Math.min(s.crew.hp + healingAmount, s.crew.maxHp),
+          },
+        }));
+        return true;
+      },
+
+      updateSettings: (settings: Partial<GameState['settings']>) => {
+        set((state) => ({
+          settings: {
+            ...state.settings,
+            ...settings,
+          },
         }));
       },
     }),
     {
-      name: 'ship-breakers-store',
+      name: 'ship-breakers-store-v1',
     }
   )
 );

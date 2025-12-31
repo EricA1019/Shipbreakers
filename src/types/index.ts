@@ -66,11 +66,41 @@ export interface Wreck {
   stripped: boolean;
 }
 
+export interface RunStats {
+  roomsAttempted: number;
+  roomsSucceeded: number;
+  roomsFailed: number;
+  damageTaken: number;
+  fuelSpent: number;
+  xpGained: Record<SkillType, number>;
+}
+
 export interface RunState {
   wreckId: string;
   status: 'traveling' | 'salvaging' | 'returning' | 'completed';
   timeRemaining: number;
   collectedLoot: Loot[];
+  stats: RunStats;
+}
+
+export interface PlayerStats {
+  totalCreditsEarned: number;
+  totalWrecksCleared: number;
+  totalRoomsSalvaged: number;
+  totalItemsCollected: number;
+  highestSingleProfit: number;
+  mostValuableItem: { name: string; value: number } | null;
+  longestWinStreak: number;
+  deathsAvoided: number;
+  licensesRenewed: number;
+  daysPlayed: number;
+}
+
+export interface GameSettings {
+  autoSave: boolean;
+  confirmDialogs: boolean;
+  showTooltips: boolean;
+  showKeyboardHints: boolean;
 }
 
 export interface GameState {
@@ -83,4 +113,6 @@ export interface GameState {
   day: number;
   licenseDaysRemaining: number;
   licenseFee: number;
+  stats: PlayerStats;
+  settings: GameSettings;
 }

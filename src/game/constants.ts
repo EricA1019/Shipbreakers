@@ -55,7 +55,7 @@ export const SALVAGE_VALUE_BONUS_PER_LEVEL = 0.1; // 10%
 
 // mismatch penalty applies for advanced wrecks (tier >= threshold)
 export const MISMATCH_PENALTY_THRESHOLD = 3;
-export const SKILL_MISMATCH_PENALTY = 15; // percent points from success chance
+export const SKILL_MISMATCH_PENALTY = 10; // percent points from success chance (slightly reduced)
 
 export const FUEL_COST_PER_AU = 2; // per-way
 export const TIME_PER_ROOM = 2;
@@ -69,3 +69,39 @@ export const MVP_GOAL = 10000; // prototype goal
 
 // Tier scaling (rooms and hazard floors defined in generator logic)
 export const TIER_ROOM_BASE = 3; // rooms = base + tier
+
+// Station Services
+export const FUEL_PRICE = 10; // CR per unit
+export const HEALING_COST = 50; // CR per treatment
+export const HEALING_AMOUNT = 10; // HP restored per treatment
+
+// Efficiency rating thresholds
+export const EFFICIENCY_THRESHOLDS = {
+  perfect: 0.95,
+  excellent: 0.8,
+  good: 0.6,
+  fair: 0.4,
+} as const;
+
+// Critical HP threshold for warnings
+export const CRITICAL_HP_THRESHOLD = 0.3; // 30% HP
+
+// Stats milestones for toast notifications
+export const CREDIT_MILESTONES = [1000, 5000, 10000, 25000, 50000];
+
+// Keyboard shortcuts help text
+export const KEYBOARD_SHORTCUTS = {
+  hub: {
+    s: 'Select Wreck',
+    i: 'Inventory',
+    h: 'Medical Bay',
+    f: 'Fuel Depot',
+    r: 'Reset Game',
+  },
+  salvage: {
+    '1-6': 'Select Room',
+    esc: 'View Inventory',
+    r: 'Return to Station',
+    space: 'Salvage Room',
+  },
+} as const;

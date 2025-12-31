@@ -6,7 +6,8 @@ export function calculateHazardSuccess(skills: Skills, hazardType: HazardType, h
   const matchingSkillKey = SKILL_HAZARD_MAP[hazardType] as keyof Skills;
   const skillValue = skills[matchingSkillKey] ?? 1;
 
-  let base = skillValue * 20 - hazardLevel * 10;
+  // Slightly easier: bump skill influence and ease hazard penalty
+  let base = skillValue * 22 - hazardLevel * 8;
 
   // If mismatched (skill that would match isn't present or low) and tier >= threshold apply penalty
   // We'll interpret 'mismatch' as the player not having a high matching skill; the penalty applies if the skill is less than 3

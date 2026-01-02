@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Project assets (often large / generated)
+assets/
+src/assets/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

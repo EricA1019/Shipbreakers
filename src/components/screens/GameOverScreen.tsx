@@ -1,20 +1,25 @@
+import { useGameStore } from "../../stores/gameStore";
+import CyberPanel from "../ui/CyberPanel";
+import CyberButton from "../ui/CyberButton";
 
-import { useGameStore } from '../../stores/gameStore';
-import CyberPanel from '../ui/CyberPanel';
-import CyberButton from '../ui/CyberButton';
+import type { ScreenProps } from "../../types";
 
-export default function GameOverScreen({ onNavigate }: { onNavigate: (s: any) => void }) {
-  const { resetGame } = useGameStore((s) => ({ resetGame: s.resetGame }));
+export default function GameOverScreen({ onNavigate }: ScreenProps) {
+  const { resetGame, stats } = useGameStore((s) => ({
+    resetGame: s.resetGame,
+    stats: s.stats,
+  }));
   return (
     <div className="max-w-4xl mx-auto text-center mt-24">
       {/* Red vignette overlay for dramatic effect */}
-      <div 
+      <div
         className="fixed inset-0 pointer-events-none z-40"
         style={{
-          background: 'radial-gradient(circle, transparent 40%, rgba(127, 0, 0, 0.5) 100%)',
+          background:
+            "radial-gradient(circle, transparent 40%, rgba(127, 0, 0, 0.5) 100%)",
         }}
       />
-      
+
       <CyberPanel variant="warning" className="animate-pulse relative z-50">
         <div className="text-6xl font-bold mb-4 glitch text-glow-red-strong">
           GAME OVER
@@ -22,26 +27,52 @@ export default function GameOverScreen({ onNavigate }: { onNavigate: (s: any) =>
         <div className="mb-6 text-xl text-red-300">
           ⚠️ CRITICAL SYSTEM FAILURE ⚠️
         </div>
-        
-        <CyberPanel variant="terminal" className="mb-6 text-left max-w-md mx-auto">
+
+        <CyberPanel
+          variant="terminal"
+          className="mb-6 text-left max-w-md mx-auto"
+        >
           <div className="text-xs space-y-1 font-mono">
-            <div className="text-red-400 text-glow-red">&gt; LIFE SUPPORT: OFFLINE</div>
-            <div className="text-red-400 text-glow-red">&gt; CREW STATUS: CRITICAL</div>
-            <div className="text-red-400 text-glow-red">&gt; HULL INTEGRITY: COMPROMISED</div>
-            <div className="text-amber-400 text-glow-amber">&gt; EMERGENCY BEACON: ACTIVATED</div>
-            <div className="text-cyan-400 text-glow-cyan">&gt; AWAITING RESCUE...</div>
+            <div className="text-red-400 text-glow-red">
+              &gt; LIFE SUPPORT: OFFLINE
+            </div>
+            <div className="text-red-400 text-glow-red">
+              &gt; CREW STATUS: CRITICAL
+            </div>
+            <div className="text-red-400 text-glow-red">
+              &gt; HULL INTEGRITY: COMPROMISED
+            </div>
+            <div className="text-amber-400 text-glow-amber">
+              &gt; EMERGENCY BEACON: ACTIVATED
+            </div>
+            <div className="text-cyan-400 text-glow-cyan">
+              &gt; AWAITING RESCUE...
+            </div>
           </div>
         </CyberPanel>
-        
+
         <div className="text-zinc-400 mb-6">
           Your crew has fallen. The station mourns another lost team.
         </div>
-        
+
+        <div className="mb-4 bg-zinc-900 border border-amber-600/20 p-3 rounded max-w-sm mx-auto">
+          <div className="text-amber-200 text-sm font-mono">STATS</div>
+          <div className="mt-2 text-amber-100 text-sm">
+            Days survived: {stats?.daysPlayed ?? 0}
+          </div>
+          <div className="mt-1 text-amber-100 text-sm">
+            Runs completed: {stats?.totalWrecksCleared ?? 0}
+          </div>
+        </div>
+
         <div className="flex justify-center gap-2">
-          <CyberButton 
-            variant="danger" 
+          <CyberButton
+            variant="danger"
             glowColor="red"
-            onClick={() => { resetGame(); onNavigate('hub'); }}
+            onClick={() => {
+              resetGame();
+              onNavigate("hub");
+            }}
           >
             🔄 Reset Game
           </CyberButton>

@@ -1,5 +1,5 @@
-import type { GraveyardZone, WreckPreview } from '../../types';
-import { ZONES } from '../../types';
+import type { GraveyardZone, WreckPreview } from "../../types";
+import { ZONES } from "../../types";
 
 interface GraveyardMapProps {
   unlockedZones: GraveyardZone[];
@@ -10,15 +10,15 @@ interface GraveyardMapProps {
 }
 
 const ZONE_COLORS: Record<GraveyardZone, string> = {
-  near: '#ea580c', // amber-600
-  mid: '#f59e0b', // amber-500
-  deep: '#fbbf24', // amber-400
+  near: "#ea580c", // amber-600
+  mid: "#f59e0b", // amber-500
+  deep: "#fbbf24", // amber-400
 };
 
 const ZONE_LABELS: Record<GraveyardZone, string> = {
-  near: 'NEAR ZONE',
-  mid: 'MID ZONE',
-  deep: 'DEEP ZONE',
+  near: "NEAR ZONE",
+  mid: "MID ZONE",
+  deep: "DEEP ZONE",
 };
 
 const WRECK_MASS_SIZES: Record<string, number> = {
@@ -73,8 +73,12 @@ export default function GraveyardMap({
     <div className="w-full bg-zinc-900 border border-amber-600/30 p-4 rounded">
       <div className="text-amber-500 font-bold text-sm mb-3 flex items-center gap-2">
         📡 GRAVEYARD SCAN
-        {showScanAnimation && <span className="animate-pulse">scanning...</span>}
-        <span className="text-zinc-400 text-xs ml-auto">{availableWrecks.length} wrecks detected</span>
+        {showScanAnimation && (
+          <span className="animate-pulse">scanning...</span>
+        )}
+        <span className="text-zinc-400 text-xs ml-auto">
+          {availableWrecks.length} wrecks detected
+        </span>
       </div>
 
       <svg
@@ -85,8 +89,18 @@ export default function GraveyardMap({
       >
         {/* Grid background */}
         <defs>
-          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#3f3f46" strokeWidth="0.5" />
+          <pattern
+            id="grid"
+            width="40"
+            height="40"
+            patternUnits="userSpaceOnUse"
+          >
+            <path
+              d="M 40 0 L 0 0 0 40"
+              fill="none"
+              stroke="#3f3f46"
+              strokeWidth="0.5"
+            />
           </pattern>
         </defs>
         <rect width={svgWidth} height={svgHeight} fill="url(#grid)" />
@@ -95,10 +109,10 @@ export default function GraveyardMap({
         <circle cx={centerX} cy={centerY} r="4" fill="#fbbf24" />
 
         {/* Zone circles */}
-        {(['near', 'mid', 'deep'] as GraveyardZone[]).map((zone) => {
+        {(["near", "mid", "deep"] as GraveyardZone[]).map((zone) => {
           const radius = zoneRadii[zone];
           const isLocked = isZoneLocked(zone);
-          const color = isLocked ? '#52525b' : ZONE_COLORS[zone];
+          const color = isLocked ? "#52525b" : ZONE_COLORS[zone];
           const opacity = isLocked ? 0.3 : 0.5;
 
           return (
@@ -126,7 +140,7 @@ export default function GraveyardMap({
                 textAnchor="middle"
               >
                 {ZONE_LABELS[zone]}
-                {isLocked && ' (LOCKED)'}
+                {isLocked && " (LOCKED)"}
               </text>
 
               {/* Distance range label */}
@@ -156,7 +170,7 @@ export default function GraveyardMap({
             <g
               key={wreck.id}
               onClick={() => !isLocked && onSelectWreck(wreck.id)}
-              style={{ cursor: isLocked ? 'not-allowed' : 'pointer' }}
+              style={{ cursor: isLocked ? "not-allowed" : "pointer" }}
             >
               {/* Wreck circle */}
               <circle
@@ -165,14 +179,14 @@ export default function GraveyardMap({
                 r={size}
                 fill={
                   isLocked
-                    ? '#71717a'
+                    ? "#71717a"
                     : isSelected
-                      ? '#fbbf24'
-                      : zone === 'near'
-                        ? '#ea580c'
-                        : zone === 'mid'
-                          ? '#f59e0b'
-                          : '#fbbf24'
+                      ? "#fbbf24"
+                      : zone === "near"
+                        ? "#ea580c"
+                        : zone === "mid"
+                          ? "#f59e0b"
+                          : "#fbbf24"
                 }
                 opacity={isLocked ? 0.3 : 0.8}
               />

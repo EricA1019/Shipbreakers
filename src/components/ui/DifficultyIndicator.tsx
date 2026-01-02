@@ -1,25 +1,63 @@
-import type { Wreck } from '../../types';
-import { useGameStore } from '../../stores/gameStore';
+import type { Wreck } from "../../types";
+import { useGameStore } from "../../stores/gameStore";
 
 interface DifficultyIndicatorProps {
   wreck: Wreck;
 }
 
-export default function DifficultyIndicator({ wreck }: DifficultyIndicatorProps) {
+export default function DifficultyIndicator({
+  wreck,
+}: DifficultyIndicatorProps) {
   const { crew } = useGameStore((s) => ({ crew: s.crew }));
 
   // Calculate crew's average skill level
-  const avgCrewSkill = (crew.skills.technical + crew.skills.combat + crew.skills.salvage + crew.skills.piloting) / 4;
+  const avgCrewSkill =
+    (crew.skills.technical +
+      crew.skills.combat +
+      crew.skills.salvage +
+      crew.skills.piloting) /
+    4;
 
   // Calculate difficulty delta
   const difficultyDelta = wreck.tier - avgCrewSkill;
 
-  const getDifficultyRating = (delta: number): { label: string; icon: string; color: string; message: string } => {
-    if (delta <= -2) return { label: 'Too Easy', icon: '😴', color: 'text-cyan-400', message: 'Minimal challenge. Great for farming credits.' };
-    if (delta <= -1) return { label: 'Easy', icon: '✓', color: 'text-green-400', message: 'Well-matched. Good income with low risk.' };
-    if (delta <= 0.5) return { label: 'Balanced', icon: '⚖️', color: 'text-amber-400', message: 'Good difficulty. Meaningful rewards and risk.' };
-    if (delta <= 1.5) return { label: 'Challenging', icon: '⚡', color: 'text-yellow-400', message: 'Difficult but manageable. Higher rewards.' };
-    return { label: 'Overwhelming', icon: '🔴', color: 'text-red-500', message: 'Very difficult. Risk of crew injury or death.' };
+  const getDifficultyRating = (
+    delta: number,
+  ): { label: string; icon: string; color: string; message: string } => {
+    if (delta <= -2)
+      return {
+        label: "Too Easy",
+        icon: "😴",
+        color: "text-cyan-400",
+        message: "Minimal challenge. Great for farming credits.",
+      };
+    if (delta <= -1)
+      return {
+        label: "Easy",
+        icon: "✓",
+        color: "text-green-400",
+        message: "Well-matched. Good income with low risk.",
+      };
+    if (delta <= 0.5)
+      return {
+        label: "Balanced",
+        icon: "⚖️",
+        color: "text-amber-400",
+        message: "Good difficulty. Meaningful rewards and risk.",
+      };
+    if (delta <= 1.5)
+      return {
+        label: "Challenging",
+        icon: "⚡",
+        color: "text-yellow-400",
+        message: "Difficult but manageable. Higher rewards.",
+      };
+    return {
+      label: "Overwhelming",
+      icon: "🔴",
+      color: "text-red-500",
+      message: "Very difficult. Risk of crew injury or death.",
+    };
   };
 
   const rating = getDifficultyRating(difficultyDelta);
@@ -49,8 +87,8 @@ export default function DifficultyIndicator({ wreck }: DifficultyIndicatorProps)
       </div>
 
       <div className="text-zinc-400 text-[10px] mb-2">
-        <span className="text-green-400">● Crew {avgCrewSkill.toFixed(1)}</span> vs{' '}
-        <span className="text-red-500">● Wreck {wreck.tier}</span>
+        <span className="text-green-400">● Crew {avgCrewSkill.toFixed(1)}</span>{" "}
+        vs <span className="text-red-500">● Wreck {wreck.tier}</span>
       </div>
 
       <div className={`text-[10px] ${rating.color}`}>{rating.message}</div>

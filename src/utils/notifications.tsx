@@ -4,4 +4,4 @@ export {
   showWarningNotification,
   showErrorNotification,
   showInfoNotification,
-} from '../components/ui/NotificationSystem';
+} from "../components/ui/NotificationSystem";

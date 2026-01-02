@@ -1,16 +1,17 @@
+import { useState, useEffect } from "react";
+import { useGameStore } from "../../stores/gameStore";
+import GraveyardMap from "../ui/GraveyardMap";
+import ZoneUnlockModal from "../ui/ZoneUnlockModal";
+import VictoryModal from "../ui/VictoryModal";
+import WreckDetailsPanel from "../ui/WreckDetailsPanel";
+import CyberPanel from "../ui/CyberPanel";
+import CyberButton from "../ui/CyberButton";
+import { ScanningProgress } from "../ui/VisualEffects";
+import { getWreckPreview } from "../../game/wreckGenerator";
 
-import { useState, useEffect } from 'react';
-import { useGameStore } from '../../stores/gameStore';
-import GraveyardMap from '../ui/GraveyardMap';
-import ZoneUnlockModal from '../ui/ZoneUnlockModal';
-import VictoryModal from '../ui/VictoryModal';
-import WreckDetailsPanel from '../ui/WreckDetailsPanel';
-import CyberPanel from '../ui/CyberPanel';
-import CyberButton from '../ui/CyberButton';
-import { ScanningProgress } from '../ui/VisualEffects';
-import { getWreckPreview } from '../../game/wreckGenerator';
+import type { ScreenProps } from "../../types";
 
-export default function WreckSelectScreen({ onNavigate }: { onNavigate: (s: any) => void }) {
+export default function WreckSelectScreen({ onNavigate }: ScreenProps) {
   const [selectedWreckId, setSelectedWreckId] = useState<string | null>(null);
   const [showMap, setShowMap] = useState(true);
   const [showZoneModal, setShowZoneModal] = useState(false);
@@ -28,6 +29,7 @@ export default function WreckSelectScreen({ onNavigate }: { onNavigate: (s: any)
     stats,
     initializeGame,
     licenseTier,
+    clearLastUnlockedZone,
   } = useGameStore((s) => ({
     availableWrecks: s.availableWrecks,
     startRun: s.startRun,
@@ -38,6 +40,7 @@ export default function WreckSelectScreen({ onNavigate }: { onNavigate: (s: any)
     stats: s.stats,
     initializeGame: s.initializeGame,
     licenseTier: s.licenseTier,
+    clearLastUnlockedZone: (s as any).clearLastUnlockedZone,
   }));
 
   // Convert wrecks to preview format for map
@@ -79,7 +82,7 @@ export default function WreckSelectScreen({ onNavigate }: { onNavigate: (s: any)
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.altKey || e.ctrlKey || e.metaKey) return;
 
-      if (e.key >= '1' && e.key <= '9') {
+      if (e.key >= "1" && e.key <= "9") {
         const wreckIndex = parseInt(e.key) - 1;
         if (wreckIndex < availableWrecks.length) {
           e.preventDefault();
@@ -87,24 +90,24 @@ export default function WreckSelectScreen({ onNavigate }: { onNavigate: (s: any)
         }
       }
 
-      if (e.key === 'Enter' && selectedWreckId) {
+      if (e.key === "Enter" && selectedWreckId) {
         e.preventDefault();
         const selected = availableWrecks.find((w) => w.id === selectedWreckId);
         if (selected) {
           startRun(selected.id);
-          onNavigate('travel');
+          onNavigate("travel");
         }
       }
 
       // M key for map toggle
-      if (e.key === 'm' || e.key === 'M') {
+      if (e.key === "m" || e.key === "M") {
         e.preventDefault();
         setShowMap(!showMap);
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [selectedWreckId, availableWrecks, showMap]);
 
   const handleSelectFromMap = (wreckId: string) => {
@@ -119,7 +122,10 @@ export default function WreckSelectScreen({ onNavigate }: { onNavigate: (s: any)
         <ZoneUnlockModal
           zone={lastUnlockedZone}
           tier={licenseTier}
-          onClose={() => setShowZoneModal(false)}
+          onClose={() => {
+            setShowZoneModal(false);
+            clearLastUnlockedZone();
+          }}
         />
       )}
 
@@ -128,7 +134,7 @@ export default function WreckSelectScreen({ onNavigate }: { onNavigate: (s: any)
         <VictoryModal
           stats={stats}
           onNewGame={() => {
-            localStorage.removeItem('ship-breakers-store');
+            localStorage.removeItem("ship-breakers-store-v1");
             initializeGame();
             window.location.reload();
           }}
@@ -143,11 +149,11 @@ export default function WreckSelectScreen({ onNavigate }: { onNavigate: (s: any)
             onClick={() => setShowMap(!showMap)}
             className={`px-3 py-1 text-xs font-bold transition ${
               showMap
-                ? 'bg-amber-600 text-zinc-900'
-                : 'bg-zinc-700 text-amber-400 border border-amber-600/30'
+                ? "bg-amber-600 text-zinc-900"
+                : "bg-zinc-700 text-amber-400 border border-amber-600/30"
             }`}
           >
-            {showMap ? '🗺️ MAP' : '📋 LIST'} (M)
+            {showMap ? "🗺️ MAP" : "📋 LIST"} (M)
           </button>
           <button
             className="bg-zinc-700 px-3 py-1 text-xs border border-amber-600/30 hover:bg-zinc-600"
@@ -163,7 +169,7 @@ export default function WreckSelectScreen({ onNavigate }: { onNavigate: (s: any)
           </button>
           <button
             className="bg-zinc-700 px-3 py-1 text-xs border border-amber-600/30 hover:bg-zinc-600"
-            onClick={() => onNavigate('hub')}
+            onClick={() => onNavigate("hub")}
           >
             🏠 Back
           </button>
@@ -195,41 +201,58 @@ export default function WreckSelectScreen({ onNavigate }: { onNavigate: (s: any)
           />
 
           {/* Details below map */}
-          {selectedWreck && (() => {
-            const preview = wreckPreviews.find((p) => p.id === selectedWreckId);
-            return (
-              <div className="bg-zinc-800 border border-amber-600/20 p-4 rounded">
-                <div className="text-amber-400 font-bold mb-3">{selectedWreck.name}</div>
-                <div className="text-zinc-300 text-sm space-y-1">
-                  <div>
-                    Distance: <span className="text-amber-300 font-mono">{selectedWreck.distance} AU</span>
+          {selectedWreck &&
+            (() => {
+              const preview = wreckPreviews.find(
+                (p) => p.id === selectedWreckId,
+              );
+              return (
+                <div className="bg-zinc-800 border border-amber-600/20 p-4 rounded">
+                  <div className="text-amber-400 font-bold mb-3">
+                    {selectedWreck.name}
                   </div>
-                  <div>
-                    Type: <span className="text-amber-300">{selectedWreck.type.toUpperCase()}</span>
-                  </div>
-                  <div>
-                    Rooms: <span className="text-amber-300">{selectedWreck.rooms.length}</span>
-                  </div>
-                  {preview && (
+                  <div className="text-zinc-300 text-sm space-y-1">
                     <div>
-                      Estimated Mass: <span className="text-amber-300">{preview.estimatedMass.toUpperCase()}</span>
+                      Distance:{" "}
+                      <span className="text-amber-300 font-mono">
+                        {selectedWreck.distance} AU
+                      </span>
                     </div>
-                  )}
+                    <div>
+                      Type:{" "}
+                      <span className="text-amber-300">
+                        {selectedWreck.type.toUpperCase()}
+                      </span>
+                    </div>
+                    <div>
+                      Rooms:{" "}
+                      <span className="text-amber-300">
+                        {selectedWreck.rooms.length}
+                      </span>
+                    </div>
+                    {preview && (
+                      <div>
+                        Estimated Mass:{" "}
+                        <span className="text-amber-300">
+                          {preview.estimatedMass.toUpperCase()}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (selectedWreckId) {
+                        startRun(selectedWreckId);
+                        onNavigate("travel");
+                      }
+                    }}
+                    className="mt-4 w-full bg-amber-600 text-zinc-900 font-bold py-2 hover:bg-amber-500 transition"
+                  >
+                    🚀 LAUNCH (Enter)
+                  </button>
                 </div>
-                <button
-                  onClick={() => {
-                    if (selectedWreckId) {
-                      startRun(selectedWreckId);
-                      onNavigate('travel');
-                    }
-                  }}
-                  className="mt-4 w-full bg-amber-600 text-zinc-900 font-bold py-2 hover:bg-amber-500 transition"
-                >
-                  🚀 LAUNCH (Enter)
-                </button>
-              </div>
-            );
-          })()}
+              );
+            })()}
         </div>
       ) : (
         // List view
@@ -240,9 +263,9 @@ export default function WreckSelectScreen({ onNavigate }: { onNavigate: (s: any)
               const totalValue = w.rooms.reduce(
                 (sum, room) =>
                   sum + room.loot.reduce((s, item) => s + (item.value ?? 0), 0),
-                0
+                0,
               );
-              
+
               return (
                 <div
                   key={w.id}
@@ -250,11 +273,11 @@ export default function WreckSelectScreen({ onNavigate }: { onNavigate: (s: any)
                   className="cursor-pointer"
                 >
                   <CyberPanel
-                    variant={selectedWreckId === w.id ? 'default' : 'default'}
+                    variant={selectedWreckId === w.id ? "default" : "default"}
                     className={`transition-all ${
                       selectedWreckId === w.id
-                        ? 'border-amber-500 border-2'
-                        : 'hover:border-amber-500/50'
+                        ? "border-amber-500 border-2"
+                        : "hover:border-amber-500/50"
                     }`}
                   >
                     <div className="flex justify-between items-start">
@@ -268,11 +291,28 @@ export default function WreckSelectScreen({ onNavigate }: { onNavigate: (s: any)
                           )}
                         </div>
                         <div className="text-zinc-400 text-xs mt-2 space-y-0.5 font-mono">
-                          <div>TYPE______ {w.type.toUpperCase()}</div>
+                          <div>
+                            TYPE______ {w.type.toUpperCase()}{" "}
+                            <span className="text-amber-300">
+                              •{" "}
+                              {{
+                                military: "军事",
+                                science: "科学",
+                                industrial: "工业",
+                                luxury: "豪华",
+                                civilian: "平民",
+                              }[w.type] ?? ""}
+                            </span>
+                          </div>
                           <div>TIER______ {w.tier}</div>
                           <div>DISTANCE__ {w.distance} AU</div>
                           <div>ROOMS_____ {w.rooms.length}</div>
-                          <div>VALUE_____ <span className="text-amber-500 text-glow-amber">{totalValue.toLocaleString()} CR</span></div>
+                          <div>
+                            VALUE_____{" "}
+                            <span className="text-amber-500 text-glow-amber">
+                              {totalValue.toLocaleString()} CR
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -293,7 +333,7 @@ export default function WreckSelectScreen({ onNavigate }: { onNavigate: (s: any)
                   onClick={() => {
                     if (selectedWreckId) {
                       startRun(selectedWreckId);
-                      onNavigate('travel');
+                      onNavigate("travel");
                     }
                   }}
                   className="w-full"

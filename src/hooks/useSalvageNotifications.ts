@@ -1,6 +1,6 @@
-import { useEffect, useRef } from 'react';
-import { useGameStore } from '../stores/gameStore';
-import { showSuccessNotification } from '../utils/notifications';
+import { useEffect, useRef } from "react";
+import { useGameStore } from "../stores/gameStore";
+import { showSuccessNotification } from "../utils/notifications";
 
 export function useSalvageNotifications() {
   const currentRun = useGameStore((s) => s.currentRun);
@@ -16,7 +16,7 @@ export function useSalvageNotifications() {
       const newItem = currentRun.collectedLoot[currentCount - 1];
       showSuccessNotification(
         `✅ Item Salvaged: ${newItem.name}`,
-        `+${newItem.value} CR`
+        `+${newItem.value} CR`,
       );
     }
 

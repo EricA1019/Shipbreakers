@@ -1,12 +1,16 @@
-import type { GameState } from '../../types';
+import type { GameState } from "../../types";
 
 interface VictoryModalProps {
-  stats: GameState['stats'];
+  stats: GameState["stats"];
   onNewGame: () => void;
   onContinue?: () => void;
 }
 
-export default function VictoryModal({ stats, onNewGame, onContinue }: VictoryModalProps) {
+export default function VictoryModal({
+  stats,
+  onNewGame,
+  onContinue,
+}: VictoryModalProps) {
   const formatNumber = (n: number) => n.toLocaleString();
 
   return (
@@ -14,7 +18,9 @@ export default function VictoryModal({ stats, onNewGame, onContinue }: VictoryMo
       <div className="bg-zinc-900 border-2 border-yellow-500 p-8 max-w-md rounded">
         {/* Victory header */}
         <div className="text-center mb-6 border-b border-yellow-600/30 pb-4">
-          <div className="text-yellow-500 font-bold text-3xl animate-pulse">🎯 ESCAPED!</div>
+          <div className="text-yellow-500 font-bold text-3xl animate-pulse">
+            🎯 ESCAPED!
+          </div>
           <div className="text-yellow-400 text-sm mt-2 font-mono">
             You've collected enough credits to escape Cinder Station
           </div>
@@ -31,44 +37,60 @@ export default function VictoryModal({ stats, onNewGame, onContinue }: VictoryMo
 
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div className="bg-zinc-800 p-2 rounded border border-yellow-600/10">
-              <div className="text-yellow-300 font-bold">{stats.totalWrecksCleared}</div>
+              <div className="text-yellow-300 font-bold">
+                {stats.totalWrecksCleared}
+              </div>
               <div className="text-zinc-400">Wrecks Cleared</div>
             </div>
             <div className="bg-zinc-800 p-2 rounded border border-yellow-600/10">
-              <div className="text-yellow-300 font-bold">{stats.totalRoomsSalvaged}</div>
+              <div className="text-yellow-300 font-bold">
+                {stats.totalRoomsSalvaged}
+              </div>
               <div className="text-zinc-400">Rooms Salvaged</div>
             </div>
             <div className="bg-zinc-800 p-2 rounded border border-yellow-600/10">
-              <div className="text-yellow-300 font-bold">{stats.totalItemsCollected}</div>
+              <div className="text-yellow-300 font-bold">
+                {stats.totalItemsCollected}
+              </div>
               <div className="text-zinc-400">Items Collected</div>
             </div>
             <div className="bg-zinc-800 p-2 rounded border border-yellow-600/10">
-              <div className="text-yellow-300 font-bold">{stats.daysPlayed}</div>
+              <div className="text-yellow-300 font-bold">
+                {stats.daysPlayed}
+              </div>
               <div className="text-zinc-400">Days Survived</div>
             </div>
           </div>
 
           <div className="bg-zinc-800 p-2 rounded border border-yellow-600/10 text-xs">
-            <div className="text-yellow-300 font-bold">{formatNumber(stats.highestSingleProfit)} CR</div>
+            <div className="text-yellow-300 font-bold">
+              {formatNumber(stats.highestSingleProfit)} CR
+            </div>
             <div className="text-zinc-400">Highest Single Haul</div>
           </div>
 
           {stats.longestWinStreak > 0 && (
             <div className="bg-emerald-900/30 p-2 rounded border border-emerald-600/20 text-xs">
-              <div className="text-emerald-400 font-bold">🔥 {stats.longestWinStreak}</div>
+              <div className="text-emerald-400 font-bold">
+                🔥 {stats.longestWinStreak}
+              </div>
               <div className="text-zinc-400">Longest Win Streak</div>
             </div>
           )}
 
           {stats.deathsAvoided > 0 && (
             <div className="bg-cyan-900/30 p-2 rounded border border-cyan-600/20 text-xs">
-              <div className="text-cyan-400 font-bold">💪 {stats.deathsAvoided}</div>
+              <div className="text-cyan-400 font-bold">
+                💪 {stats.deathsAvoided}
+              </div>
               <div className="text-zinc-400">Deaths Avoided</div>
             </div>
           )}
 
           <div className="bg-zinc-800 p-2 rounded border border-yellow-600/10 text-xs">
-            <div className="text-yellow-300 font-bold">{stats.licensesRenewed}</div>
+            <div className="text-yellow-300 font-bold">
+              {stats.licensesRenewed}
+            </div>
             <div className="text-zinc-400">Licenses Renewed</div>
           </div>
         </div>

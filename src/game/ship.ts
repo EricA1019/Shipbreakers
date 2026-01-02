@@ -1,12 +1,24 @@
-import { SeededRandom } from './random';
-import type { GridRoom, GridPosition, Direction, WreckMass, Loot, HazardType } from '../types';
+import { SeededRandom } from "./random";
+import type {
+  GridRoom,
+  GridPosition,
+  Direction,
+  WreckMass,
+  Loot,
+  HazardType,
+  ShipLayout,
+} from "../types";
 
 function opposite(dir: Direction): Direction {
   switch (dir) {
-    case 'north': return 'south';
-    case 'south': return 'north';
-    case 'east': return 'west';
-    case 'west': return 'east';
+    case "north":
+      return "south";
+    case "south":
+      return "north";
+    case "east":
+      return "west";
+    case "west":
+      return "east";
   }
 }
 
@@ -17,6 +29,7 @@ export class Ship {
   height: number;
   grid: GridRoom[][];
   entryPosition: GridPosition;
+  layout?: ShipLayout;
   private rng: SeededRandom;
 
   static sizeByMass: Record<WreckMass, { w: number; h: number }> = {
@@ -26,7 +39,10 @@ export class Ship {
     massive: { w: 4, h: 3 },
   };
 
-  constructor(seed: string, opts: { width?: number; height?: number; name?: string } = {}) {
+  constructor(
+    seed: string,
+    opts: { width?: number; height?: number; name?: string } = {},
+  ) {
     this.rng = new SeededRandom(seed);
     this.width = opts.width ?? 3;
     this.height = opts.height ?? 2;
@@ -53,7 +69,12 @@ export class Ship {
           id: roomId,
           name: `Room ${x},${y}`,
           hazardLevel: this.rng.nextInt(0, 3),
-          hazardType: this.rng.pick(['mechanical', 'combat', 'environmental', 'security'] as HazardType[]),
+          hazardType: this.rng.pick([
+            "mechanical",
+            "combat",
+            "environmental",
+            "security",
+          ] as HazardType[]),
           loot: [] as Loot[],
           looted: false,
           position: { x, y },
@@ -70,10 +91,10 @@ export class Ship {
 
   private neighbors(x: number, y: number) {
     const neigh: Array<{ pos: GridPosition; dir: Direction }> = [];
-    if (y > 0) neigh.push({ pos: { x, y: y - 1 }, dir: 'north' });
-    if (y < this.height - 1) neigh.push({ pos: { x, y: y + 1 }, dir: 'south' });
-    if (x < this.width - 1) neigh.push({ pos: { x: x + 1, y }, dir: 'east' });
-    if (x > 0) neigh.push({ pos: { x: x - 1, y }, dir: 'west' });
+    if (y > 0) neigh.push({ pos: { x, y: y - 1 }, dir: "north" });
+    if (y < this.height - 1) neigh.push({ pos: { x, y: y + 1 }, dir: "south" });
+    if (x < this.width - 1) neigh.push({ pos: { x: x + 1, y }, dir: "east" });
+    if (x > 0) neigh.push({ pos: { x: x - 1, y }, dir: "west" });
     return neigh;
   }
 
@@ -86,7 +107,11 @@ export class Ship {
     visited.add(key(start));
 
     // frontier edges: [fromPos, toPos, dir]
-    const frontier: Array<{ from: GridPosition; to: GridPosition; dir: Direction }> = [];
+    const frontier: Array<{
+      from: GridPosition;
+      to: GridPosition;
+      dir: Direction;
+    }> = [];
 
     const pushFrontier = (from: GridPosition) => {
       for (const n of this.neighbors(from.x, from.y)) {
@@ -144,10 +169,10 @@ export class Ship {
     for (const dir of room.connections) {
       let nx = pos.x;
       let ny = pos.y;
-      if (dir === 'north') ny -= 1;
-      if (dir === 'south') ny += 1;
-      if (dir === 'east') nx += 1;
-      if (dir === 'west') nx -= 1;
+      if (dir === "north") ny -= 1;
+      if (dir === "south") ny += 1;
+      if (dir === "east") nx += 1;
+      if (dir === "west") nx -= 1;
       const r = this.getRoom(nx, ny);
       if (r) neighbors.push({ room: r, dir });
     }
@@ -161,11 +186,114 @@ export class Ship {
     const dx = to.x - from.x;
     const dy = to.y - from.y;
     let dir: Direction | null = null;
-    if (dx === 1 && dy === 0) dir = 'east';
-    if (dx === -1 && dy === 0) dir = 'west';
-    if (dx === 0 && dy === 1) dir = 'south';
-    if (dx === 0 && dy === -1) dir = 'north';
+    if (dx === 1 && dy === 0) dir = "east";
+    if (dx === -1 && dy === 0) dir = "west";
+    if (dx === 0 && dy === 1) dir = "south";
+    if (dx === 0 && dy === -1) dir = "north";
     if (!dir) return false;
     return room.connections.includes(dir);
+  }
+
+  /**
+   * Regenerate door connections based on layout shape.
+   * This replaces the rectangular MST with one that respects the layout's sparse positions.
+   */
+  regenerateDoorsForLayout(layout: ShipLayout) {
+    // Clear all existing connections
+    for (let y = 0; y < this.height; y++) {
+      for (let x = 0; x < this.width; x++) {
+        this.grid[y][x].connections = [];
+      }
+    }
+
+    // Build set of valid positions from layout
+    const layoutPositions = new Set<string>();
+    for (const room of layout.rooms) {
+      layoutPositions.add(`${room.x},${room.y}`);
+    }
+
+    // Find all potential edges (adjacent layout rooms)
+    type Edge = { from: GridPosition; to: GridPosition; dir: Direction };
+    const potentialEdges: Edge[] = [];
+    
+    for (const room of layout.rooms) {
+      const pos = { x: room.x, y: room.y };
+      // Check each cardinal direction
+      const adjacentChecks: { dx: number; dy: number; dir: Direction }[] = [
+        { dx: 1, dy: 0, dir: "east" },
+        { dx: -1, dy: 0, dir: "west" },
+        { dx: 0, dy: 1, dir: "south" },
+        { dx: 0, dy: -1, dir: "north" },
+      ];
+      
+      for (const check of adjacentChecks) {
+        const nx = pos.x + check.dx;
+        const ny = pos.y + check.dy;
+        const neighborKey = `${nx},${ny}`;
+        
+        // Only add edge if neighbor is also in layout
+        if (layoutPositions.has(neighborKey)) {
+          // Avoid duplicate edges (A->B and B->A)
+          const existingEdge = potentialEdges.find(
+            e => (e.from.x === nx && e.from.y === ny && e.to.x === pos.x && e.to.y === pos.y)
+          );
+          if (!existingEdge) {
+            potentialEdges.push({ from: pos, to: { x: nx, y: ny }, dir: check.dir });
+          }
+        }
+      }
+    }
+
+    // Use MST to ensure all layout rooms are connected
+    const visited = new Set<string>();
+    const key = (p: GridPosition) => `${p.x},${p.y}`;
+    const connectedEdges: Edge[] = [];
+
+    // Start from first layout room
+    if (layout.rooms.length > 0) {
+      const startRoom = layout.rooms[0];
+      visited.add(`${startRoom.x},${startRoom.y}`);
+      
+      // Prim's algorithm on potential edges
+      while (visited.size < layout.rooms.length) {
+        // Find edges from visited to unvisited
+        const validEdges = potentialEdges.filter(
+          e => (visited.has(key(e.from)) && !visited.has(key(e.to))) ||
+               (visited.has(key(e.to)) && !visited.has(key(e.from)))
+        );
+        
+        if (validEdges.length === 0) {
+          console.warn("[Ship] MST disconnected layout!", { visited: Array.from(visited), total: layout.rooms.length });
+          break; // Disconnected layout
+        }
+        
+        // Pick random edge
+        const edge = validEdges[this.rng.nextInt(0, validEdges.length - 1)];
+        connectedEdges.push(edge);
+        visited.add(key(edge.from));
+        visited.add(key(edge.to));
+      }
+    }
+
+    // Apply MST edges
+    for (const edge of connectedEdges) {
+      this.connectPositions(edge.from, edge.to, edge.dir);
+    }
+
+    // Add 20-30% extra random doors from remaining potential edges
+    const remainingEdges = potentialEdges.filter(
+      e => !connectedEdges.includes(e)
+    );
+    for (const edge of remainingEdges) {
+      if (this.rng.nextFloat() < 0.25) {
+        this.connectPositions(edge.from, edge.to, edge.dir);
+      }
+    }
+
+    // Update entry position to a valid layout room
+    const firstRoom = layout.rooms[0];
+    if (firstRoom) {
+      this.entryPosition = { x: firstRoom.x, y: firstRoom.y };
+    }
   }
 }

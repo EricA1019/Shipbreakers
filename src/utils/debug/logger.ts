@@ -1,4 +1,4 @@
-export type LogLevel = 'DEBUG' | 'INFO' | 'WARN' | 'ERROR';
+export type LogLevel = "DEBUG" | "INFO" | "WARN" | "ERROR";
 
 export interface LogEntry {
   id: string;
@@ -16,20 +16,28 @@ class Logger {
 
   constructor() {
     // Auto-capture unhandled errors
-    if (typeof window !== 'undefined') {
-      window.addEventListener('error', (event) => {
-        this.error('Unhandled Exception', {
-          message: event.message,
-          filename: event.filename,
-          lineno: event.lineno,
-          colno: event.colno,
-        }, event.error?.stack);
+    if (typeof window !== "undefined") {
+      window.addEventListener("error", (event) => {
+        this.error(
+          "Unhandled Exception",
+          {
+            message: event.message,
+            filename: event.filename,
+            lineno: event.lineno,
+            colno: event.colno,
+          },
+          event.error?.stack,
+        );
       });
 
-      window.addEventListener('unhandledrejection', (event) => {
-        this.error('Unhandled Promise Rejection', {
-          reason: event.reason
-        }, event.reason?.stack);
+      window.addEventListener("unhandledrejection", (event) => {
+        this.error(
+          "Unhandled Promise Rejection",
+          {
+            reason: event.reason,
+          },
+          event.reason?.stack,
+        );
       });
     }
   }
@@ -51,58 +59,68 @@ class Logger {
 
     // Console output
     const style = {
-      DEBUG: 'color: #9ca3af',
-      INFO: 'color: #60a5fa',
-      WARN: 'color: #fbbf24',
-      ERROR: 'color: #f87171',
+      DEBUG: "color: #9ca3af",
+      INFO: "color: #60a5fa",
+      WARN: "color: #fbbf24",
+      ERROR: "color: #f87171",
     }[level];
 
-    console.log(`%c[${level}] ${message}`, style, meta || '');
+    console.log(`%c[${level}] ${message}`, style, meta || "");
 
     // Notify listeners
-    this.listeners.forEach(l => l(entry));
+    this.listeners.forEach((l) => l(entry));
   }
 
-  debug(message: string, meta?: any) { this.add('DEBUG', message, meta); }
-  info(message: string, meta?: any) { this.add('INFO', message, meta); }
-  warn(message: string, meta?: any) { this.add('WARN', message, meta); }
-  error(message: string, meta?: any, stack?: string) { 
+  debug(message: string, meta?: any) {
+    this.add("DEBUG", message, meta);
+  }
+  info(message: string, meta?: any) {
+    this.add("INFO", message, meta);
+  }
+  warn(message: string, meta?: any) {
+    this.add("WARN", message, meta);
+  }
+  error(message: string, meta?: any, stack?: string) {
     // If meta is an Error object, extract stack
     if (meta instanceof Error) {
       stack = stack || meta.stack;
       meta = { message: meta.message, name: meta.name };
     }
-    this.add('ERROR', message, meta, stack); 
+    this.add("ERROR", message, meta, stack);
   }
 
-  getLogs() { return [...this.logs]; }
-  
-  clear() { 
-    this.logs = []; 
-    this.info('Logs cleared');
+  getLogs() {
+    return [...this.logs];
+  }
+
+  clear() {
+    this.logs = [];
+    this.info("Logs cleared");
   }
 
   subscribe(listener: (entry: LogEntry) => void) {
     this.listeners.push(listener);
     return () => {
-      this.listeners = this.listeners.filter(l => l !== listener);
+      this.listeners = this.listeners.filter((l) => l !== listener);
     };
   }
 
   exportText() {
-    return this.logs.map(l => {
-      const time = new Date(l.timestamp).toISOString();
-      const metaStr = l.meta ? ` | ${JSON.stringify(l.meta)}` : '';
-      const stackStr = l.stack ? `\n${l.stack}` : '';
-      return `${time} [${l.level}] ${l.message}${metaStr}${stackStr}`;
-    }).join('\n');
+    return this.logs
+      .map((l) => {
+        const time = new Date(l.timestamp).toISOString();
+        const metaStr = l.meta ? ` | ${JSON.stringify(l.meta)}` : "";
+        const stackStr = l.stack ? `\n${l.stack}` : "";
+        return `${time} [${l.level}] ${l.message}${metaStr}${stackStr}`;
+      })
+      .join("\n");
   }
 
   download() {
     const text = this.exportText();
-    const blob = new Blob([text], { type: 'text/plain' });
+    const blob = new Blob([text], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
     a.download = `shipbreakers-log-${new Date().toISOString()}.txt`;
     a.click();

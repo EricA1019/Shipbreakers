@@ -2,8 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Self-hosted fonts (place woff2/woff in public/fonts/) */
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('/fonts/jetbrains-mono/JetBrainsMono-Regular.woff2') format('woff2'),
+       url('/fonts/jetbrains-mono/JetBrainsMono-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Noto Sans Mono CJK SC';
+  src: url('/fonts/noto-cjk/NotoSansMonoCJKsc-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  /* Primary UI font (mono for UI readability), fallback to system CJK-safe fonts */
+  font-family: 'JetBrains Mono', 'Noto Sans Mono CJK SC', ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace;
   line-height: 1.5;
   font-weight: 400;
 
@@ -257,4 +275,25 @@ button:focus-visible {
   .animate-pulse-border {
     animation: pulse-border 1.5s ease-in-out infinite;
   }
+
+  /* Micro-interactions */
+  .btn-press {
+    transition: transform 120ms cubic-bezier(.2,.9,.2,1), box-shadow 160ms cubic-bezier(.2,.9,.2,1);
+  }
+  .btn-press:active {
+    transform: translateY(1px) scale(0.995);
+    box-shadow: none;
+  }
+  .focus-ring {
+    box-shadow: 0 0 0 4px rgba(99,102,241,0.08), 0 2px 0 rgba(0,0,0,0.2);
+    outline: none;
+  }
+  .hover-raise:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(2,6,23,0.6);
+  }
+  .reduced-motion-safe {
+    transition: none !important;
+  }
 }
+

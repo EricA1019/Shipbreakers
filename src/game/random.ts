@@ -2,7 +2,7 @@ export class SeededRandom {
   private state: number;
 
   constructor(seed: string | number) {
-    if (typeof seed === 'string') {
+    if (typeof seed === "string") {
       this.state = 0;
       for (let i = 0; i < seed.length; i++) {
         this.state = (this.state << 5) - this.state + seed.charCodeAt(i);
@@ -23,7 +23,7 @@ export class SeededRandom {
     x ^= x << 5;
     this.state = x | 0;
     // return positive float [0,1)
-    return ((x >>> 0) / 4294967296);
+    return (x >>> 0) / 4294967296;
   }
 
   nextFloat(min = 0, max = 1): number {

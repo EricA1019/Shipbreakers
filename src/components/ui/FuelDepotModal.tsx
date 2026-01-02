@@ -1,14 +1,20 @@
-import { useState } from 'react';
-import { useGameStore } from '../../stores/gameStore';
-import { FUEL_PRICE } from '../../game/constants';
-import { showSuccessNotification, showWarningNotification } from '../../utils/notifications';
+import { useState } from "react";
+import { useGameStore } from "../../stores/gameStore";
+import { FUEL_PRICE } from "../../game/constants";
+import {
+  showSuccessNotification,
+  showWarningNotification,
+} from "../../utils/notifications";
 
 interface FuelDepotModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-export default function FuelDepotModal({ isOpen, onClose }: FuelDepotModalProps) {
+export default function FuelDepotModal({
+  isOpen,
+  onClose,
+}: FuelDepotModalProps) {
   const { credits, fuel, buyFuel } = useGameStore((s) => ({
     credits: s.credits,
     fuel: s.fuel,
@@ -29,10 +35,16 @@ export default function FuelDepotModal({ isOpen, onClose }: FuelDepotModalProps)
 
   const handlePurchase = () => {
     if (buyFuel(selectedAmount)) {
-      showSuccessNotification(`Fuel Purchase`, `+${selectedAmount} fuel for ${currentCost} CR`);
+      showSuccessNotification(
+        `Fuel Purchase`,
+        `+${selectedAmount} fuel for ${currentCost} CR`,
+      );
       onClose();
     } else {
-      showWarningNotification(`Insufficient Credits`, `Need ${currentCost} CR, have ${credits} CR`);
+      showWarningNotification(
+        `Insufficient Credits`,
+        `Need ${currentCost} CR, have ${credits} CR`,
+      );
     }
   };
 
@@ -41,14 +53,22 @@ export default function FuelDepotModal({ isOpen, onClose }: FuelDepotModalProps)
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-zinc-900 border-2 border-amber-600/50 p-6 max-w-md w-full mx-4">
-        <div className="text-amber-500 text-xs font-semibold tracking-wider mb-4">⛽ FUEL DEPOT</div>
-
-        <div className="bg-zinc-800 border border-amber-600/20 p-3 mb-4 rounded">
-          <div className="text-amber-100 text-sm mb-2">Current Fuel: <span className="font-bold">{fuel}</span></div>
-          <div className="text-amber-100 text-sm">Credits: <span className="font-bold">{credits} CR</span></div>
+        <div className="text-amber-500 text-xs font-semibold tracking-wider mb-4">
+          ⛽ FUEL DEPOT
         </div>
 
-        <div className="text-zinc-400 text-xs mb-3">Price: {FUEL_PRICE} CR per unit</div>
+        <div className="bg-zinc-800 border border-amber-600/20 p-3 mb-4 rounded">
+          <div className="text-amber-100 text-sm mb-2">
+            Current Fuel: <span className="font-bold">{fuel}</span>
+          </div>
+          <div className="text-amber-100 text-sm">
+            Credits: <span className="font-bold">{credits} CR</span>
+          </div>
+        </div>
+
+        <div className="text-zinc-400 text-xs mb-3">
+          Price: {FUEL_PRICE} CR per unit
+        </div>
 
         <div className="space-y-2 mb-4">
           {fuelOptions.map((option) => (
@@ -57,8 +77,8 @@ export default function FuelDepotModal({ isOpen, onClose }: FuelDepotModalProps)
               onClick={() => setSelectedAmount(option.amount)}
               className={`w-full p-2 text-left border-2 rounded transition-colors ${
                 selectedAmount === option.amount
-                  ? 'border-amber-500 bg-amber-500/10 text-amber-100'
-                  : 'border-amber-600/20 bg-zinc-800 text-zinc-300 hover:border-amber-600/50'
+                  ? "border-amber-500 bg-amber-500/10 text-amber-100"
+                  : "border-amber-600/20 bg-zinc-800 text-zinc-300 hover:border-amber-600/50"
               }`}
             >
               <span className="font-semibold">+{option.amount} fuel</span>
@@ -69,7 +89,9 @@ export default function FuelDepotModal({ isOpen, onClose }: FuelDepotModalProps)
 
         <div className="bg-zinc-800 border border-amber-600/20 p-3 rounded mb-4">
           <div className="text-zinc-400 text-xs mb-1">PURCHASE SUMMARY</div>
-          <div className="text-amber-100 font-bold text-lg">{selectedAmount} fuel for {currentCost} CR</div>
+          <div className="text-amber-100 font-bold text-lg">
+            {selectedAmount} fuel for {currentCost} CR
+          </div>
         </div>
 
         <div className="flex gap-2">
@@ -84,11 +106,11 @@ export default function FuelDepotModal({ isOpen, onClose }: FuelDepotModalProps)
             disabled={!canAfford}
             className={`flex-1 px-4 py-2 font-bold ${
               canAfford
-                ? 'bg-amber-500 text-zinc-900 hover:bg-amber-400'
-                : 'bg-zinc-700 text-zinc-500 cursor-not-allowed opacity-50'
+                ? "bg-amber-500 text-zinc-900 hover:bg-amber-400"
+                : "bg-zinc-700 text-zinc-500 cursor-not-allowed opacity-50"
             }`}
           >
-            {canAfford ? 'Purchase' : 'Insufficient Credits'}
+            {canAfford ? "Purchase" : "Insufficient Credits"}
           </button>
         </div>
       </div>

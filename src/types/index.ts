@@ -1,16 +1,34 @@
-export type HazardType = 'mechanical' | 'combat' | 'environmental' | 'security';
-export type WreckType = 'military' | 'science' | 'industrial' | 'civilian' | 'luxury';
-export type LootCategory = 'universal' | 'military' | 'science' | 'industrial' | 'civilian';
-export type LootRarity = 'common' | 'uncommon' | 'rare' | 'legendary';
-export type ItemType = 'weapon' | 'armor' | 'tech' | 'material' | 'data' | 'medical' | 'luxury' | 'misc';
-export type SkillType = 'technical' | 'combat' | 'salvage' | 'piloting';
+export type HazardType = "mechanical" | "combat" | "environmental" | "security";
+export type WreckType =
+  | "military"
+  | "science"
+  | "industrial"
+  | "civilian"
+  | "luxury";
+export type LootCategory =
+  | "universal"
+  | "military"
+  | "science"
+  | "industrial"
+  | "civilian";
+export type LootRarity = "common" | "uncommon" | "rare" | "legendary";
+export type ItemType =
+  | "weapon"
+  | "armor"
+  | "tech"
+  | "material"
+  | "data"
+  | "medical"
+  | "luxury"
+  | "misc";
+export type SkillType = "technical" | "combat" | "salvage" | "piloting";
 
 // Phase 5 - Graveyard zones and license tiers
-export type GraveyardZone = 'near' | 'mid' | 'deep';
+export type GraveyardZone = "near" | "mid" | "deep";
 
-export type LicenseTier = 'basic' | 'standard' | 'premium';
+export type LicenseTier = "basic" | "standard" | "premium";
 
-export type WreckMass = 'small' | 'medium' | 'large' | 'massive';
+export type WreckMass = "small" | "medium" | "large" | "massive";
 
 export interface ZoneConfig {
   id: GraveyardZone;
@@ -25,34 +43,34 @@ export interface ZoneConfig {
 
 export const ZONES: Record<GraveyardZone, ZoneConfig> = {
   near: {
-    id: 'near',
-    label: 'NEAR ZONE',
+    id: "near",
+    label: "NEAR ZONE",
     distanceRange: [1.0, 2.0],
     tierRange: [1, 2],
     luxuryChance: 0.05,
     wreckCountMin: 2,
     wreckCountMax: 3,
-    description: 'Safe salvage near Cinder Station. Low risk, low reward.',
+    description: "Safe salvage near Cinder Station. Low risk, low reward.",
   },
   mid: {
-    id: 'mid',
-    label: 'MID ZONE',
+    id: "mid",
+    label: "MID ZONE",
     distanceRange: [2.0, 3.0],
     tierRange: [2, 3],
     luxuryChance: 0.15,
     wreckCountMin: 2,
     wreckCountMax: 3,
-    description: 'Moderate risk sector. Requires Standard License.',
+    description: "Moderate risk sector. Requires Standard License.",
   },
   deep: {
-    id: 'deep',
-    label: 'DEEP ZONE',
+    id: "deep",
+    label: "DEEP ZONE",
     distanceRange: [3.0, 5.0],
     tierRange: [4, 5],
-    luxuryChance: 0.30,
+    luxuryChance: 0.3,
     wreckCountMin: 2,
     wreckCountMax: 3,
-    description: 'Critical danger zone. Premium License required.',
+    description: "Critical danger zone. Premium License required.",
   },
 };
 
@@ -66,25 +84,25 @@ export interface LicenseTierConfig {
 
 export const LICENSE_TIERS: Record<LicenseTier, LicenseTierConfig> = {
   basic: {
-    tier: 'basic',
+    tier: "basic",
     cost: 5000,
     duration: 14,
-    unlocksZones: ['near'],
-    label: 'BASIC SALVAGE LICENSE',
+    unlocksZones: ["near"],
+    label: "BASIC SALVAGE LICENSE",
   },
   standard: {
-    tier: 'standard',
+    tier: "standard",
     cost: 15000,
     duration: 21,
-    unlocksZones: ['near', 'mid'],
-    label: 'STANDARD SALVAGE LICENSE',
+    unlocksZones: ["near", "mid"],
+    label: "STANDARD SALVAGE LICENSE",
   },
   premium: {
-    tier: 'premium',
+    tier: "premium",
     cost: 35000,
     duration: 30,
-    unlocksZones: ['near', 'mid', 'deep'],
-    label: 'PREMIUM SALVAGE LICENSE',
+    unlocksZones: ["near", "mid", "deep"],
+    label: "PREMIUM SALVAGE LICENSE",
   },
 };
 
@@ -112,15 +130,27 @@ export interface SkillXp {
 }
 
 export interface CrewMember {
-  id: string; // UUID
+  id: string;
+  firstName: string;
+  lastName: string;
   name: string;
-  isPlayer?: boolean; // captain flag (true for captain)
+  isPlayer?: boolean;
+  background: BackgroundId;
+  traits: TraitId[];
   skills: Skills;
-  skillXp: SkillXp; // learns by doing
+  skillXp: SkillXp;
   hp: number;
   maxHp: number;
-  hiredDay?: number; // day hired (undefined for starting captain)
-  hireCost?: number; // cost paid to hire
+  stamina: number;
+  maxStamina: number;
+  sanity: number;
+  maxSanity: number;
+  position?: CrewPosition;
+  currentJob: CrewJob;
+  status: CrewStatus;
+  hiredDay?: number;
+  hireCost?: number;
+  customDotColor?: string;
 }
 
 // Backwards-compatible alias until rest of codebase migrates
@@ -135,6 +165,18 @@ export interface Loot {
   itemType: ItemType;
   manufacturer: string;
   description: string;
+  // Optional equipment fields - if present, item is installable on ship
+  slotType?: SlotType;
+  tier?: 1 | 2 | 3 | 4 | 5;
+  powerDraw?: number;
+  effects?: ItemEffect[];
+}
+
+/**
+ * Type guard to check if a Loot item is equippable on the player ship
+ */
+export function isEquippable(item: Loot): boolean {
+  return item.slotType !== undefined && item.slotType !== null;
 }
 
 export interface Room {
@@ -144,6 +186,10 @@ export interface Room {
   hazardType: HazardType;
   loot: Loot[];
   looted: boolean;
+  // Optional equipment found in the room (Phase 7)
+  equipment?: Item | null;
+  // Sealed rooms require cutting open before salvaging
+  sealed?: boolean;
 }
 
 // Grid system types for Phase 6
@@ -152,11 +198,16 @@ export interface GridPosition {
   y: number;
 }
 
-export type Direction = 'north' | 'south' | 'east' | 'west';
+export type Direction = "north" | "south" | "east" | "west";
 
 export interface GridRoom extends Room {
   position: GridPosition;
   connections: Direction[]; // Adjacent doors
+}
+
+export interface ShipLayout {
+  template: string;
+  rooms: Array<{ x: number; y: number; w: number; h: number; kind: string }>;
 }
 
 export interface Ship {
@@ -166,6 +217,82 @@ export interface Ship {
   height: number;
   grid: GridRoom[][];
   entryPosition: GridPosition;
+  layout?: ShipLayout;
+}
+
+/**
+ * Type guard to check if a Ship has a procedural layout from WASM
+ */
+export function hasShipLayout(
+  ship: Ship,
+): ship is Ship & { layout: ShipLayout } {
+  return ship.layout !== undefined && Array.isArray(ship.layout.rooms);
+}
+
+// Phase 7: Items & Slots System types
+export type SlotType =
+  | "engineering"
+  | "scanning"
+  | "medical"
+  | "combat"
+  | "bridge"
+  | "cargo";
+
+export type EffectType =
+  | "skill_bonus"
+  | "hazard_resist"
+  | "fuel_efficiency"
+  | "scan_range"
+  | "heal_rate"
+  | "loot_bonus";
+
+export interface ItemEffect {
+  type: EffectType;
+  value: number;
+  skill?: SkillType; // required for 'skill_bonus'
+  hazard?: HazardType; // required for 'hazard_resist'
+}
+
+export interface Item {
+  id: string;
+  name: string;
+  description: string;
+  slotType: SlotType;
+  tier: 1 | 2 | 3 | 4 | 5;
+  rarity: LootRarity;
+  powerDraw: number; // 0 = passive, 1.. = active draw
+  effects: ItemEffect[];
+  manufacturer?: string;
+  value: number;
+}
+
+export interface ItemSlot {
+  id: string;
+  type: SlotType;
+  installedItem: Loot | Item | null; // Accepts both Loot (equippable) and Item (legacy equipment)
+}
+
+export type PlayerRoomType =
+  | "bridge"
+  | "engine"
+  | "medbay"
+  | "cargo"
+  | "workshop"
+  | "armory"
+  | "lounge";
+
+export interface PlayerShipRoom extends GridRoom {
+  roomType: PlayerRoomType;
+  slots: ItemSlot[];
+}
+
+export interface ReactorModule {
+  id: string;
+  name: string;
+  tier: 1 | 2 | 3 | 4 | 5;
+  powerOutput: number;
+  manufacturer?: string;
+  value: number;
 }
 
 export interface PlayerShip extends Ship {
@@ -174,6 +301,14 @@ export interface PlayerShip extends Ship {
   cargoUsed: number;
   hp: number;
   maxHp: number;
+
+  // Flattened rooms array for convenient access (derived from grid)
+  rooms: PlayerShipRoom[];
+
+  // Phase 7 fields
+  reactor?: ReactorModule; // installed reactor module
+  powerCapacity?: number; // derived from reactor (power output)
+  powerUsed?: number; // computed sum of installed items' powerDraw
 }
 
 export interface Wreck {
@@ -200,9 +335,10 @@ export interface RunStats {
 
 export interface RunState {
   wreckId: string;
-  status: 'traveling' | 'salvaging' | 'returning' | 'completed';
+  status: "traveling" | "salvaging" | "returning" | "completed";
   timeRemaining: number;
   collectedLoot: Loot[];
+  collectedEquipment?: (Loot | Item)[]; // Now supports unified inventory
   stats: RunStats;
 }
 
@@ -226,6 +362,35 @@ export interface GameSettings {
   showKeyboardHints: boolean;
 }
 
+// UI Toast notifications used across the app
+export interface Toast {
+  id: string;
+  message: string;
+  type: "success" | "error" | "warning" | "info";
+  duration?: number;
+}
+
+// Screen navigation typing for consistent onNavigate props
+export type Screen =
+  | "hub"
+  | "crew"
+  | "salvage"
+  | "travel"
+  | "wreck-select"
+  | "select"
+  | "run-summary"
+  | "summary"
+  | "sell"
+  | "shipyard"
+  | "equipment-shop"
+  | "shop"
+  | "game-over"
+  | "gameover";
+
+export interface ScreenProps {
+  onNavigate: (screen: Screen) => void;
+}
+
 export interface HireCandidate {
   id: string;
   name: string;
@@ -241,19 +406,182 @@ export interface WreckPreview {
   zone: GraveyardZone;
 }
 
+// ============================================
+// PHASE 9: Crew Identity & Survival Types
+// ============================================
+
+// Background IDs - must match keys in backgrounds.ts
+export type BackgroundId =
+  | "ex_military"
+  | "station_rat"
+  | "freighter_pilot"
+  | "scrap_diver"
+  | "corporate_exile"
+  | "dock_worker"
+  | "medical_dropout"
+  | "enforcer"
+  | "smuggler"
+  | "colonist"
+  | "ship_captain";
+
+// Trait IDs - must match keys in traits.ts
+export type TraitId =
+  | "brave"
+  | "lucky"
+  | "efficient"
+  | "eagle_eye"
+  | "loyal"
+  | "steady"
+  | "tireless"
+  | "greedy"
+  | "coward"
+  | "reckless"
+  | "lazy"
+  | "paranoid"
+  | "addicted"
+  | "clumsy"
+  | "quiet"
+  | "veteran"
+  | "idealist"
+  | "pragmatic";
+
+export type CrewStatus = "active" | "resting" | "injured" | "breakdown";
+
+export type CrewJob =
+  | "idle"
+  | "salvaging"
+  | "resting"
+  | "healing"
+  | "socializing";
+
+export interface CrewPosition {
+  location: "ship" | "wreck" | "station";
+  roomId?: string;
+  gridPosition?: GridPosition;
+}
+
+export interface CrewBackground {
+  id: BackgroundId;
+  name: string;
+  description: string;
+  skillModifiers: Partial<Skills>;
+  traitPool: TraitId[];
+  statModifiers?: {
+    stamina?: number;
+    sanity?: number;
+  };
+}
+
+export type TraitEffectType =
+  | "skill_mod"
+  | "stamina_mod"
+  | "sanity_mod"
+  | "work_speed"
+  | "event_chance"
+  | "loot_bonus"
+  | "special";
+
+export interface TraitEffect {
+  type: TraitEffectType;
+  target?: string;
+  value: number;
+  description?: string;
+}
+
+export interface CrewTrait {
+  id: TraitId;
+  name: string;
+  description: string;
+  category: "positive" | "negative" | "neutral";
+  effects: TraitEffect[];
+}
+
+export interface PantryCapacity {
+  food: number;
+  drink: number;
+  luxury: number;
+}
+
+export type EventTrigger =
+  | "travel"
+  | "salvage"
+  | "social"
+  | "daily"
+  | "starvation"
+  | "breakdown";
+
+export interface EventRequirement {
+  skill?: keyof Skills;
+  minLevel?: number;
+  item?: string;
+  trait?: TraitId;
+  credits?: number;
+}
+
+export type EventEffectType =
+  | "credits"
+  | "fuel"
+  | "food"
+  | "drink"
+  | "hp"
+  | "stamina"
+  | "sanity"
+  | "trait_add"
+  | "trait_remove"
+  | "loot"
+  | "crew_add"
+  | "relationship";
+
+export interface EventEffect {
+  type: EventEffectType;
+  target?: string;
+  value: number | string;
+}
+
+export interface EventChoice {
+  id: string;
+  text: string;
+  requirements?: EventRequirement;
+  effects: EventEffect[];
+}
+
+export interface GameEvent {
+  id: string;
+  trigger: EventTrigger;
+  title: string;
+  description: string;
+  choices: EventChoice[];
+  requirements?: EventRequirement;
+  weight: number;
+}
+
+export type ShoreLeaveType = "rest" | "recreation" | "party";
+
+export interface ShoreLeaveOption {
+  type: ShoreLeaveType;
+  cost: number;
+  duration: number;
+  staminaRecovery: number;
+  sanityRecovery: number;
+  eventChance: number;
+  beerPerCrew?: number;
+}
+
+
 export interface GameState {
   credits: number;
   fuel: number;
   // Phase 5: multiple crew support
   crewRoster: CrewMember[]; // max 5
   // Convenience: active selected crew for compatibility
-  crew: Crew; 
+  crew: Crew;
   selectedCrewId: string | null; // crew assigned for next run
 
   hireCandidates: HireCandidate[];
   availableWrecks: Wreck[];
   currentRun: RunState | null;
   inventory: Loot[];
+  equipmentInventory?: (Loot | Item)[];
   day: number;
   licenseDaysRemaining: number;
   // Will use LICENSE_TIERS for pricing; keep licenseFee for compatibility
@@ -267,4 +595,25 @@ export interface GameState {
 
   // Phase 6: player ship state
   playerShip?: PlayerShip;
+
+  // Phase 7: Equipment and cargo swap (unified with Loot system)
+  cargoSwapPending?: {
+    newItem: Loot | Item;
+    source: "salvage" | "shop";
+  } | null;
+
+  // Phase 9: Provisions
+  food: number;
+  drink: number;
+  luxuryDrink: number;
+  pantryCapacity: PantryCapacity;
+  daysWithoutFood: number;
+  beerRationDays: number;
+  crewEfficiencyPenalty: number;
+  activeEvent?: GameEvent | null;
+  isNewGame?: boolean;
+
+  // Auto-salvage
+  autoSalvageEnabled?: boolean;
+  autoAssignments?: Record<string, string> | null;
 }

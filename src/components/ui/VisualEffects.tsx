@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 
 interface ScanningProgressProps {
   label?: string;
@@ -6,7 +6,11 @@ interface ScanningProgressProps {
   onComplete?: () => void;
 }
 
-export function ScanningProgress({ label = 'SCANNING...', duration = 5000, onComplete }: ScanningProgressProps) {
+export function ScanningProgress({
+  label = "SCANNING...",
+  duration = 5000,
+  onComplete,
+}: ScanningProgressProps) {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
@@ -31,15 +35,22 @@ export function ScanningProgress({ label = 'SCANNING...', duration = 5000, onCom
         {progress < 100 && <div className="scan-line" />}
         <div
           className="absolute h-full bg-cyan-500 transition-all duration-100"
-          style={{ width: `${progress}%`, boxShadow: '0 0 10px rgba(6, 182, 212, 0.5)' }}
+          style={{
+            width: `${progress}%`,
+            boxShadow: "0 0 10px rgba(6, 182, 212, 0.5)",
+          }}
         />
         <div
           className="absolute h-full w-1 bg-cyan-300 animate-pulse"
-          style={{ left: `${progress}%`, boxShadow: '0 0 15px rgba(103, 232, 249, 0.8)' }}
+          style={{
+            left: `${progress}%`,
+            boxShadow: "0 0 15px rgba(103, 232, 249, 0.8)",
+          }}
         />
       </div>
       <div className="text-zinc-400 text-xs font-mono">
-        [{progress}%] {'█'.repeat(Math.floor(progress / 5))}{'░'.repeat(20 - Math.floor(progress / 5))}
+        [{progress}%] {"█".repeat(Math.floor(progress / 5))}
+        {"░".repeat(20 - Math.floor(progress / 5))}
       </div>
     </div>
   );
@@ -51,7 +62,9 @@ interface RadarDisplayProps {
 }
 
 export function RadarDisplay({ contacts = 3, size = 192 }: RadarDisplayProps) {
-  const [pings, setPings] = useState<Array<{ id: number; angle: number; distance: number }>>([]);
+  const [pings, setPings] = useState<
+    Array<{ id: number; angle: number; distance: number }>
+  >([]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -77,13 +90,43 @@ export function RadarDisplay({ contacts = 3, size = 192 }: RadarDisplayProps) {
 
   return (
     <div className="space-y-2">
-      <div className="text-amber-500 text-xs font-semibold">PROXIMITY RADAR</div>
+      <div className="text-amber-500 text-xs font-semibold">
+        PROXIMITY RADAR
+      </div>
       <div className="relative mx-auto" style={{ width: size, height: size }}>
         <svg className="absolute inset-0 w-full h-full">
-          <circle cx={center} cy={center} r={maxRadius} fill="none" stroke="rgba(251, 191, 36, 0.1)" strokeWidth="1" />
-          <circle cx={center} cy={center} r={maxRadius * 0.75} fill="none" stroke="rgba(251, 191, 36, 0.1)" strokeWidth="1" />
-          <circle cx={center} cy={center} r={maxRadius * 0.5} fill="none" stroke="rgba(251, 191, 36, 0.1)" strokeWidth="1" />
-          <circle cx={center} cy={center} r={maxRadius * 0.25} fill="none" stroke="rgba(251, 191, 36, 0.1)" strokeWidth="1" />
+          <circle
+            cx={center}
+            cy={center}
+            r={maxRadius}
+            fill="none"
+            stroke="rgba(251, 191, 36, 0.1)"
+            strokeWidth="1"
+          />
+          <circle
+            cx={center}
+            cy={center}
+            r={maxRadius * 0.75}
+            fill="none"
+            stroke="rgba(251, 191, 36, 0.1)"
+            strokeWidth="1"
+          />
+          <circle
+            cx={center}
+            cy={center}
+            r={maxRadius * 0.5}
+            fill="none"
+            stroke="rgba(251, 191, 36, 0.1)"
+            strokeWidth="1"
+          />
+          <circle
+            cx={center}
+            cy={center}
+            r={maxRadius * 0.25}
+            fill="none"
+            stroke="rgba(251, 191, 36, 0.1)"
+            strokeWidth="1"
+          />
 
           <line
             x1={center}
@@ -99,8 +142,14 @@ export function RadarDisplay({ contacts = 3, size = 192 }: RadarDisplayProps) {
           {pings.map((ping) => (
             <circle
               key={ping.id}
-              cx={center + Math.cos(ping.angle) * (ping.distance * maxRadius) / 100}
-              cy={center + Math.sin(ping.angle) * (ping.distance * maxRadius) / 100}
+              cx={
+                center +
+                (Math.cos(ping.angle) * (ping.distance * maxRadius)) / 100
+              }
+              cy={
+                center +
+                (Math.sin(ping.angle) * (ping.distance * maxRadius)) / 100
+              }
               r="3"
               fill="rgba(239, 68, 68, 0.8)"
               className="animate-ping"
@@ -110,13 +159,18 @@ export function RadarDisplay({ contacts = 3, size = 192 }: RadarDisplayProps) {
           <circle cx={center} cy={center} r="4" fill="rgba(34, 197, 94, 1)" />
         </svg>
       </div>
-      <div className="text-green-400 text-xs text-center text-glow-green">CONTACTS: {pings.length}</div>
+      <div className="text-green-400 text-xs text-center text-glow-green">
+        CONTACTS: {pings.length}
+      </div>
     </div>
   );
 }
 
 interface TerminalOutputProps {
-  lines: Array<{ text: string; type?: 'success' | 'error' | 'warning' | 'info' }>;
+  lines: Array<{
+    text: string;
+    type?: "success" | "error" | "warning" | "info";
+  }>;
 }
 
 export function TerminalOutput({ lines }: TerminalOutputProps) {
@@ -124,24 +178,27 @@ export function TerminalOutput({ lines }: TerminalOutputProps) {
     <div className="bg-black p-4 text-green-400 text-xs font-mono space-y-1 relative overflow-hidden">
       <div
         className="absolute inset-0 pointer-events-none"
-        style={{ background: 'repeating-linear-gradient(0deg, rgba(34, 197, 94, 0.03) 0px, rgba(34, 197, 94, 0.03) 1px, transparent 1px, transparent 3px)' }}
+        style={{
+          background:
+            "repeating-linear-gradient(0deg, rgba(34, 197, 94, 0.03) 0px, rgba(34, 197, 94, 0.03) 1px, transparent 1px, transparent 3px)",
+        }}
       />
       {lines.map((line, i) => {
-        let colorClass = 'text-green-400';
-        let glowClass = 'text-glow-green';
+        let colorClass = "text-green-400";
+        let glowClass = "text-glow-green";
 
-        if (line.type === 'error') {
-          colorClass = 'text-red-400';
-          glowClass = 'text-glow-red';
-        } else if (line.type === 'warning') {
-          colorClass = 'text-amber-400';
-          glowClass = 'text-glow-amber';
-        } else if (line.type === 'info') {
-          colorClass = 'text-cyan-400';
-          glowClass = 'text-glow-cyan';
-        } else if (line.type === 'success') {
-          colorClass = 'text-green-300';
-          glowClass = 'text-glow-green';
+        if (line.type === "error") {
+          colorClass = "text-red-400";
+          glowClass = "text-glow-red";
+        } else if (line.type === "warning") {
+          colorClass = "text-amber-400";
+          glowClass = "text-glow-amber";
+        } else if (line.type === "info") {
+          colorClass = "text-cyan-400";
+          glowClass = "text-glow-cyan";
+        } else if (line.type === "success") {
+          colorClass = "text-green-300";
+          glowClass = "text-glow-green";
         }
 
         return (
@@ -159,7 +216,11 @@ export function DataStream({ lines = 15 }: { lines?: number }) {
   return (
     <div className="h-32 overflow-hidden text-xs text-green-400 leading-tight font-mono opacity-50 relative">
       {Array.from({ length: lines }, (_, i) => (
-        <div key={i} className="data-stream-char" style={{ animationDelay: `${i * 150}ms` }}>
+        <div
+          key={i}
+          className="data-stream-char"
+          style={{ animationDelay: `${i * 150}ms` }}
+        >
           {Math.random().toString(16).substring(2, 18).toUpperCase()}
         </div>
       ))}
@@ -169,36 +230,55 @@ export function DataStream({ lines = 15 }: { lines?: number }) {
 
 interface HazardWarningProps {
   title: string;
-  level?: 'warning' | 'critical';
+  level?: "warning" | "critical";
 }
 
-export function HazardWarning({ title, level = 'warning' }: HazardWarningProps) {
-  const borderColor = level === 'critical' ? 'border-red-500' : 'border-orange-500';
-  const textColor = level === 'critical' ? 'text-red-400' : 'text-orange-400';
-  const bgColor = level === 'critical' ? 'bg-red-950/20' : 'bg-orange-950/20';
+export function HazardWarning({
+  title,
+  level = "warning",
+}: HazardWarningProps) {
+  const borderColor =
+    level === "critical" ? "border-red-500" : "border-orange-500";
+  const textColor = level === "critical" ? "text-red-400" : "text-orange-400";
+  const bgColor = level === "critical" ? "bg-red-950/20" : "bg-orange-950/20";
 
   return (
-    <div className={`border-2 ${borderColor} ${bgColor} p-4 animate-pulse-border`}>
+    <div
+      className={`border-2 ${borderColor} ${bgColor} p-4 animate-pulse-border`}
+    >
       <div className={`${textColor} text-sm font-mono text-center space-y-2`}>
         <div className="text-xl">⚠ {title} ⚠</div>
-        <div className="animate-pulse">{'█ '.repeat(10)}</div>
+        <div className="animate-pulse">{"█ ".repeat(10)}</div>
         <div>
-          EXPOSURE LEVEL: <span className={level === 'critical' ? 'text-red-300' : 'text-orange-300'}>{level.toUpperCase()}</span>
+          EXPOSURE LEVEL:{" "}
+          <span
+            className={
+              level === "critical" ? "text-red-300" : "text-orange-300"
+            }
+          >
+            {level.toUpperCase()}
+          </span>
         </div>
       </div>
     </div>
   );
 }
 
-export function ASCIIBox({ title, children }: { title: string; children: React.ReactNode }) {
-  const border = '═'.repeat(title.length + 2);
+export function ASCIIBox({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  const border = "═".repeat(title.length + 2);
   return (
     <pre className="text-cyan-400 text-xs leading-tight text-glow-cyan">
-{`╔${border}╗
+      {`╔${border}╗
 ║ ${title} ║
 ╠${border}╣`}
-{children}
-{`╚${border}╝`}
+      {children}
+      {`╚${border}╝`}
     </pre>
   );
 }

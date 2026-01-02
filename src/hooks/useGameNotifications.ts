@@ -1,7 +1,10 @@
-import { useEffect, useRef } from 'react';
-import { useGameStore } from '../stores/gameStore';
-import { showSuccessNotification, showWarningNotification } from '../utils/notifications';
-import { CREDIT_MILESTONES } from '../game/constants';
+import { useEffect, useRef } from "react";
+import { useGameStore } from "../stores/gameStore";
+import {
+  showSuccessNotification,
+  showWarningNotification,
+} from "../utils/notifications";
+import { CREDIT_MILESTONES } from "../game/constants";
 
 export function useGameNotifications() {
   const { credits, crew, licenseDaysRemaining } = useGameStore((s) => ({
@@ -17,9 +20,11 @@ export function useGameNotifications() {
 
   // Initialize refs on first render
   useEffect(() => {
-    if (previousCreditsRef.current === null) previousCreditsRef.current = credits;
+    if (previousCreditsRef.current === null)
+      previousCreditsRef.current = credits;
     if (previousHpRef.current === null) previousHpRef.current = crew.hp;
-    if (previousLicenseDaysRef.current === null) previousLicenseDaysRef.current = licenseDaysRemaining;
+    if (previousLicenseDaysRef.current === null)
+      previousLicenseDaysRef.current = licenseDaysRemaining;
     if (Object.keys(previousSkillLevelsRef.current).length === 0) {
       previousSkillLevelsRef.current = { ...crew.skills };
     }
@@ -28,10 +33,15 @@ export function useGameNotifications() {
   useEffect(() => {
     // Credit milestone notifications
     if (previousCreditsRef.current === null) return;
-    const creditMilestones = CREDIT_MILESTONES || [1000, 5000, 10000, 25000, 50000, 100000];
+    const creditMilestones = CREDIT_MILESTONES || [
+      1000, 5000, 10000, 25000, 50000, 100000,
+    ];
     creditMilestones.forEach((milestone) => {
       if (credits >= milestone && previousCreditsRef.current! < milestone) {
-        showSuccessNotification(`💰 Milestone Reached!`, `${milestone} CR accumulated`);
+        showSuccessNotification(
+          `💰 Milestone Reached!`,
+          `${milestone} CR accumulated`,
+        );
       }
     });
     previousCreditsRef.current = credits;
@@ -43,7 +53,10 @@ export function useGameNotifications() {
     Object.entries(crew.skills).forEach(([skill, level]) => {
       const prevLevel = previousSkillLevelsRef.current[skill];
       if (level > prevLevel) {
-        showSuccessNotification(`⭐ Skill Level-Up!`, `${skill.toUpperCase()} is now Level ${level}`);
+        showSuccessNotification(
+          `⭐ Skill Level-Up!`,
+          `${skill.toUpperCase()} is now Level ${level}`,
+        );
       }
     });
     previousSkillLevelsRef.current = { ...crew.skills };
@@ -53,7 +66,10 @@ export function useGameNotifications() {
     // Critical HP warning
     if (previousHpRef.current === null) return;
     if (crew.hp <= 5 && previousHpRef.current > 5 && crew.hp > 0) {
-      showWarningNotification(`❤️ CRITICAL HEALTH!`, `Only ${crew.hp} HP remaining`);
+      showWarningNotification(
+        `❤️ CRITICAL HEALTH!`,
+        `Only ${crew.hp} HP remaining`,
+      );
     }
     previousHpRef.current = crew.hp;
   }, [crew.hp]);
@@ -62,10 +78,16 @@ export function useGameNotifications() {
     // License expiry warning
     if (previousLicenseDaysRef.current === null) return;
     if (licenseDaysRemaining === 2 && previousLicenseDaysRef.current !== 2) {
-      showWarningNotification(`📜 License Expiring Soon`, `Only ${licenseDaysRemaining} days remain`);
+      showWarningNotification(
+        `📜 License Expiring Soon`,
+        `Only ${licenseDaysRemaining} days remain`,
+      );
     }
     if (licenseDaysRemaining === 1 && previousLicenseDaysRef.current !== 1) {
-      showWarningNotification(`📜 URGENT: License Expires Tomorrow`, `Renew immediately to avoid game over`);
+      showWarningNotification(
+        `📜 URGENT: License Expires Tomorrow`,
+        `Renew immediately to avoid game over`,
+      );
     }
     previousLicenseDaysRef.current = licenseDaysRemaining;
   }, [licenseDaysRemaining]);

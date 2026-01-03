@@ -1,0 +1,14 @@
+/home/eric/Typescript/Shipbreakers/game-logic/target/wasm32-unknown-unknown/release/deps/serde-66beed1130efd044.d: /home/eric/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs /home/eric/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs /home/eric/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs /home/eric/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs /home/eric/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs /home/eric/Typescript/Shipbreakers/game-logic/target/wasm32-unknown-unknown/release/build/serde-264859572d053669/out/private.rs
+
+/home/eric/Typescript/Shipbreakers/game-logic/target/wasm32-unknown-unknown/release/deps/libserde-66beed1130efd044.rlib: /home/eric/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs /home/eric/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs /home/eric/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs /home/eric/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs /home/eric/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs /home/eric/Typescript/Shipbreakers/game-logic/target/wasm32-unknown-unknown/release/build/serde-264859572d053669/out/private.rs
+
+/home/eric/Typescript/Shipbreakers/game-logic/target/wasm32-unknown-unknown/release/deps/libserde-66beed1130efd044.rmeta: /home/eric/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs /home/eric/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs /home/eric/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs /home/eric/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs /home/eric/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs /home/eric/Typescript/Shipbreakers/game-logic/target/wasm32-unknown-unknown/release/build/serde-264859572d053669/out/private.rs
+
+/home/eric/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs:
+/home/eric/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs:
+/home/eric/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs:
+/home/eric/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs:
+/home/eric/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs:
+/home/eric/Typescript/Shipbreakers/game-logic/target/wasm32-unknown-unknown/release/build/serde-264859572d053669/out/private.rs:
+
+# env-dep:OUT_DIR=/home/eric/Typescript/Shipbreakers/game-logic/target/wasm32-unknown-unknown/release/build/serde-264859572d053669/out

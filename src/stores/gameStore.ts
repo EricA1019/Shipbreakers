@@ -1439,7 +1439,6 @@ export const useGameStore = create<GameState & GameActions>()(
               ...c,
               inventory: c.inventory || [],
             }));
-            console.log("[Migration] Added inventory field to crew roster");
           }
         }
 
@@ -1454,7 +1453,6 @@ export const useGameStore = create<GameState & GameActions>()(
             ],
           };
           delete (updates.currentRun as any).collectedEquipment;
-          console.log("[Migration] Merged collectedEquipment into collectedLoot");
         }
 
         // Ensure settings have crew work thresholds (Phase 9+ feature)
@@ -1466,7 +1464,6 @@ export const useGameStore = create<GameState & GameActions>()(
               minCrewStamina: 20,
               minCrewSanity: 20,
             };
-            console.log("[Migration] Added crew work threshold settings");
           }
         }
 
@@ -1503,11 +1500,6 @@ export const useGameStore = create<GameState & GameActions>()(
                       ? "H-luxury"
                       : "T-freighter";
             ship.layout = wasmBridge.generateShipLayoutSync(
-              wreck.id,
-              layoutTemplate,
-            );
-            console.log(
-              "[Migration] Added layout to wreck:",
               wreck.id,
               layoutTemplate,
             );

@@ -1,0 +1,29 @@
+module.exports = {
+  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
+  theme: {
+    extend: {
+      colors: {
+        'sb-bg': '#0b0b0d',
+        'sb-panel': '#0f1724',
+        amber: {
+          50: '#fff7ed',
+          500: '#f59e0b',
+          600: '#d97706',
+        },
+        cyan: {
+          400: '#2dd4bf',
+        },
+        'danger-red': '#ef4444',
+      },
+      boxShadow: {
+        'glow-amber': '0 4px 24px rgba(245,158,11,0.18)',
+        'glow-cyan': '0 6px 28px rgba(45,212,191,0.14)',
+        'glow-red': '0 4px 20px rgba(239,68,68,0.12)',
+      },
+      fontFamily: {
+        mono: ['"JetBrains Mono"', '"Noto Sans Mono CJK SC"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Roboto Mono', '"Courier New"', 'monospace'],
+      },
+    },
+  },
+  plugins: [],
+};

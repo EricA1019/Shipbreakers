@@ -1,0 +1,19 @@
+<svg width="1920" height="1080" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1920" height="1080" fill="transparent"/>
+  <!-- Far layer: Very sparse, tiny stars -->
+  <circle cx="243" cy="156" r="0.8" fill="white" opacity="0.4"/>
+  <circle cx="789" cy="432" r="0.8" fill="white" opacity="0.5"/>
+  <circle cx="1234" cy="234" r="0.8" fill="white" opacity="0.3"/>
+  <circle cx="456" cy="678" r="0.8" fill="white" opacity="0.4"/>
+  <circle cx="1567" cy="890" r="0.8" fill="white" opacity="0.5"/>
+  <circle cx="1023" cy="567" r="0.8" fill="white" opacity="0.3"/>
+  <circle cx="1678" cy="345" r="0.8" fill="white" opacity="0.4"/>
+  <circle cx="678" cy="890" r="0.8" fill="white" opacity="0.5"/>
+  <circle cx="1345" cy="678" r="0.8" fill="white" opacity="0.3"/>
+  <circle cx="234" cy="789" r="0.8" fill="white" opacity="0.4"/>
+  <circle cx="1789" cy="123" r="0.8" fill="white" opacity="0.5"/>
+  <circle cx="890" cy="234" r="0.8" fill="white" opacity="0.3"/>
+  <circle cx="1456" cy="456" r="0.8" fill="white" opacity="0.4"/>
+  <circle cx="345" cy="456" r="0.8" fill="white" opacity="0.5"/>
+  <circle cx="1123" cy="890" r="0.8" fill="white" opacity="0.3"/>
+</svg>

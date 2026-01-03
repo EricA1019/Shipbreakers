@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ship Breakers - Hub Redesign Mockup</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background: #09090b; }
+    .text-glow-amber { text-shadow: 0 0 10px rgba(251, 191, 36, 0.5); }
+    .text-glow-green { text-shadow: 0 0 10px rgba(34, 197, 94, 0.5); }
+    .text-glow-cyan { text-shadow: 0 0 10px rgba(6, 182, 212, 0.5); }
+    .border-glow { box-shadow: 0 0 15px rgba(251, 191, 36, 0.15); }
+    @keyframes pulse-border { 0%, 100% { border-color: rgba(251, 191, 36, 0.4); } 50% { border-color: rgba(251, 191, 36, 0.7); } }
+    .animate-border { animation: pulse-border 2s ease-in-out infinite; }
+    /* Empty cell for L-shaped ship footprint */
+    .empty-cell { background: transparent; border: 1px dashed rgba(255,255,255,0.04); border-radius: 8px; min-height: 120px; }
+  </style>
+</head>
+<body class="text-zinc-100 font-mono p-4">
+  <div class="max-w-6xl mx-auto">
+    
+    <!-- HEADER -->
+    <div class="bg-zinc-900 border border-amber-600/30 rounded-t-lg p-3 flex justify-between items-center border-glow">
+      <div>
+        <h1 class="text-amber-500 font-bold text-xl tracking-wider text-glow-amber">[SHIPBREAKERS] CINDER STATION // HUB</h1>
+        <div class="text-zinc-500 text-xs italic mt-1">"Another day grinding steel in the void..."</div>
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="text-amber-100">💰 <span class="font-mono text-glow-amber">5,000 CR</span></div>
+        <div class="text-orange-300">⛽ <span class="font-mono">100</span></div>
+        <button class="px-3 py-1 bg-zinc-800 border border-amber-600/30 text-amber-400 text-xs rounded hover:bg-zinc-700 transition">
+          🔧 SHIPYARD
+        </button>
+        <button class="px-3 py-1 bg-zinc-800 border border-amber-600/30 text-amber-400 text-xs rounded hover:bg-zinc-700 transition">
+          🛒 SHOP
+        </button>
+      </div>
+    </div>
+
+    <!-- MAIN 3-COLUMN LAYOUT -->
+    <div class="grid grid-cols-12 gap-4 mt-4">
+      
+      <!-- LEFT COLUMN - Crew & License (3 cols) -->
+      <div class="col-span-3 space-y-4">
+        
+        <!-- Crew Roster -->
+        <div class="bg-zinc-900 border border-amber-600/20 rounded p-3">
+          <div class="text-amber-500 text-sm font-bold mb-3 tracking-wider border-b border-amber-600/20 pb-2">CREW ROSTER</div>
+          <div class="space-y-2">
+            <!-- Crew Member 1 -->
+            <div class="bg-zinc-800/50 p-2 rounded border border-amber-600/10">
+              <div class="flex justify-between text-xs">
+                <span class="text-amber-200">○ Player <span class="text-zinc-500">(Captain)</span></span>
+                <span class="text-green-400 text-glow-green">100%</span>
+              </div>
+              <div class="h-1.5 bg-zinc-700 rounded mt-1">
+                <div class="h-full bg-green-500 rounded" style="width: 100%"></div>
+              </div>
+            </div>
+            <!-- Crew Member 2 -->
+            <div class="bg-zinc-800/50 p-2 rounded border border-amber-600/10">
+              <div class="flex justify-between text-xs">
+                <span class="text-amber-200">○ Doc Jones <span class="text-zinc-500">(Medic)</span></span>
+                <span class="text-yellow-400">75%</span>
+              </div>
+              <div class="h-1.5 bg-zinc-700 rounded mt-1">
+                <div class="h-full bg-yellow-500 rounded" style="width: 75%"></div>
+              </div>
+            </div>
+            <!-- Crew Member 3 -->
+            <div class="bg-zinc-800/50 p-2 rounded border border-amber-600/10">
+              <div class="flex justify-between text-xs">
+                <span class="text-amber-200">○ Rex <span class="text-zinc-500">(Engineer)</span></span>
+                <span class="text-red-400">40%</span>
+              </div>
+              <div class="h-1.5 bg-zinc-700 rounded mt-1">
+                <div class="h-full bg-red-500 rounded" style="width: 40%"></div>
+              </div>
+            </div>
+          </div>
+          <div class="mt-3 flex gap-2">
+            <button class="flex-1 px-2 py-1.5 bg-amber-600/20 border border-amber-600/30 text-amber-400 text-xs rounded hover:bg-amber-600/30 transition">
+              + Hire Crew
+            </button>
+            <button class="flex-1 px-2 py-1.5 bg-zinc-800 border border-amber-600/30 text-amber-400 text-xs rounded hover:bg-zinc-700 transition">
+              📋 View All
+            </button>
+          </div>
+        </div>
+
+        <!-- License Panel -->
+        <div class="bg-zinc-900 border border-amber-600/20 rounded p-3">
+          <div class="text-amber-500 text-sm font-bold mb-3 tracking-wider border-b border-amber-600/20 pb-2">LICENSE STATUS</div>
+          <div class="space-y-2 text-xs">
+            <div class="flex justify-between">
+              <span class="text-zinc-500">DAY__________</span>
+              <span class="text-amber-400 text-glow-amber">3</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-zinc-500">TIER_________</span>
+              <span class="text-amber-400 font-bold text-glow-amber">BASIC</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-zinc-500">DAYS_LEFT____</span>
+              <span class="text-green-400 text-glow-green">11</span>
+            </div>
+          </div>
+          <!-- Upgrade Box -->
+          <div class="mt-3 bg-amber-900/20 border border-amber-600/30 p-2 rounded">
+            <div class="text-amber-400 text-xs font-bold mb-1">Upgrade Available</div>
+            <div class="text-zinc-400 text-xs mb-2">STANDARD LICENSE - Better rates</div>
+            <button class="w-full px-2 py-1.5 bg-amber-600/30 border border-amber-600/40 text-amber-300 text-xs rounded hover:bg-amber-600/40 transition">
+              ↑ Upgrade (2,000 CR)
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CENTER COLUMN - Ship Display (5 cols, L-shape) -->
+      <div class="col-span-5">
+        <div class="bg-zinc-900 border-2 border-amber-600/40 rounded-lg p-4 animate-border border-glow">
+          <!-- Ship Header -->
+          <div class="text-center mb-4">
+            <h2 class="text-amber-400 font-bold text-xl tracking-wider text-glow-amber">SS BREAKER-01</h2>
+            <div class="text-zinc-500 text-xs uppercase tracking-widest">Small Salvage Vessel — L-Footprint</div>
+          </div>
+
+          <!-- SHIP GRID - L-shaped 3x3 footprint (matches actual implementation) -->
+          <div class="bg-zinc-950 border border-amber-600/20 rounded-lg p-6 mx-auto max-w-md">
+            <div class="grid grid-cols-3 gap-3" style="aspect-ratio: 1;">
+              <!-- Row 0 -->
+              <div class="bg-cyan-900/20 border-2 border-amber-600/30 hover:border-amber-500/50 hover:shadow-[0_0_8px_rgba(251,191,36,0.2)] transition-all cursor-pointer rounded-lg p-3 flex flex-col justify-between min-h-[110px]">
+                <div>
+                  <div class="text-amber-50 text-xs font-mono font-semibold">Bridge-A</div>
+                  <div class="text-zinc-400 text-[10px] uppercase tracking-wider mt-1">bridge</div>
+                </div>
+              </div>
+              <div class="bg-red-900/20 border-2 border-amber-600/30 hover:border-amber-500/50 hover:shadow-[0_0_8px_rgba(251,191,36,0.2)] transition-all cursor-pointer rounded-lg p-3 flex flex-col justify-between min-h-[110px]">
+                <div>
+                  <div class="text-amber-50 text-xs font-mono font-semibold">Engine-A</div>
+                  <div class="text-zinc-400 text-[10px] uppercase tracking-wider mt-1">engine</div>
+                </div>
+              </div>
+              <div class="empty-cell"></div>
+
+              <!-- Row 1 -->
+              <div class="bg-green-900/20 border-2 border-amber-600/30 hover:border-amber-500/50 hover:shadow-[0_0_8px_rgba(251,191,36,0.2)] transition-all cursor-pointer rounded-lg p-3 flex flex-col justify-between min-h-[110px]">
+                <div>
+                  <div class="text-amber-50 text-xs font-mono font-semibold">Medbay-A</div>
+                  <div class="text-zinc-400 text-[10px] uppercase tracking-wider mt-1">medbay</div>
+                </div>
+              </div>
+              <div class="empty-cell"></div>
+              <div class="empty-cell"></div>
+
+              <!-- Row 2 -->
+              <div class="bg-amber-900/20 border-2 border-amber-600/30 hover:border-amber-500/50 hover:shadow-[0_0_8px_rgba(251,191,36,0.2)] transition-all cursor-pointer rounded-lg p-3 flex flex-col justify-between min-h-[110px]">
+                <div>
+                  <div class="text-amber-50 text-xs font-mono font-semibold">Cargo-A</div>
+                  <div class="text-zinc-400 text-[10px] uppercase tracking-wider mt-1">cargo</div>
+                </div>
+              </div>
+              <div class="empty-cell"></div>
+              <div class="empty-cell"></div>
+            </div>
+          </div>
+
+          <!-- Ship Stats Bars -->
+          <div class="grid grid-cols-3 gap-6 mt-6 px-4">
+            <div class="text-center">
+              <div class="text-zinc-500 text-xs mb-1 uppercase tracking-wider">Hull</div>
+              <div class="h-3 bg-zinc-800 rounded-full overflow-hidden border border-zinc-700">
+                <div class="h-full bg-gradient-to-r from-green-600 to-green-400" style="width: 100%"></div>
+              </div>
+              <div class="text-green-400 text-xs mt-1 font-mono text-glow-green">100/100</div>
+            </div>
+            <div class="text-center">
+              <div class="text-zinc-500 text-xs mb-1 uppercase tracking-wider">Fuel</div>
+              <div class="h-3 bg-zinc-800 rounded-full overflow-hidden border border-zinc-700">
+                <div class="h-full bg-gradient-to-r from-orange-600 to-orange-400" style="width: 80%"></div>
+              </div>
+              <div class="text-orange-400 text-xs mt-1 font-mono">80</div>
+            </div>
+            <div class="text-center">
+              <div class="text-zinc-500 text-xs mb-1 uppercase tracking-wider">Cargo</div>
+              <div class="h-3 bg-zinc-800 rounded-full overflow-hidden border border-zinc-700">
+                <div class="h-full bg-gradient-to-r from-amber-600 to-amber-400" style="width: 30%"></div>
+              </div>
+              <div class="text-amber-400 text-xs mt-1 font-mono">3/10</div>
+            </div>
+          </div>
+
+          <!-- Rename Button -->
+          <div class="text-center mt-4">
+            <button class="px-4 py-1 bg-zinc-800 border border-amber-600/30 text-amber-400 text-xs rounded hover:bg-zinc-700 transition">
+              ✏️ Rename Ship
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN - Inventory (4 cols) -->
+      <div class="col-span-4">
+        <div class="bg-zinc-900 border border-amber-600/20 rounded p-3 h-full flex flex-col">
+          <div class="flex justify-between items-center mb-3 border-b border-amber-600/20 pb-2">
+            <span class="text-amber-500 text-sm font-bold tracking-wider">INVENTORY</span>
+            <span class="text-zinc-500 text-xs">(3 items)</span>
+          </div>
+          
+          <!-- Scrollable item list -->
+          <div class="space-y-2 flex-1 overflow-y-auto max-h-80">
+            <!-- Item 1 -->
+            <div class="bg-zinc-800/50 border border-amber-600/10 rounded p-2 hover:border-amber-600/30 transition">
+              <div class="flex justify-between items-start">
+                <div>
+                  <div class="text-amber-200 text-sm font-bold">Data Core</div>
+                  <div class="text-zinc-500 text-xs">Military grade encryption</div>
+                </div>
+                <div class="text-amber-400 text-sm font-mono font-bold">250 CR</div>
+              </div>
+              <button class="w-full mt-2 py-1 bg-red-900/30 border border-red-600/30 text-red-400 text-xs rounded hover:bg-red-900/50 transition">
+                Sell
+              </button>
+            </div>
+
+            <!-- Item 2 -->
+            <div class="bg-zinc-800/50 border border-amber-600/10 rounded p-2 hover:border-amber-600/30 transition">
+              <div class="flex justify-between items-start">
+                <div>
+                  <div class="text-amber-200 text-sm font-bold">Salvage Parts</div>
+                  <div class="text-zinc-500 text-xs">Industrial components</div>
+                </div>
+                <div class="text-amber-400 text-sm font-mono font-bold">120 CR</div>
+              </div>
+              <button class="w-full mt-2 py-1 bg-red-900/30 border border-red-600/30 text-red-400 text-xs rounded hover:bg-red-900/50 transition">
+                Sell
+              </button>
+            </div>
+
+            <!-- Item 3 -->
+            <div class="bg-zinc-800/50 border border-amber-600/10 rounded p-2 hover:border-amber-600/30 transition">
+              <div class="flex justify-between items-start">
+                <div>
+                  <div class="text-amber-200 text-sm font-bold">Circuit Board</div>
+                  <div class="text-zinc-500 text-xs">Electronic module</div>
+                </div>
+                <div class="text-amber-400 text-sm font-mono font-bold">80 CR</div>
+              </div>
+              <button class="w-full mt-2 py-1 bg-red-900/30 border border-red-600/30 text-red-400 text-xs rounded hover:bg-red-900/50 transition">
+                Sell
+              </button>
+            </div>
+
+            <!-- Item 4 (equipment) -->
+            <div class="bg-cyan-900/20 border border-cyan-600/20 rounded p-2 hover:border-cyan-600/40 transition">
+              <div class="flex justify-between items-start">
+                <div>
+                  <div class="text-cyan-300 text-sm font-bold">🔧 Hull Scanner</div>
+                  <div class="text-zinc-500 text-xs">Equippable • Bridge slot</div>
+                </div>
+                <div class="text-cyan-400 text-sm font-mono font-bold">T2</div>
+              </div>
+              <div class="flex gap-1 mt-2">
+                <button class="flex-1 py-1 bg-cyan-900/30 border border-cyan-600/30 text-cyan-400 text-xs rounded hover:bg-cyan-900/50 transition">
+                  Install
+                </button>
+                <button class="flex-1 py-1 bg-red-900/30 border border-red-600/30 text-red-400 text-xs rounded hover:bg-red-900/50 transition">
+                  Sell
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sell All Footer -->
+          <div class="mt-3 pt-3 border-t border-zinc-700">
+            <div class="flex justify-between text-sm mb-2">
+              <span class="text-zinc-400">Total Value:</span>
+              <span class="text-amber-400 font-bold font-mono text-glow-amber">450 CR</span>
+            </div>
+            <button class="w-full py-2 bg-amber-600/30 border border-amber-600/50 text-amber-300 text-sm font-bold rounded hover:bg-amber-600/40 transition">
+              💰 SELL ALL LOOT
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FOOTER - Mission & Actions -->
+    <div class="bg-zinc-900 border border-amber-600/20 rounded-b-lg p-4 mt-4">
+      <div class="flex justify-between items-center">
+        <div>
+          <div class="text-amber-500 font-bold text-lg text-glow-amber">🎯 TARGET: 10,000 CR</div>
+          <div class="text-zinc-500 text-xs">Escape Cinder Station and start a new life</div>
+        </div>
+        <div class="flex gap-2 flex-wrap justify-end">
+          <button class="px-4 py-2 bg-orange-900/30 border border-orange-600/30 text-orange-400 text-sm rounded hover:bg-orange-900/50 transition group relative">
+            ⛽ Fuel Depot
+            <span class="hidden group-hover:block absolute -top-7 left-1/2 -translate-x-1/2 bg-zinc-800 px-2 py-0.5 rounded text-[10px] text-zinc-300 whitespace-nowrap">(F)</span>
+          </button>
+          <button class="px-4 py-2 bg-green-900/30 border border-green-600/30 text-green-400 text-sm rounded hover:bg-green-900/50 transition group relative">
+            🏥 Medical Bay
+            <span class="hidden group-hover:block absolute -top-7 left-1/2 -translate-x-1/2 bg-zinc-800 px-2 py-0.5 rounded text-[10px] text-zinc-300 whitespace-nowrap">(M)</span>
+          </button>
+          <button class="px-4 py-2 bg-cyan-900/30 border border-cyan-600/30 text-cyan-400 text-sm rounded hover:bg-cyan-900/50 transition group relative">
+            📊 Stats
+            <span class="hidden group-hover:block absolute -top-7 left-1/2 -translate-x-1/2 bg-zinc-800 px-2 py-0.5 rounded text-[10px] text-zinc-300 whitespace-nowrap">(S)</span>
+          </button>
+          <button class="px-4 py-2 bg-zinc-800 border border-zinc-600/30 text-zinc-400 text-sm rounded hover:bg-zinc-700 transition">
+            ⚙️ Settings
+          </button>
+          <button class="px-6 py-2 bg-amber-600/40 border-2 border-amber-500/60 text-amber-100 text-sm font-bold rounded hover:bg-amber-600/60 transition shadow-lg shadow-amber-500/20">
+            🚀 SELECT WRECK
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Design Notes -->
+    <div class="mt-8 p-4 bg-zinc-900/50 border border-dashed border-zinc-700 rounded text-xs text-zinc-500">
+      <div class="font-bold text-zinc-400 mb-2">📐 DESIGN NOTES:</div>
+      <ul class="space-y-1 list-disc list-inside">
+        <li><strong>Layout:</strong> 12-column grid (3 + 5 + 4) with ship centered and prominent — more breathing room</li>
+        <li><strong>Ship Grid:</strong> L-shaped 3x3 footprint to improve visual hierarchy and reduce crowding</li>
+        <li><strong>Inventory:</strong> Vertical scrollable list on right side, equipment items highlighted in cyan</li>
+        <li><strong>Stats:</strong> Hull/Fuel/Cargo bars displayed below ship visual</li>
+        <li><strong>Colors:</strong> Bridge=cyan, Engine=red, Medbay=green, Cargo=amber</li>
+        <li><strong>Keyboard hints:</strong> Shown on hover for quick actions (F, M, S)</li>
+      </ul>
+    </div>
+
+  </div>
+</body>
+</html>

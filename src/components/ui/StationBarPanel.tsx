@@ -1,6 +1,6 @@
 import { useGameStore } from "../../stores/gameStore";
-import CyberPanel from "./CyberPanel";
-import CyberButton from "./CyberButton";
+import IndustrialPanel from "./IndustrialPanel";
+import IndustrialButton from "./IndustrialButton";
 import { PROVISION_PRICES } from "../../game/constants";
 
 type ProvisionKey = "food" | "water" | "beer" | "wine";
@@ -28,68 +28,64 @@ export default function StationBarPanel() {
   const canBuyWine = credits >= PROVISION_PRICES.wine && luxuryDrink < pantryCapacity.luxury;
 
   return (
-    <CyberPanel title="STATION BAR // PROVISIONS">
+    <IndustrialPanel title="STATION BAR" subtitle="PROVISIONS & SUPPLIES">
       <div className="space-y-3 text-sm">
         <div className="grid grid-cols-3 gap-2">
-          <div className="bg-zinc-950 border border-amber-600/20 p-2">
-            <div className="text-zinc-400 text-xs">FOOD</div>
-            <div className="text-amber-100 font-bold">
+          <div className="bg-[rgba(0,0,0,0.28)] border border-[rgba(255,255,255,0.08)] p-2 rounded-lg">
+            <div className="text-[var(--muted)] text-xs uppercase tracking-wider">FOOD</div>
+            <div className="text-[var(--haz)] font-bold font-['Orbitron']">
               {food}/{pantryCapacity.food}
             </div>
           </div>
-          <div className="bg-zinc-950 border border-amber-600/20 p-2">
-            <div className="text-zinc-400 text-xs">WATER</div>
-            <div className="text-amber-100 font-bold">
+          <div className="bg-[rgba(0,0,0,0.28)] border border-[rgba(255,255,255,0.08)] p-2 rounded-lg">
+            <div className="text-[var(--muted)] text-xs uppercase tracking-wider">WATER</div>
+            <div className="text-[var(--cyan)] font-bold font-['Orbitron']">
               {drink}/{pantryCapacity.drink}
             </div>
           </div>
-          <div className="bg-zinc-950 border border-amber-600/20 p-2">
-            <div className="text-zinc-400 text-xs">LUXURY</div>
-            <div className="text-amber-100 font-bold">
+          <div className="bg-[rgba(0,0,0,0.28)] border border-[rgba(255,255,255,0.08)] p-2 rounded-lg">
+            <div className="text-[var(--muted)] text-xs uppercase tracking-wider">LUXURY</div>
+            <div className="text-[var(--rust)] font-bold font-['Orbitron']">
               {luxuryDrink}/{pantryCapacity.luxury}
             </div>
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-2">
-          <CyberButton
-            variant="secondary"
+          <IndustrialButton
+            title={`🍖 Buy Food (+1)`}
+            description={`${PROVISION_PRICES.food} cr`}
+            variant="info"
             onClick={() => buyProvision?.("food")}
             disabled={!buyProvision || !canBuyFood}
-            className="text-xs"
-          >
-            Buy Food (+1) — {PROVISION_PRICES.food} CR
-          </CyberButton>
-          <CyberButton
-            variant="secondary"
+          />
+          <IndustrialButton
+            title={`💧 Buy Water (+1)`}
+            description={`${PROVISION_PRICES.water} cr`}
+            variant="info"
             onClick={() => buyProvision?.("water")}
             disabled={!buyProvision || !canBuyWater}
-            className="text-xs"
-          >
-            Buy Water (+1) — {PROVISION_PRICES.water} CR
-          </CyberButton>
-          <CyberButton
-            variant="secondary"
+          />
+          <IndustrialButton
+            title={`🍺 Buy Beer (+1)`}
+            description={`${PROVISION_PRICES.beer} cr`}
+            variant="info"
             onClick={() => buyProvision?.("beer")}
             disabled={!buyProvision || !canBuyBeer}
-            className="text-xs"
-          >
-            Buy Beer (+1) — {PROVISION_PRICES.beer} CR
-          </CyberButton>
-          <CyberButton
-            variant="secondary"
+          />
+          <IndustrialButton
+            title={`🍷 Buy Wine (+1)`}
+            description={`${PROVISION_PRICES.wine} cr`}
+            variant="info"
             onClick={() => buyProvision?.("wine")}
             disabled={!buyProvision || !canBuyWine}
-            className="text-xs"
-          >
-            Buy Wine (+1) — {PROVISION_PRICES.wine} CR
-          </CyberButton>
+          />
         </div>
 
-        <div className="text-zinc-500 text-xs">
-          Beer/wine count as luxury. If you drink luxury instead of water, you take a small efficiency penalty next day.
+        <div className="text-[var(--muted)] text-xs">
+          Beer/wine count as luxury. Consuming luxury instead of water reduces efficiency next day.
         </div>
       </div>
-    </CyberPanel>
+    </IndustrialPanel>
   );
 }

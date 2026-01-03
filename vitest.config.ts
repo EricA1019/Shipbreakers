@@ -7,5 +7,10 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     exclude: ['**/node_modules/**', '**/dist/**', '**/archive/**'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'text-summary', 'html'],
+      exclude: ['**/node_modules/**', '**/dist/**', '**/archive/**', '**/*.test.ts', '**/*.test.tsx'],
+    },
   },
 });

@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Run Summary - Industrial Mockup</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;800&display=swap');
+    
+    :root {
+      --bg0: #07080a;
+      --bg1: #0b0d10;
+      --haz: #f2b233;
+      --cyan: #38e0c7;
+      --rust: #ff6a2a;
+      --ok: #71ff78;
+      --bad: #ff4b4b;
+      --text: #e9edf2;
+      --muted: #8b95a5;
+      --glowH: 0 0 12px rgba(242, 178, 51, 0.6);
+      --glowC: 0 0 12px rgba(56, 224, 199, 0.5);
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'JetBrains Mono', monospace;
+      background: radial-gradient(ellipse at center, rgba(56, 224, 199, 0.1), var(--bg0) 50%);
+      color: var(--text);
+      padding: 20px;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .container {
+      max-width: 800px;
+      width: 100%;
+    }
+    
+    .panel {
+      background: rgba(11, 13, 16, 0.9);
+      border: 2px solid rgba(56, 224, 199, 0.3);
+      border-radius: 16px;
+      padding: 0;
+      margin-bottom: 16px;
+      box-shadow: 
+        inset 0 1px 2px rgba(0, 0, 0, 0.5),
+        0 0 40px rgba(56, 224, 199, 0.15);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .panel-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      text-align: center;
+    }
+    
+    .panel-title {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 800;
+      font-size: 24px;
+      letter-spacing: 1px;
+      color: var(--cyan);
+      text-shadow: var(--glowC);
+      text-transform: uppercase;
+    }
+    
+    .panel-subtitle {
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+    
+    .panel-content {
+      padding: 24px;
+    }
+    
+    .tape {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: repeating-linear-gradient(
+        45deg,
+        var(--cyan),
+        var(--cyan) 12px,
+        rgba(0, 0, 0, 0.8) 12px,
+        rgba(0, 0, 0, 0.8) 24px
+      );
+      opacity: 0.3;
+    }
+    
+    /* Mission Success Banner */
+    .success-banner {
+      background: rgba(113, 255, 120, 0.08);
+      border: 1px solid rgba(113, 255, 120, 0.25);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    
+    .success-icon {
+      font-size: 56px;
+      margin-bottom: 12px;
+    }
+    
+    .success-text {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 800;
+      font-size: 20px;
+      color: var(--ok);
+      text-shadow: 0 0 16px rgba(113, 255, 120, 0.6);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    
+    .success-subtext {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+    
+    /* Stat Grid */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin: 20px 0;
+    }
+    
+    .stat-card {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+    }
+    
+    .stat-label {
+      font-size: 10px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+    
+    .stat-value {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 800;
+      font-size: 28px;
+      color: var(--cyan);
+      text-shadow: var(--glowC);
+    }
+    
+    .stat-value.positive {
+      color: var(--ok);
+      text-shadow: 0 0 12px rgba(113, 255, 120, 0.6);
+    }
+    
+    /* Details List */
+    .details-section {
+      margin: 24px 0;
+    }
+    
+    .section-title {
+      font-size: 12px;
+      color: var(--haz);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+    
+    .details-list {
+      background: rgba(0, 0, 0, 0.26);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 16px;
+    }
+    
+    .detail-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    
+    .detail-item:last-child {
+      border-bottom: none;
+    }
+    
+    .detail-label {
+      font-size: 12px;
+      color: var(--text);
+    }
+    
+    .detail-value {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--cyan);
+    }
+    
+    .detail-value.positive {
+      color: var(--ok);
+    }
+    
+    .detail-value.negative {
+      color: var(--bad);
+    }
+    
+    /* Loot Preview */
+    .loot-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-top: 12px;
+    }
+    
+    .loot-item {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      padding: 10px;
+      text-align: center;
+      font-size: 24px;
+    }
+    
+    .loot-count {
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+    
+    /* Industrial Button */
+    .industrial-btn {
+      background: rgba(11, 13, 16, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      padding: 16px 24px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      text-align: center;
+      width: 100%;
+    }
+    
+    .industrial-btn:hover {
+      border-color: var(--haz);
+      background: rgba(242, 178, 51, 0.08);
+    }
+    
+    .industrial-btn.primary {
+      border-color: var(--cyan);
+      background: rgba(56, 224, 199, 0.15);
+    }
+    
+    .industrial-btn.primary:hover {
+      background: rgba(56, 224, 199, 0.25);
+      box-shadow: 0 0 24px rgba(56, 224, 199, 0.3);
+    }
+    
+    .btn-title {
+      font-weight: 700;
+      font-size: 16px;
+      color: var(--text);
+    }
+    
+    .btn-desc {
+      font-size: 12px;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Main Panel -->
+    <div class="panel">
+      <div class="tape"></div>
+      <div class="panel-header">
+        <div class="panel-title">✓ MISSION COMPLETE</div>
+        <div class="panel-subtitle">SALVAGE RUN SUMMARY · UTS VALOR</div>
+      </div>
+      <div class="panel-content">
+        <!-- Success Banner -->
+        <div class="success-banner">
+          <div class="success-icon">🎯</div>
+          <div class="success-text">SUCCESSFUL OPERATION</div>
+          <div class="success-subtext">All crew returned safely · Cargo secured</div>
+        </div>
+
+        <!-- Main Stats -->
+        <div class="stat-grid">
+          <div class="stat-card">
+            <div class="stat-label">Loot Collected</div>
+            <div class="stat-value positive">+8.2K</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Fuel Spent</div>
+            <div class="stat-value">-23</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Rooms Explored</div>
+            <div class="stat-value">12 / 12</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Time Elapsed</div>
+            <div class="stat-value">47m</div>
+          </div>
+        </div>
+
+        <!-- Performance Details -->
+        <div class="details-section">
+          <div class="section-title">PERFORMANCE BREAKDOWN</div>
+          <div class="details-list">
+            <div class="detail-item">
+              <span class="detail-label">Total Loot Value</span>
+              <span class="detail-value positive">+8,240₵</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Auto-Salvage Bonus</span>
+              <span class="detail-value positive">+480₵</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Fuel Cost</span>
+              <span class="detail-value negative">-23 fuel</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Hazards Encountered</span>
+              <span class="detail-value">4</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Crew Injuries</span>
+              <span class="detail-value">1</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Efficiency Rating</span>
+              <span class="detail-value positive">92%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Loot Preview -->
+        <div class="details-section">
+          <div class="section-title">NOTABLE SALVAGE</div>
+          <div class="loot-grid">
+            <div class="loot-item">
+              ⚙️
+              <div class="loot-count">Power Core</div>
+            </div>
+            <div class="loot-item">
+              🔧
+              <div class="loot-count">Components (8)</div>
+            </div>
+            <div class="loot-item">
+              💎
+              <div class="loot-count">Rare Materials</div>
+            </div>
+            <div class="loot-item">
+              🔬
+              <div class="loot-count">Data Chips (3)</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Crew Status -->
+        <div class="details-section">
+          <div class="section-title">CREW STATUS</div>
+          <div class="details-list">
+            <div class="detail-item">
+              <span class="detail-label">Zara Chen (Captain)</span>
+              <span class="detail-value positive">HEALTHY</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Marcus Volt</span>
+              <span class="detail-value positive">HEALTHY</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Nina Kowalski</span>
+              <span class="detail-value">INJURED (-1 HP)</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Rex Holt</span>
+              <span class="detail-value">TIRED (-4 STAM)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action -->
+        <div style="margin-top: 28px;">
+          <button class="industrial-btn primary">
+            <div class="btn-title">→ Return to Station</div>
+            <div class="btn-desc">Proceed to hub and manage loot</div>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

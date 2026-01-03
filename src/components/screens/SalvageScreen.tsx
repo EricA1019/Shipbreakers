@@ -1,11 +1,16 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useGameStore } from "../../stores/gameStore";
 import type { AutoSalvageRules, AutoSalvageResult } from "../../stores/gameStore";
 import { FUEL_COST_PER_AU } from "../../game/constants";
 import ShipGrid from "../game/ShipGrid";
-import CyberPanel from "../ui/CyberPanel";
+import IndustrialPanel from "../ui/IndustrialPanel";
+import IndustrialButton from "../ui/IndustrialButton";
+import StatChip from "../ui/StatChip";
+import StatusPill from "../ui/StatusPill";
+import HazardTag from "../ui/HazardTag";
 import CargoSwapModal from "../ui/CargoSwapModal";
 import AutoSalvageMenu from "../game/AutoSalvageMenu";
+import { useAudio } from "../../hooks/useAudio";
 import type { ScreenProps, CrewMember } from "../../types";
 
 // Helper: Get crew availability status
@@ -53,11 +58,17 @@ export default function SalvageScreen({ onNavigate }: ScreenProps) {
     settings: s.settings,
   }));
 
+  const audio = useAudio();
   const [showCrewPanel, setShowCrewPanel] = useState(true);
   const [sealedRoomToCut, setSealedRoomToCut] = useState<string | null>(null);
   const [sealedUpdateCounter, setSealedUpdateCounter] = useState(0);
   const [showAutoSalvageMenu, setShowAutoSalvageMenu] = useState(false);
   const [isAutoSalvageRunning, setIsAutoSalvageRunning] = useState(false);
+
+  // Play transition sound on mount
+  useEffect(() => {
+    audio.playTransition();
+  }, []);
   const [autoSalvageResult, setAutoSalvageResult] = useState<AutoSalvageResult | null>(null);
   const [showEmergencyEvacModal, setShowEmergencyEvacModal] = useState(false);
 
@@ -106,6 +117,29 @@ export default function SalvageScreen({ onNavigate }: ScreenProps) {
 
   const canReturn = fuel >= Math.ceil(wreck.distance * FUEL_COST_PER_AU);
 
+  // Calculate total cargo value
+  const totalValue = useMemo(() => {
+    return currentRun.collectedLoot.reduce((sum, item) => sum + (item.value || 0), 0);
+  }, [currentRun.collectedLoot]);
+
+  // Get active hazards count (from wreck rooms)
+  const activeHazards = useMemo(() => {
+    if (!wreck.rooms) return [];
+    const hazards: string[] = [];
+    wreck.rooms.forEach(room => {
+      if ((room as any).hazards) {
+        hazards.push(...(room as any).hazards);
+      }
+    });
+    return hazards;
+  }, [wreck.rooms]);
+
+  // Get sealed rooms
+  const sealedRooms = useMemo(() => {
+    if (!wreck.rooms) return [];
+    return wreck.rooms.filter(r => r.sealed);
+  }, [wreck.rooms]);
+
   // Calculate total value at risk for emergency evac modal
   const totalValueAtRisk = useMemo(() => {
     let total = 0;
@@ -141,73 +175,73 @@ export default function SalvageScreen({ onNavigate }: ScreenProps) {
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-4">
+    <div className="max-w-[1600px] mx-auto">
       {/* Header */}
-      <CyberPanel className="mb-4">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-4">
-            <div className="text-amber-500 font-bold text-lg">SALVAGE OPERATION</div>
-            <div className={`text-xs px-2 py-1 rounded border uppercase tracking-wider font-mono ${
-              wreck.type === 'military' ? 'bg-red-900/20 border-red-600/40 text-red-400' :
-              wreck.type === 'science' ? 'bg-blue-900/20 border-blue-600/40 text-blue-400' :
-              wreck.type === 'industrial' ? 'bg-orange-900/20 border-orange-600/40 text-orange-400' :
-              'bg-zinc-800/40 border-zinc-600/40 text-zinc-400'
-            }`}>
-              {wreck.type} • T{wreck.tier}
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="text-zinc-400 text-sm">
-              {displayName} • {wreck.distance} AU
-            </div>
-            <div className="flex gap-2 text-sm">
-              <span>⏱️ {currentRun.timeRemaining}</span>
-              <span>⛽ {fuel}</span>
-              <span>📦 {currentRun.collectedLoot.length}/{cargoCapacity}</span>
-            </div>
-          </div>
-        </div>
-      </CyberPanel>
+      <IndustrialPanel
+        title={`SALVAGE OPS // ${displayName.toUpperCase()}`}
+        subtitle={`${wreck.type.toUpperCase()} WRECK · TIER ${wreck.tier} · ${wreck.distance} AU`}
+        showTape
+        headerRight={
+          <>
+            <StatChip label="FUEL" value={fuel} variant="amber" />
+            <StatChip label="CARGO" value={`${currentRun.collectedLoot.length}/${cargoCapacity}`} variant="cyan" />
+            <StatChip label="VALUE" value={`${Math.floor(totalValue / 1000)}K`} variant="green" />
+            <StatChip label="HAZARDS" value={activeHazards.length} variant="red" />
+          </>
+        }
+      >
+        <></>  
+      </IndustrialPanel>
 
-      {/* Action Buttons */}
-      <div className="flex gap-2 mb-4">
-        <button
-          className="bg-amber-600 hover:bg-amber-500 text-zinc-900 font-bold px-4 py-2 rounded"
-          onClick={() => setShowAutoSalvageMenu(true)}
-          disabled={isAutoSalvageRunning}
-        >
-          🤖 Auto-Salvage
-        </button>
-        <button
-          className="bg-green-700 hover:bg-green-600 text-white font-bold px-4 py-2 rounded"
-          onClick={onReturn}
-          disabled={!canReturn || isAutoSalvageRunning}
-        >
-          ✓ Return to Station
-        </button>
-        <button
-          className="bg-red-700 hover:bg-red-600 text-white font-bold px-4 py-2 rounded ml-auto"
-          onClick={() => setShowEmergencyEvacModal(true)}
-          disabled={isAutoSalvageRunning}
-        >
-          🚨 Emergency Evacuate
-        </button>
-        <button
-          className={`px-4 py-2 rounded font-bold ${showCrewPanel ? 'bg-zinc-700 text-amber-400' : 'bg-zinc-800 text-zinc-400'}`}
-          onClick={() => setShowCrewPanel(!showCrewPanel)}
-        >
-          👥 Crew {showCrewPanel ? '▼' : '▶'}
-        </button>
-      </div>
+      {/* Operations */}
+      <IndustrialPanel title="OPERATIONS" showTape>
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+          <IndustrialButton
+            title="🤖 Auto-Salvage"
+            description="Run automated salvage"
+            variant="info"
+            onClick={() => setShowAutoSalvageMenu(true)}
+            disabled={isAutoSalvageRunning}
+          />
+          <IndustrialButton
+            title="✓ Return to Station"
+            description="Complete mission"
+            variant="success"
+            onClick={onReturn}
+            disabled={!canReturn || isAutoSalvageRunning}
+          />
+          <IndustrialButton
+            title="🚨 Emergency Evac"
+            description="Abandon mission"
+            variant="danger"
+            onClick={() => setShowEmergencyEvacModal(true)}
+            disabled={isAutoSalvageRunning}
+          />
+          <IndustrialButton
+            title={`👥 Crew ${showCrewPanel ? '▼' : '▶'}`}
+            description="Toggle crew panel"
+            variant="info"
+            onClick={() => setShowCrewPanel(!showCrewPanel)}
+          />
+        </div>
+      </IndustrialPanel>
 
       {/* Main Content */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Ship Grid */}
         <div className={showCrewPanel ? "col-span-2" : "col-span-3"}>
-          <CyberPanel>
-            <div className="text-amber-400 font-bold mb-3 border-b border-amber-600/30 pb-2">
-              SHIP LAYOUT
-            </div>
+          <IndustrialPanel
+            title="DECK SCANNER"
+            subtitle="BREACH POINTS & ROOM STATUS"
+            showTape
+            headerRight={
+              <StatusPill
+                icon="dot"
+                label={sealedRooms.length > 0 ? `${sealedRooms.length} SEALED` : "ALL OPEN"}
+                variant={sealedRooms.length > 0 ? "warning" : "default"}
+              />
+            }
+          >
             {shipObj?.grid ? (
               <ShipGrid
                 ship={shipObj}
@@ -221,126 +255,195 @@ export default function SalvageScreen({ onNavigate }: ScreenProps) {
                 }}
               />
             ) : (
-              <div className="text-zinc-500 text-center py-8">
+              <div className="text-[var(--muted)] text-center py-8">
                 No ship layout available
               </div>
             )}
-          </CyberPanel>
+          </IndustrialPanel>
 
           {/* Ship Cargo Summary */}
-          <CyberPanel className="mt-4">
-            <div className="text-amber-400 font-bold mb-2 border-b border-amber-600/30 pb-2">
-              SECURED CARGO ({currentRun.collectedLoot.length}/{cargoCapacity})
-            </div>
+          <IndustrialPanel title="SHIP CARGO" className="mt-4">
             {currentRun.collectedLoot.length === 0 ? (
-              <div className="text-zinc-500 text-sm">No items secured yet</div>
+              <div className="text-[var(--muted)] text-sm text-center py-8">
+                No items secured yet
+              </div>
             ) : (
-              <div className="grid grid-cols-3 gap-2 max-h-40 overflow-y-auto">
-                {currentRun.collectedLoot.map((item) => (
-                  <div
-                    key={item.id}
-                    className="text-xs p-2 bg-zinc-900 border border-amber-600/20 rounded"
-                  >
-                    <div className="font-bold text-amber-300">{item.name}</div>
-                    <div className="text-zinc-400">{item.value} CR</div>
+              <div className="space-y-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                  {currentRun.collectedLoot.map((item) => (
+                    <div
+                      key={item.id}
+                      className="bg-[rgba(0,0,0,0.28)] border border-[rgba(255,255,255,0.08)] p-2 rounded-lg"
+                    >
+                      <div className="text-[13px] font-semibold truncate">
+                        {item.name}
+                      </div>
+                      <div className="text-[10px] text-[var(--muted)] mt-1">
+                        {item.rarity}
+                      </div>
+                      <div
+                        className="text-[11px] font-['Orbitron'] font-bold text-[var(--cyan)] mt-1"
+                        style={{ textShadow: "var(--glowC)" }}
+                      >
+                        {item.value} cr
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-3 pt-3 border-t border-[rgba(255,255,255,0.08)]">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[var(--muted)] text-xs">
+                      TOTAL HAUL VALUE
+                    </span>
+                    <span
+                      className="font-['Orbitron'] text-lg font-extrabold text-[var(--cyan)]"
+                      style={{ textShadow: "var(--glowC)" }}
+                    >
+                      {totalValue.toLocaleString()} CR
+                    </span>
                   </div>
-                ))}
+                </div>
               </div>
             )}
-          </CyberPanel>
+          </IndustrialPanel>
         </div>
 
         {/* Crew Panel */}
         {showCrewPanel && (
           <div className="col-span-1">
-            <CyberPanel>
-              <div className="text-amber-400 font-bold mb-3 border-b border-amber-600/30 pb-2">
-                CREW STATUS
-              </div>
+            <IndustrialPanel
+              title="CREW STATUS"
+              subtitle={`${crewRoster.length} MEMBERS`}
+              showTape
+              headerRight={<StatusPill icon="dot" label="TRACKING" />}
+            >
               <div className="space-y-3 max-h-[600px] overflow-y-auto">
                 {crewRoster.map((crew) => {
                   const status = getCrewStatus(crew, settings);
                   const hpPercent = (crew.hp / crew.maxHp) * 100;
+                  const staminaPercent = (crew.stamina / 100) * 100;
+                  const sanityPercent = (crew.sanity / 100) * 100;
+                  const isInjured = hpPercent < 50;
+                  
                   return (
                     <div
                       key={crew.id}
-                      className={`p-3 rounded border ${
-                        status.available
-                          ? 'bg-green-900/10 border-green-600/30'
-                          : 'bg-red-900/10 border-red-600/30'
-                      }`}
+                      className="rounded-xl border border-[rgba(255,255,255,0.08)] bg-[rgba(0,0,0,0.26)] p-3"
                     >
-                      <div className="flex justify-between items-start mb-2">
-                        <div className="font-bold text-amber-300">{crew.name}</div>
-                        <div className={`text-xs px-2 py-0.5 rounded ${
-                          status.available
-                            ? 'bg-green-700/30 text-green-400'
-                            : 'bg-red-700/30 text-red-400'
-                        }`}>
-                          {status.available ? '✓ Ready' : '✗ Unavailable'}
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <div className="font-bold text-[13px]">
+                            {crew.name.toUpperCase()}
+                          </div>
+                          <div className="text-[10px] text-[var(--muted)] uppercase tracking-wider mt-1">
+                            {crew.background || "HAULER"}
+                          </div>
                         </div>
+                        <StatusPill
+                          icon="dot"
+                          label={status.available ? "READY" : "UNAVAILABLE"}
+                          variant={status.available ? "default" : "danger"}
+                        />
                       </div>
 
-                      {/* Stats */}
-                      <div className="space-y-1 text-xs mb-2">
-                        <div className="flex justify-between">
-                          <span className="text-zinc-400">HP:</span>
-                          <span className={hpPercent < 50 ? 'text-red-400' : 'text-green-400'}>
-                            {crew.hp}/{crew.maxHp} ({Math.floor(hpPercent)}%)
-                          </span>
+                      {/* Progress Bars */}
+                      <div className="grid grid-cols-3 gap-2 text-[10px] mb-3">
+                        <div>
+                          <div className="text-[var(--muted)] uppercase tracking-wider">
+                            HP
+                          </div>
+                          <div
+                            className="h-1 rounded-full bg-[rgba(255,255,255,0.08)] mt-1 overflow-hidden"
+                            style={{ border: "1px solid rgba(0,0,0,0.35)" }}
+                          >
+                            <div
+                              className="h-full"
+                              style={{
+                                width: `${hpPercent}%`,
+                                background: isInjured
+                                  ? "linear-gradient(90deg, rgba(255,75,75,0.85), rgba(255,106,42,0.85))"
+                                  : "linear-gradient(90deg, rgba(113,255,120,0.85), rgba(56,224,199,0.85))",
+                              }}
+                            />
+                          </div>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-zinc-400">Stamina:</span>
-                          <span className={crew.stamina < 20 ? 'text-red-400' : 'text-cyan-400'}>
-                            {crew.stamina}
-                          </span>
+                        <div>
+                          <div className="text-[var(--muted)] uppercase tracking-wider">
+                            STAMINA
+                          </div>
+                          <div
+                            className="h-1 rounded-full bg-[rgba(255,255,255,0.08)] mt-1 overflow-hidden"
+                            style={{ border: "1px solid rgba(0,0,0,0.35)" }}
+                          >
+                            <div
+                              className="h-full"
+                              style={{
+                                width: `${staminaPercent}%`,
+                                background:
+                                  "linear-gradient(90deg, rgba(113,255,120,0.85), rgba(56,224,199,0.85))",
+                              }}
+                            />
+                          </div>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-zinc-400">Sanity:</span>
-                          <span className={crew.sanity < 20 ? 'text-red-400' : 'text-purple-400'}>
-                            {crew.sanity}
-                          </span>
+                        <div>
+                          <div className="text-[var(--muted)] uppercase tracking-wider">
+                            SANITY
+                          </div>
+                          <div
+                            className="h-1 rounded-full bg-[rgba(255,255,255,0.08)] mt-1 overflow-hidden"
+                            style={{ border: "1px solid rgba(0,0,0,0.35)" }}
+                          >
+                            <div
+                              className="h-full"
+                              style={{
+                                width: `${sanityPercent}%`,
+                                background:
+                                  "linear-gradient(90deg, rgba(113,255,120,0.85), rgba(56,224,199,0.85))",
+                              }}
+                            />
+                          </div>
                         </div>
                       </div>
 
                       {!status.available && (
-                        <div className="text-xs text-red-400 mb-2">
+                        <div className="text-xs text-[var(--bad)] mb-2">
                           {status.reason}
                         </div>
                       )}
 
                       {/* Inventory */}
                       {crew.inventory.length > 0 ? (
-                        <div className="mt-2 pt-2 border-t border-zinc-700">
-                          <div className="text-xs text-zinc-400 mb-1">Carrying:</div>
+                        <div className="mt-2 pt-2 border-t border-[rgba(255,255,255,0.08)]">
+                          <div className="text-xs text-[var(--muted)] mb-2 uppercase tracking-wider">Carrying:</div>
                           {crew.inventory.map((item) => (
                             <div
                               key={item.id}
-                              className="flex justify-between items-center bg-zinc-900 p-2 rounded mb-1"
+                              className="flex justify-between items-center bg-[rgba(0,0,0,0.28)] border border-[rgba(255,255,255,0.08)] p-2 rounded-lg mb-2"
                             >
                               <div className="text-xs">
-                                <div className="font-bold text-amber-300">{item.name}</div>
-                                <div className="text-zinc-500">{item.value} CR</div>
+                                <div className="font-bold text-[13px]">{item.name}</div>
+                                <div className="text-[var(--muted)] text-[10px]">{item.value} CR</div>
                               </div>
-                              <button
-                                className="bg-amber-600 hover:bg-amber-500 text-zinc-900 text-xs px-2 py-1 rounded"
+                              <IndustrialButton
+                                title="→Ship"
+                                description=""
+                                variant="info"
                                 onClick={() => transferItemToShip(crew.id, item.id)}
                                 disabled={currentRun.collectedLoot.length >= cargoCapacity}
-                              >
-                                →Ship
-                              </button>
+                              />
                             </div>
                           ))}
-                          <button
-                            className="w-full mt-1 bg-amber-700 hover:bg-amber-600 text-white text-xs px-2 py-1 rounded"
+                          <IndustrialButton
+                            title="Transfer All"
+                            description="Move all items to ship"
+                            variant="info"
+                            fullWidth
                             onClick={() => transferAllItemsToShip(crew.id)}
                             disabled={currentRun.collectedLoot.length >= cargoCapacity}
-                          >
-                            Transfer All
-                          </button>
+                          />
                         </div>
                       ) : (
-                        <div className="text-xs text-zinc-500 mt-2 italic">
+                        <div className="text-xs text-[var(--muted)] mt-2 italic">
                           Empty inventory
                         </div>
                       )}
@@ -348,7 +451,7 @@ export default function SalvageScreen({ onNavigate }: ScreenProps) {
                   );
                 })}
               </div>
-            </CyberPanel>
+            </IndustrialPanel>
           </div>
         )}
       </div>
@@ -356,37 +459,43 @@ export default function SalvageScreen({ onNavigate }: ScreenProps) {
       {/* Sealed Room Cut Modal */}
       {sealedRoomToCut && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-          <div className="bg-zinc-900 border-2 border-amber-600/50 rounded-lg p-6 max-w-md shadow-2xl">
-            <div className="text-amber-400 text-xl font-bold mb-4">
-              🔒 Sealed Compartment
-            </div>
-            <div className="text-zinc-300 mb-4">
-              This room is sealed. Cut through? (1 time unit)
-            </div>
-            <div className="flex gap-2">
-              <button
-                className="flex-1 bg-amber-600 hover:bg-amber-500 text-zinc-900 font-bold px-4 py-2 rounded"
-                onClick={() => {
-                  onCutIntoRoom(sealedRoomToCut);
-                  setSealedRoomToCut(null);
-                }}
-                disabled={currentRun.timeRemaining < 1}
-              >
-                🔧 Cut Into Room
-              </button>
-              <button
-                className="flex-1 bg-zinc-700 hover:bg-zinc-600 text-amber-100 px-4 py-2 rounded"
-                onClick={() => setSealedRoomToCut(null)}
-              >
-                Cancel
-              </button>
-            </div>
-            {currentRun.timeRemaining < 1 && (
-              <div className="text-red-400 text-xs mt-2 text-center">
-                ⚠️ Not enough time remaining
+          <IndustrialPanel
+            title="SEALED ROOM"
+            subtitle="BREACH REQUIRED"
+            variant="warning"
+            showTape
+            className="max-w-md"
+          >
+            <div className="space-y-4">
+              <div className="text-[var(--muted)] text-sm">
+                This room is sealed. You must use a Cutting Laser to breach the door (costs 1 time unit).
               </div>
-            )}
-          </div>
+              {currentRun.timeRemaining < 1 && (
+                <HazardTag label="⚠️ NOT ENOUGH TIME" variant="danger" />
+              )}
+              <div className="flex gap-2">
+                <IndustrialButton
+                  title="🔧 Cut Into Room"
+                  description="Use cutting laser"
+                  variant="primary"
+                  fullWidth
+                  onClick={() => {
+                    audio.playClick();
+                    onCutIntoRoom(sealedRoomToCut);
+                    setSealedRoomToCut(null);
+                  }}
+                  disabled={currentRun.timeRemaining < 1}
+                />
+                <IndustrialButton
+                  title="Cancel"
+                  description="Return to ops"
+                  variant="info"
+                  fullWidth
+                  onClick={() => setSealedRoomToCut(null)}
+                />
+              </div>
+            </div>
+          </IndustrialPanel>
         </div>
       )}
 
@@ -396,10 +505,14 @@ export default function SalvageScreen({ onNavigate }: ScreenProps) {
           wreckType={wreck.type}
           wreckTier={wreck.tier}
           onStart={async (rules, speed) => {
+            audio.playClick();
             setShowAutoSalvageMenu(false);
             setIsAutoSalvageRunning(true);
             const result = await runAutoSalvage(rules as AutoSalvageRules, speed as 1 | 2);
             setIsAutoSalvageRunning(false);
+            if (result) {
+              audio.playSuccess();
+            }
             setAutoSalvageResult(result);
           }}
           onCancel={() => setShowAutoSalvageMenu(false)}
@@ -409,40 +522,61 @@ export default function SalvageScreen({ onNavigate }: ScreenProps) {
       {/* Auto-Salvage Result Modal */}
       {autoSalvageResult && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-          <div className="bg-zinc-900 border-2 border-amber-600/50 rounded-lg p-6 max-w-md shadow-2xl">
-            <div className="text-amber-400 text-xl font-bold mb-4 flex items-center gap-2">
-              📊 Auto-Salvage Complete
-            </div>
-
+          <IndustrialPanel
+            title="📊 AUTO-SALVAGE COMPLETE"
+            variant="success"
+            showTape
+            className="max-w-md"
+          >
             <div className="space-y-3 mb-6">
-              <div className="flex justify-between text-sm">
-                <span className="text-zinc-400">Rooms Salvaged:</span>
-                <span className="text-amber-300 font-mono">{autoSalvageResult.roomsSalvaged}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-zinc-400">Loot Collected:</span>
-                <span className="text-amber-300 font-mono">{autoSalvageResult.lootCollected} items</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-zinc-400">Credits Earned:</span>
-                <span className="text-green-400 font-mono">+{autoSalvageResult.creditsEarned.toLocaleString()} CR</span>
-              </div>
-              {autoSalvageResult.injuries > 0 && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-zinc-400">Injuries Sustained:</span>
-                  <span className="text-red-400 font-mono">{autoSalvageResult.injuries}</span>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="bg-[rgba(0,0,0,0.28)] border border-[rgba(255,255,255,0.08)] p-3 rounded-lg">
+                  <div className="text-[10px] text-[var(--muted)] uppercase tracking-wider mb-1">
+                    Rooms
+                  </div>
+                  <div className="font-['Orbitron'] text-lg font-bold text-[var(--haz)]">
+                    {autoSalvageResult.roomsSalvaged}
+                  </div>
                 </div>
-              )}
+                <div className="bg-[rgba(0,0,0,0.28)] border border-[rgba(255,255,255,0.08)] p-3 rounded-lg">
+                  <div className="text-[10px] text-[var(--muted)] uppercase tracking-wider mb-1">
+                    Loot
+                  </div>
+                  <div className="font-['Orbitron'] text-lg font-bold text-[var(--cyan)]">
+                    {autoSalvageResult.lootCollected}
+                  </div>
+                </div>
+                <div className="bg-[rgba(0,0,0,0.28)] border border-[rgba(255,255,255,0.08)] p-3 rounded-lg col-span-2">
+                  <div className="text-[10px] text-[var(--muted)] uppercase tracking-wider mb-1">
+                    Credits Earned
+                  </div>
+                  <div className="font-['Orbitron'] text-xl font-extrabold text-[var(--ok)]">
+                    +{autoSalvageResult.creditsEarned.toLocaleString()} CR
+                  </div>
+                </div>
+                {autoSalvageResult.injuries > 0 && (
+                  <div className="bg-[rgba(255,75,75,0.1)] border border-[rgba(255,75,75,0.25)] p-3 rounded-lg col-span-2">
+                    <div className="text-[10px] text-[var(--muted)] uppercase tracking-wider mb-1">
+                      Injuries
+                    </div>
+                    <div className="font-['Orbitron'] text-lg font-bold text-[var(--bad)]">
+                      {autoSalvageResult.injuries}
+                    </div>
+                  </div>
+                )}
+              </div>
 
-              <div className="border-t border-zinc-700 pt-3 mt-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-zinc-400">Stop Reason:</span>
-                  <span className={`font-mono ${
-                    autoSalvageResult.stopReason === "complete" ? "text-green-400" :
-                    autoSalvageResult.stopReason === "cargo_full" ? "text-amber-400" :
-                    autoSalvageResult.stopReason === "time_out" ? "text-orange-400" :
-                    autoSalvageResult.stopReason === "cancelled" ? "text-zinc-400" :
-                    "text-red-400"
+              <div className="border-t border-[rgba(255,255,255,0.08)] pt-3">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-[10px] text-[var(--muted)] uppercase tracking-wider">
+                    Stop Reason:
+                  </span>
+                  <span className={`font-mono text-xs ${
+                    autoSalvageResult.stopReason === "complete" ? "text-[var(--ok)]" :
+                    autoSalvageResult.stopReason === "cargo_full" ? "text-[var(--haz)]" :
+                    autoSalvageResult.stopReason === "time_out" ? "text-[var(--rust)]" :
+                    autoSalvageResult.stopReason === "cancelled" ? "text-[var(--muted)]" :
+                    "text-[var(--bad)]"
                   }`}>
                     {autoSalvageResult.stopReason === "complete" && "✓ All rooms cleared"}
                     {autoSalvageResult.stopReason === "cargo_full" && "📦 Cargo full"}
@@ -454,54 +588,64 @@ export default function SalvageScreen({ onNavigate }: ScreenProps) {
                 </div>
               </div>
             </div>
-
-            <button
-              className="w-full bg-amber-600 hover:bg-amber-500 text-zinc-900 font-bold px-4 py-2 rounded"
+            <IndustrialButton
+              title="Continue"
+              description="Return to salvage ops"
+              variant="success"
+              fullWidth
               onClick={() => setAutoSalvageResult(null)}
-            >
-              Continue
-            </button>
-          </div>
+            />
+          </IndustrialPanel>
         </div>
       )}
 
       {/* Emergency Evacuation Modal */}
       {showEmergencyEvacModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-          <div className="bg-zinc-900 border-2 border-red-600/50 rounded-lg p-6 max-w-md shadow-2xl">
-            <div className="text-red-400 text-xl font-bold mb-4 flex items-center gap-2">
-              🚨 EMERGENCY EVACUATION
-            </div>
-            <div className="text-zinc-300 mb-4">
-              <p className="mb-2">Are you sure you want to emergency evacuate?</p>
-              <p className="text-sm text-red-400">
-                ⚠️ All crew will drop their items and all ship cargo will be abandoned!
-              </p>
-            </div>
-            <div className="bg-red-900/20 border border-red-600/30 rounded p-3 mb-4">
-              <div className="text-sm mb-2 text-zinc-400">Value at Risk:</div>
-              <div className="text-2xl font-bold text-red-400">
-                {totalValueAtRisk.toLocaleString()} CR
+          <IndustrialPanel
+            title="🚨 EMERGENCY EVACUATION"
+            variant="danger"
+            showTape
+            className="max-w-md"
+          >
+            <div className="space-y-4">
+              <div className="text-[var(--muted)] text-sm">
+                <p className="mb-2">Are you sure you want to emergency evacuate?</p>
+              </div>
+              <HazardTag label="⚠️ ALL CREW INVENTORY AND SHIP CARGO WILL BE ABANDONED!" variant="danger" />
+              <div className="bg-[rgba(255,75,75,0.1)] border border-[rgba(255,75,75,0.25)] rounded-lg p-3">
+                <div className="text-xs text-[var(--muted)] mb-1 uppercase tracking-wider">
+                  Value at Risk:
+                </div>
+                <div
+                  className="text-2xl font-['Orbitron'] font-extrabold text-[var(--bad)]"
+                  style={{ textShadow: "0 0 8px rgba(255,75,75,0.5)" }}
+                >
+                  {totalValueAtRisk.toLocaleString()} CR
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <IndustrialButton
+                  title="🚨 EVACUATE NOW"
+                  description="Abandon mission"
+                  variant="danger"
+                  fullWidth
+                  onClick={() => {
+                    audio.playError();
+                    emergencyEvacuate();
+                    onNavigate("hub");
+                  }}
+                />
+                <IndustrialButton
+                  title="Cancel"
+                  description="Return to ops"
+                  variant="info"
+                  fullWidth
+                  onClick={() => setShowEmergencyEvacModal(false)}
+                />
               </div>
             </div>
-            <div className="flex gap-2">
-              <button
-                className="flex-1 bg-red-700 hover:bg-red-600 text-white font-bold px-4 py-2 rounded"
-                onClick={() => {
-                  emergencyEvacuate();
-                  onNavigate("hub");
-                }}
-              >
-                🚨 EVACUATE NOW
-              </button>
-              <button
-                className="flex-1 bg-zinc-700 hover:bg-zinc-600 text-amber-100 px-4 py-2 rounded"
-                onClick={() => setShowEmergencyEvacModal(false)}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
+          </IndustrialPanel>
         </div>
       )}
 

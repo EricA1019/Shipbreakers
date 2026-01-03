@@ -5,6 +5,10 @@ import type { Item, ReactorModule } from "../../types";
 import { wasmBridge } from "../../game/wasm/WasmBridge";
 import { getAllEquipment } from "../../game/data/equipment";
 import { REACTORS } from "../../game/data/reactors";
+import IndustrialPanel from "../ui/IndustrialPanel";
+import IndustrialButton from "../ui/IndustrialButton";
+import StatChip from "../ui/StatChip";
+import { useAudio } from "../../hooks/useAudio";
 
 import type { ScreenProps } from "../../types";
 
@@ -14,8 +18,13 @@ export const EquipmentShopScreen: React.FC<ScreenProps> = ({ onNavigate }) => {
     s.licenseTier === "basic" ? 1 : s.licenseTier === "standard" ? 2 : 3,
   );
   const credits = useGameStore((s) => s.credits);
+  const audio = useAudio();
+
+  useEffect(() => {
+    audio.playTransition();
+  }, []);
+
   const addToInventory = (item: Item | ReactorModule) => {
-    // simple direct mutation via store
     useGameStore.setState((state) => ({
       equipmentInventory: (state.equipmentInventory || []).concat(item as any),
       credits: state.credits - (item.value ?? 0),
@@ -34,10 +43,8 @@ export const EquipmentShopScreen: React.FC<ScreenProps> = ({ onNavigate }) => {
   useEffect(() => {
     (async () => {
       const s = await wasmBridge.generateShopStock(day, licenseTier);
-      // map wasm stock to available equipment where possible
       const all = getAllEquipment();
       const mapped: Item[] = s.map((x: any) => {
-        // try to find closest matching equipment by tier
         const found =
           all.find((a) => a.tier === x.tier) ||
           all[Math.floor(Math.random() * all.length)];
@@ -48,104 +55,134 @@ export const EquipmentShopScreen: React.FC<ScreenProps> = ({ onNavigate }) => {
   }, [day, licenseTier, forceRefresh]);
 
   const buy = (item: Item | ReactorModule) => {
-    if (credits < (item.value ?? 0))
-      return addToast({ message: "Not enough credits", type: "warning" });
+    if (credits < (item.value ?? 0)) {
+      audio.playError();
+      return addToast({ message: "Insufficient credits", type: "warning" });
+    }
+    audio.playClick();
     addToInventory(item);
-    addToast({ message: "Purchased", type: "success" });
+    addToast({ message: "Equipment purchased", type: "success" });
   };
 
   return (
-    <div className="p-6">
-      <div className="mb-4 flex items-center gap-4">
-        <div className="font-mono text-amber-200">
-          🛒 EQUIPMENT SHOP — DAY {day}
+    <div className="max-w-[1400px] mx-auto">
+      {/* Header */}
+      <IndustrialPanel
+        title="EQUIPMENT VENDOR"
+        subtitle="SALVAGE & SHIP OUTFITTING · CINDER STATION"
+      >
+        <div className="flex items-center gap-2">
+          <StatChip label="CREDITS" value={`${(credits / 1000).toFixed(1)}K`} variant="amber" />
+          <StatChip label="LICENSE TIER" value={licenseTier} variant="cyan" />
+          <StatChip label="DAY" value={day} variant="cyan" />
         </div>
-        <div className="ml-auto flex gap-2">
-          <button
-            onClick={refreshStock}
-            className="bg-zinc-800 border border-amber-600/20 text-amber-100 px-3 py-1 rounded hover:bg-zinc-700"
-          >
-            Refresh
-          </button>
-          {onNavigate && (
+      </IndustrialPanel>
+
+      {/* Category tabs */}
+      <IndustrialPanel>
+        <div className="flex gap-2 flex-wrap">
+          {[
+            { key: "tools", label: "🔧 TOOLS" },
+            { key: "systems", label: "⚙️ SYSTEMS" },
+            { key: "reactors", label: "⚡ REACTORS" },
+            { key: "expansions", label: "📦 EXPANSIONS" },
+          ].map(({ key, label }) => (
             <button
-              onClick={() => onNavigate("hub")}
-              className="bg-zinc-800 border border-amber-600/20 text-amber-100 px-3 py-1 rounded hover:bg-zinc-700"
+              key={key}
+              onClick={() => {
+                audio.playClick();
+                setCategory(key as any);
+              }}
+              className={`px-3 py-1.5 rounded-md text-xs uppercase tracking-wide transition-all font-['Orbitron'] font-bold ${
+                category === key
+                  ? "bg-amber-500/15 border border-amber-500 text-amber-400"
+                  : "bg-black/30 border border-white/8 text-zinc-400 hover:border-amber-400 hover:text-amber-400"
+              }`}
             >
-              ← Back to Hub
+              {label}
             </button>
-          )}
+          ))}
         </div>
-      </div>
+      </IndustrialPanel>
 
-      <div className="mb-4 flex gap-2">
-        <button
-          onClick={() => setCategory("tools")}
-          className={`px-3 py-1 rounded ${category === "tools" ? "bg-amber-600 text-zinc-900" : "bg-zinc-800 text-amber-200"}`}
-        >
-          Tools
-        </button>
-        <button
-          onClick={() => setCategory("systems")}
-          className={`px-3 py-1 rounded ${category === "systems" ? "bg-amber-600 text-zinc-900" : "bg-zinc-800 text-amber-200"}`}
-        >
-          Systems
-        </button>
-        <button
-          onClick={() => setCategory("reactors")}
-          className={`px-3 py-1 rounded ${category === "reactors" ? "bg-amber-600 text-zinc-900" : "bg-zinc-800 text-amber-200"}`}
-        >
-          Reactors
-        </button>
-        <button
-          onClick={() => setCategory("expansions")}
-          className={`px-3 py-1 rounded ${category === "expansions" ? "bg-amber-600 text-zinc-900" : "bg-zinc-800 text-amber-200"}`}
-        >
-          Expansions
-        </button>
-      </div>
-
-      <div className="grid grid-cols-3 gap-4">
-        {category === "reactors"
-          ? Object.values(REACTORS).map((r) => (
-              <div
-                key={r.id}
-                className="bg-zinc-900 border border-amber-600/20 p-3 rounded"
-              >
-                <div className="font-mono text-amber-100">{r.name}</div>
-                <div className="text-amber-200 text-xs">
-                  Power: {r.powerOutput} — Tier {r.tier}
-                </div>
-                <div className="mt-2">
-                  <button
+      {/* Product Grid */}
+      <IndustrialPanel>
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4">
+          {category === "reactors"
+            ? Object.values(REACTORS).map((r) => (
+                <div
+                  key={r.id}
+                  className="bg-black/26 border border-white/8 rounded-xl p-4 hover:border-amber-400 hover:bg-amber-500/4 transition"
+                >
+                  <div className="font-['Orbitron'] font-bold text-base text-amber-400 glow-amber mb-2">
+                    {r.name}
+                  </div>
+                  <div className="text-[10px] text-zinc-400 uppercase tracking-wider space-y-1 mb-3">
+                    <div>⚡ POWER: <span className="text-cyan-400 font-bold">{r.powerOutput}</span></div>
+                    <div>📊 TIER: <span className="text-amber-400 font-bold">{r.tier}</span></div>
+                  </div>
+                  <div className="bg-black/40 border border-white/6 rounded-md p-2 mb-3 text-center">
+                    <div className="text-[9px] text-zinc-400 uppercase tracking-wider mb-1">PRICE</div>
+                    <div className="font-['Orbitron'] font-bold text-sm text-cyan-400">{(r.value / 1000).toFixed(1)}K CR</div>
+                  </div>
+                  <IndustrialButton
+                    variant={credits >= r.value ? "primary" : "default"}
                     onClick={() => buy(r)}
-                    className="bg-amber-600 px-2 py-1 rounded"
-                  >
-                    Buy {r.value}CR
-                  </button>
+                    disabled={credits < r.value}
+                    title="Purchase"
+                    description=""
+                  />
                 </div>
-              </div>
-            ))
-          : stock.map((it: Item) => (
-              <div
-                key={it.id}
-                className="bg-zinc-900 border border-amber-600/20 p-3 rounded"
-              >
-                <div className="font-mono text-amber-100">{it.name}</div>
-                <div className="text-amber-200 text-xs">
-                  Tier: {it.tier} — Power: {it.powerDraw}
-                </div>
-                <div className="mt-2">
-                  <button
+              ))
+            : stock.map((it: Item) => (
+                <div
+                  key={it.id}
+                  className="bg-black/26 border border-white/8 rounded-xl p-4 hover:border-amber-400 hover:bg-amber-500/4 transition"
+                >
+                  <div className="font-['Orbitron'] font-bold text-base text-amber-400 glow-amber mb-2">
+                    {it.name}
+                  </div>
+                  <div className="text-[10px] text-zinc-400 uppercase tracking-wider space-y-1 mb-3">
+                    <div>📊 TIER: <span className="text-amber-400 font-bold">{it.tier}</span></div>
+                    <div>⚡ POWER: <span className="text-cyan-400 font-bold">{it.powerDraw}</span></div>
+                  </div>
+                  <div className="bg-black/40 border border-white/6 rounded-md p-2 mb-3 text-center">
+                    <div className="text-[9px] text-zinc-400 uppercase tracking-wider mb-1">PRICE</div>
+                    <div className="font-['Orbitron'] font-bold text-sm text-cyan-400">{((it.value ?? 0) / 1000).toFixed(1)}K CR</div>
+                  </div>
+                  <IndustrialButton
+                    variant={credits >= (it.value ?? 0) ? "primary" : "default"}
                     onClick={() => buy(it)}
-                    className="bg-amber-600 px-2 py-1 rounded"
-                  >
-                    Buy {it.value ?? 0}CR
-                  </button>
+                    disabled={credits < (it.value ?? 0)}
+                    title="Purchase"
+                    description=""
+                  />
                 </div>
-              </div>
-            ))}
-      </div>
+              ))}
+        </div>
+      </IndustrialPanel>
+
+      {/* Actions */}
+      <IndustrialPanel>
+        <div className="grid grid-cols-2 gap-3">
+          <IndustrialButton
+            onClick={() => {
+              audio.playClick();
+              refreshStock();
+            }}
+            title="🔄 Refresh Stock"
+            description="View different items"
+          />
+          <IndustrialButton
+            onClick={() => {
+              audio.playTransition();
+              onNavigate("hub");
+            }}
+            title="← Back to Station"
+            description="Return to hub"
+          />
+        </div>
+      </IndustrialPanel>
     </div>
   );
 };

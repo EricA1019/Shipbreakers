@@ -1,0 +1,486 @@
+
+> ship-breakers@0.0.2 test
+> vitest --coverage --run
+
+
+ RUN  v1.6.1 /home/eric/Typescript/Shipbreakers
+      Coverage enabled with v8
+
+ ✓ tests/unit/traits.test.ts  (17 tests) 11ms
+ ✓ tests/unit/auto-salvage.test.ts  (45 tests) 49ms
+ ✓ tests/unit/ship.test.ts  (9 tests) 9ms
+ ✓ tests/integration/loot-equipment-pipeline.test.ts  (6 tests) 8ms
+ ✓ tests/unit/crew-status.test.ts  (8 tests) 11ms
+stdout | tests/integration/phase9-mutations.test.ts > Phase 9: State Mutation Tests > Store Action Mutations > should mutate crew stats correctly during shore leave
+[INFO] [MUTATION TEST] Starting state mutation verification 
+[DEBUG] [MUTATION] Before shore leave { stamina: 30, hp: 60 }
+[DEBUG] [MUTATION] After shore leave { stamina: 80, staminaDelta: 50, hp: 60, hpDelta: 0 }
+[INFO] [MUTATION] ✓ Shore leave mutations verified 
+
+stderr | tests/integration/phase9-mutations.test.ts > Phase 9: State Mutation Tests > Store Action Mutations > should mutate crew stats correctly during shore leave
+[WASM] Module loaded but functions missing
+
+stdout | tests/integration/phase9-mutations.test.ts > Phase 9: State Mutation Tests > Store Action Mutations > should mutate pantry state during provision consumption
+[INFO] [MUTATION TEST] Starting state mutation verification 
+[DEBUG] [MUTATION] Before consumption { food: 10, drink: 10 }
+[DEBUG] [MUTATION] After consumption { food: 9, foodConsumed: 1, drink: 9, drinkConsumed: 1 }
+[INFO] [MUTATION] ✓ Pantry mutations verified 
+
+stdout | tests/integration/phase9-mutations.test.ts > Phase 9: State Mutation Tests > Store Action Mutations > should mutate credits during shore leave payment
+[INFO] [MUTATION TEST] Starting state mutation verification 
+[DEBUG] [MUTATION] Before payment { credits: 1000, expectedCost: 100 }
+[DEBUG] [MUTATION] After payment { credits: 900, actualCost: 100 }
+[INFO] [MUTATION] ✓ Credit mutations verified 
+
+stdout | tests/integration/phase9-mutations.test.ts > Phase 9: State Mutation Tests > Store Action Mutations > should track multiple sequential mutations
+[INFO] [MUTATION TEST] Starting state mutation verification 
+[DEBUG] [MUTATION] Sequential mutation tracking started 
+[DEBUG] [MUTATION] Mutation history {
+  mutations: [
+    { step: 'initial', stamina: 50, credits: 1000 },
+    { step: 'after_shore_leave', stamina: 100, credits: 900 },
+    { step: 'after_consumption', stamina: 100, credits: 900 }
+  ]
+}
+[INFO] [MUTATION] ✓ Sequential mutations tracked successfully 
+
+stdout | tests/integration/phase9-mutations.test.ts > Phase 9: State Mutation Tests > Crew Status Mutation Tracking > should detect and log status transitions
+[INFO] [MUTATION TEST] Starting state mutation verification 
+[DEBUG] [MUTATION] Status transition tracking 
+[DEBUG] [MUTATION] Status history {
+  statusHistory: [ { hp: 100, status: 'active' }, { hp: 15, status: 'injured' } ]
+}
+[INFO] [MUTATION] ✓ Status transitions logged 
+
+stdout | tests/integration/phase9-mutations.test.ts > Phase 9: State Mutation Tests > Auto-Salvage Result Mutations > should mutate and accumulate salvage results correctly
+[INFO] [MUTATION TEST] Starting state mutation verification 
+[DEBUG] [MUTATION] Starting salvage accumulation 
+[DEBUG] [MUTATION] Salvage 1 { roomsSalvaged: 1, lootCollected: 2, creditsEarned: 500, injuries: 0 }
+[DEBUG] [MUTATION] Salvage 2 {
+  roomsSalvaged: 2,
+  lootCollected: 4,
+  creditsEarned: 1000,
+  injuries: 0
+}
+[DEBUG] [MUTATION] Salvage 3 {
+  roomsSalvaged: 3,
+  lootCollected: 6,
+  creditsEarned: 1500,
+  injuries: 0
+}
+[DEBUG] [MUTATION] Salvage 4 {
+  roomsSalvaged: 4,
+  lootCollected: 8,
+  creditsEarned: 2000,
+  injuries: 1
+}
+[DEBUG] [MUTATION] Salvage 5 {
+  roomsSalvaged: 5,
+  lootCollected: 10,
+  creditsEarned: 2500,
+  injuries: 1
+}
+[INFO] [MUTATION] ✓ Salvage result mutations accumulated correctly 
+
+stdout | tests/integration/phase9-mutations.test.ts > Phase 9: State Mutation Tests > Idempotency Tests > should produce consistent results for repeated operations
+[INFO] [MUTATION TEST] Starting state mutation verification 
+[DEBUG] [MUTATION] Testing operation idempotency 
+[DEBUG] [MUTATION] Iteration 1 { stamina: 100 }
+[DEBUG] [MUTATION] Iteration 2 { stamina: 100 }
+[DEBUG] [MUTATION] Iteration 3 { stamina: 100 }
+[INFO] [MUTATION] ✓ Operations are idempotent 
+
+stdout | tests/integration/phase9-mutations.test.ts > Phase 9: State Mutation Tests > Concurrent Mutation Safety > should handle rapid state mutations without corruption
+[INFO] [MUTATION TEST] Starting state mutation verification 
+[DEBUG] [MUTATION] Testing rapid mutations 
+[DEBUG] [MUTATION] After 50 rapid mutations { food: 50, expected: 50 }
+[INFO] [MUTATION] ✓ Rapid mutations handled safely 
+
+stdout | tests/integration/phase9-mutations.test.ts > Phase 9: State Mutation Tests > Rollback and Recovery > should be able to restore previous state after failed operation
+[INFO] [MUTATION TEST] Starting state mutation verification 
+[DEBUG] [MUTATION] State snapshot captured { credits: 1000, food: 10 }
+[DEBUG] [MUTATION] After risky operation { credits: 0 }
+[DEBUG] [MUTATION] After rollback { credits: 1000, food: 10 }
+[INFO] [MUTATION] ✓ State rollback successful 
+
+ ✓ tests/unit/cargo.test.ts  (4 tests) 5ms
+stdout | tests/integration/phase9-full-flow.test.ts > Phase 9: Full Flow Integration Tests > Shore Leave → Stat Recovery → Status Update Flow > should complete full shore leave rest flow with logging
+[INFO] [TEST] Starting Phase 9 full flow test 
+[DEBUG] [TEST] Initial crew state { stamina: 30, hp: 60, sanity: 40 }
+[INFO] [TEST] Taking shore leave: rest 
+[DEBUG] [TEST] After shore leave { stamina: 80, hp: 60, credits: 1000, costDeducted: 0 }
+[INFO] [TEST] ✓ Shore leave rest flow completed successfully 
+
+stderr | tests/integration/phase9-full-flow.test.ts > Phase 9: Full Flow Integration Tests > Shore Leave → Stat Recovery → Status Update Flow > should complete full shore leave rest flow with logging
+[WASM] Module loaded but functions missing
+
+stdout | tests/integration/phase9-full-flow.test.ts > Phase 9: Full Flow Integration Tests > Shore Leave → Stat Recovery → Status Update Flow > should trigger recreation with luxury drink consumption
+[INFO] [TEST] Starting Phase 9 full flow test 
+[INFO] [TEST] Taking shore leave: recreation 
+[DEBUG] [TEST] Luxury drink consumption {
+  beforeBeer: 5,
+  afterBeer: 5,
+  beforeWine: 3,
+  afterWine: 3,
+  totalConsumed: 0
+}
+[INFO] [TEST] ✓ Recreation with luxury drinks completed 
+
+stdout | tests/integration/phase9-full-flow.test.ts > Phase 9: Full Flow Integration Tests > Shore Leave → Stat Recovery → Status Update Flow > should handle party with high sanity recovery and stamina cost
+[INFO] [TEST] Starting Phase 9 full flow test 
+[INFO] [TEST] Taking shore leave: party 
+[DEBUG] [TEST] Party results {
+  staminaBefore: 80,
+  staminaAfter: 100,
+  sanityBefore: 20,
+  sanityAfter: 100
+}
+[INFO] [TEST] ✓ Party shore leave completed 
+
+stdout | tests/integration/phase9-full-flow.test.ts > Phase 9: Full Flow Integration Tests > Daily Survival Cycle → Stat Penalties → Status Transitions > should complete full starvation cycle with status transition
+[INFO] [TEST] Starting Phase 9 full flow test 
+[INFO] [TEST] Starting starvation simulation 
+[DEBUG] [TEST] Day 1 starvation { hp: 95, status: 'active' }
+[DEBUG] [TEST] Day 2 starvation { hp: 90, status: 'active' }
+[DEBUG] [TEST] Day 3 starvation { hp: 85, status: 'active' }
+[DEBUG] [TEST] Day 4 starvation { hp: 80, status: 'active' }
+[DEBUG] [TEST] Day 5 starvation { hp: 75, status: 'active' }
+[INFO] [TEST] ✓ Starvation cycle completed { finalHP: 75, hpLost: 25 }
+
+stdout | tests/integration/phase9-full-flow.test.ts > Phase 9: Full Flow Integration Tests > Daily Survival Cycle → Stat Penalties → Status Transitions > should handle simultaneous starvation and dehydration
+[INFO] [TEST] Starting Phase 9 full flow test 
+[INFO] [TEST] Simulating combined starvation and dehydration 
+[DEBUG] [TEST] Combined penalties applied { hpLoss: 15, sanityLoss: 5 }
+[INFO] [TEST] ✓ Combined survival penalties verified 
+
+stdout | tests/integration/phase9-full-flow.test.ts > Phase 9: Full Flow Integration Tests > Salvage → Stat Consumption → Trait Effects → Status Update > should apply stamina and sanity costs during salvage with trait modifiers
+[INFO] [TEST] Starting Phase 9 full flow test 
+[INFO] [TEST] Salvage stat consumption simulation 
+[DEBUG] [TEST] Salvage costs applied { staminaCost: 5, sanityCost: 3, finalStamina: 95, finalSanity: 97 }
+[INFO] [TEST] ✓ Salvage stat consumption verified 
+
+stdout | tests/integration/phase9-full-flow.test.ts > Phase 9: Full Flow Integration Tests > Salvage → Stat Consumption → Trait Effects → Status Update > should trigger status transition when stats drop below thresholds
+[INFO] [TEST] Starting Phase 9 full flow test 
+[INFO] [TEST] Simulating injury threshold crossing 
+[DEBUG] [TEST] Status transition check { hp: 15, expectedStatus: 'injured', actualStatus: 'active' }
+[INFO] [TEST] ✓ Injury threshold verified 
+
+stdout | tests/integration/phase9-full-flow.test.ts > Phase 9: Full Flow Integration Tests > Auto-Salvage Full Flow > should execute auto-salvage and produce accurate result summary
+[INFO] [TEST] Starting Phase 9 full flow test 
+[INFO] [TEST] Auto-salvage result structure validation 
+[DEBUG] [TEST] Mock auto-salvage result {
+  roomsSalvaged: 5,
+  lootCollected: 12,
+  creditsEarned: 3500,
+  stopReason: 'cargo_full',
+  injuries: 1
+}
+[INFO] [TEST] ✓ Auto-salvage result structure validated 
+
+stdout | tests/integration/phase9-full-flow.test.ts > Phase 9: Full Flow Integration Tests > Error Handling and Edge Cases > should handle missing crew gracefully
+[INFO] [TEST] Starting Phase 9 full flow test 
+[WARN] [TEST] Testing shore leave with no crew 
+[INFO] [TEST] ✓ Missing crew handled gracefully 
+
+stdout | tests/integration/phase9-full-flow.test.ts > Phase 9: Full Flow Integration Tests > Error Handling and Edge Cases > should handle insufficient credits for shore leave
+[INFO] [TEST] Starting Phase 9 full flow test 
+[WARN] [TEST] Testing shore leave with insufficient credits 
+[DEBUG] [TEST] Credit check { initial: 10, final: 10, charged: 0 }
+[INFO] [TEST] ✓ Insufficient credits handled 
+
+stdout | tests/integration/phase9-full-flow.test.ts > Phase 9: Full Flow Integration Tests > Error Handling and Edge Cases > should handle empty provision pantry
+[INFO] [TEST] Starting Phase 9 full flow test 
+[WARN] [TEST] Testing with completely empty pantry 
+[DEBUG] [TEST] Pantry state after empty consumption { food: 0, drink: 0, beer: 0, wine: 0 }
+[INFO] [TEST] ✓ Empty pantry handled gracefully 
+
+stdout | tests/integration/phase9-wiring.test.ts > Phase 9: System Wiring Validation > Shore Leave System Wiring > should have all shore leave types implemented
+[INFO] [WIRING TEST] Starting system wiring validation 
+[DEBUG] [WIRING] Shore leave rest { initialStamina: 50, finalStamina: 100, changed: true }
+[DEBUG] [WIRING] Shore leave recreation { initialStamina: 50, finalStamina: 100, changed: true }
+[DEBUG] [WIRING] Shore leave party { initialStamina: 50, finalStamina: 100, changed: true }
+[INFO] [WIRING] Shore leave types tested {
+  results: [
+    { type: 'rest', success: true },
+    { type: 'recreation', success: true },
+    { type: 'party', success: true }
+  ]
+}
+
+stderr | tests/integration/phase9-wiring.test.ts > Phase 9: System Wiring Validation > Shore Leave System Wiring > should have all shore leave types implemented
+[WASM] Module loaded but functions missing
+
+stdout | tests/integration/phase9-wiring.test.ts > Phase 9: System Wiring Validation > Shore Leave System Wiring > should properly wire credit deduction
+[INFO] [WIRING TEST] Starting system wiring validation 
+[DEBUG] [WIRING] Before credit deduction { credits: 10000 }
+[DEBUG] [WIRING] After credit deduction { initial: 10000, final: 9900, deducted: 100 }
+[INFO] [WIRING] ✓ Credit deduction wired correctly 
+
+stdout | tests/integration/phase9-wiring.test.ts > Phase 9: System Wiring Validation > Survival System Wiring > should wire provision consumption correctly
+[INFO] [WIRING TEST] Starting system wiring validation 
+[DEBUG] [WIRING] Before consumption { food: 10, drink: 10 }
+[DEBUG] [WIRING] After consumption { food: 9, drink: 9, consumed: { food: 1, drink: 1 } }
+[INFO] [WIRING] ✓ Provision consumption wired correctly 
+
+stdout | tests/integration/phase9-wiring.test.ts > Phase 9: System Wiring Validation > Survival System Wiring > should wire starvation penalties to HP
+[INFO] [WIRING TEST] Starting system wiring validation 
+[DEBUG] [WIRING] Before starvation { hp: 100 }
+[DEBUG] [WIRING] After starvation { initial: 100, final: 95, damage: 5 }
+[INFO] [WIRING] ✓ Starvation penalties wired to HP 
+
+stdout | tests/integration/crew-position-display.test.ts > Crew Position Display Tests > Crew Position Initialization > should initialize captain with station position on game start
+[INFO] [CREW POSITION TEST] Starting crew position display test 
+[DEBUG] [POSITION] Captain initial state {
+  id: 'captain-1',
+  name: 'Player Captain',
+  position: { location: 'station' }
+}
+[INFO] [POSITION] ✓ Captain initialized with station position 
+
+stdout | tests/integration/phase9-wiring.test.ts > Phase 9: System Wiring Validation > Auto-Salvage System Wiring > should have auto-salvage rules properly wired
+[INFO] [WIRING TEST] Starting system wiring validation 
+[DEBUG] [WIRING] Testing auto-salvage rules {
+  rules: {
+    maxHazardLevel: 3,
+    priorityRooms: [ 'cargo', 'labs' ],
+    stopOnInjury: true,
+    stopOnLowStamina: 20,
+    stopOnLowSanity: 15
+  }
+}
+[INFO] [WIRING] ✓ Auto-salvage rules structure validated 
+
+stderr | tests/integration/crew-position-display.test.ts > Crew Position Display Tests > Crew Position Initialization > should initialize captain with station position on game start
+[WASM] Module loaded but functions missing
+
+stdout | tests/integration/crew-position-display.test.ts > Crew Position Display Tests > Crew Position Initialization > should set new hires to station position
+[INFO] [CREW POSITION TEST] Starting crew position display test 
+[DEBUG] [POSITION] Hired crew state { name: 'Test Hire', position: { location: 'station' } }
+[INFO] [POSITION] ✓ New hire initialized with station position 
+
+stdout | tests/integration/phase9-wiring.test.ts > Phase 9: System Wiring Validation > Auto-Salvage System Wiring > should have runAutoSalvage function implemented
+[INFO] [WIRING TEST] Starting system wiring validation 
+[DEBUG] [WIRING] Checking runAutoSalvage implementation { exists: true, type: 'function' }
+[INFO] [WIRING] ✓ runAutoSalvage function exists and is callable 
+
+stdout | tests/integration/crew-position-display.test.ts > Crew Position Display Tests > Crew Position Updates During Run > should move all crew to wreck location when arriving
+[INFO] [CREW POSITION TEST] Starting crew position display test 
+[DEBUG] [POSITION] Starting run { wreckId: 'wreck_1767408442544_g9ok1' }
+[DEBUG] [POSITION] Crew positions after arrival {
+  crewPositions: [
+    {
+      id: 'captain-1',
+      name: 'Player Captain',
+      location: 'wreck',
+      roomId: undefined
+    }
+  ]
+}
+[INFO] [POSITION] ✓ All crew moved to wreck location 
+
+stdout | tests/integration/crew-position-display.test.ts > Crew Position Display Tests > Crew Position Updates During Run > should return all crew to station when completing run
+[INFO] [CREW POSITION TEST] Starting crew position display test 
+[DEBUG] [POSITION] Returning to station 
+[DEBUG] [POSITION] Crew positions after return {
+  crewPositions: [ { id: 'captain-1', name: 'Player Captain', location: 'station' } ]
+}
+[INFO] [POSITION] ✓ All crew returned to station 
+
+stdout | tests/integration/crew-position-display.test.ts > Crew Position Display Tests > Crew Room Assignments > should assign crew to specific room when using auto-salvage
+[INFO] [CREW POSITION TEST] Starting crew position display test 
+[DEBUG] [POSITION] Assigning crew to room { crewId: 'captain-1', roomId: 'test-room-1' }
+[DEBUG] [POSITION] Crew after assignment { id: 'captain-1', location: 'wreck', roomId: 'test-room-1' }
+[INFO] [POSITION] ✓ Crew assigned to specific room 
+
+stdout | tests/integration/crew-position-display.test.ts > Crew Position Display Tests > Crew Room Assignments > should show crew in entry room when no specific assignment
+[INFO] [CREW POSITION TEST] Starting crew position display test 
+[DEBUG] [POSITION] Testing entry room detection {
+  shipEntryPosition: { x: 1, y: 1 },
+  crewPosition: { location: 'wreck' }
+}
+[DEBUG] [POSITION] Entry room filter result { shouldShowInEntry: true, entryRoomPosition: { x: 1, y: 1 } }
+[INFO] [POSITION] ✓ Crew correctly filtered to entry room 
+
+stdout | tests/integration/crew-position-display.test.ts > Crew Position Display Tests > Multiple Crew Support > should handle multiple crew on the same run
+[INFO] [CREW POSITION TEST] Starting crew position display test 
+[DEBUG] [POSITION] Crew roster {
+  count: 3,
+  crew: [
+    { id: 'captain-1', name: 'Player Captain', position: [Object] },
+    {
+      id: 'crew-mjxpcq8j-f7',
+      name: 'Crew Member 1',
+      position: [Object]
+    },
+    {
+      id: 'crew-mjxpcq8j-9y',
+      name: 'Crew Member 2',
+      position: [Object]
+    }
+  ]
+}
+[DEBUG] [POSITION] All crew on run { crewCount: 3, atWreck: 3 }
+[INFO] [POSITION] ✓ Multiple crew supported on single run 
+
+stdout | tests/integration/crew-position-display.test.ts > Crew Position Display Tests > Multiple Crew Support > should allow different crew to have different room assignments
+[INFO] [CREW POSITION TEST] Starting crew position display test 
+[DEBUG] [POSITION] Different room assignments {
+  crew1: { id: 'captain-1', roomId: 'room-A' },
+  crew2: { id: 'crew-mjxpcq8w-qk', roomId: 'room-B' }
+}
+[INFO] [POSITION] ✓ Different crew can have different room assignments 
+
+stdout | tests/integration/crew-position-display.test.ts > Crew Position Display Tests > Location Filter Behavior > should only show crew matching locationFilter
+[INFO] [CREW POSITION TEST] Starting crew position display test 
+[INFO] [POSITION] ✓ Location filter correctly filters crew by location 
+
+stdout | tests/integration/crew-position-display.test.ts > Crew Position Display Tests > Edge Cases > should handle crew with undefined position gracefully
+[INFO] [CREW POSITION TEST] Starting crew position display test 
+[INFO] [POSITION] ✓ Crew without position are filtered out 
+
+stdout | tests/integration/crew-position-display.test.ts > Crew Position Display Tests > Edge Cases > should handle empty crew roster
+[INFO] [CREW POSITION TEST] Starting crew position display test 
+[INFO] [POSITION] ✓ Empty roster handled gracefully 
+
+stdout | tests/integration/phase9-wiring.test.ts > Phase 9: System Wiring Validation > Trait System Wiring > should wire trait effects to stat calculations
+[INFO] [WIRING TEST] Starting system wiring validation 
+[DEBUG] [WIRING] Crew with traits {
+  traits: [ 'workaholic', 'resilient' ],
+  stamina: 100,
+  maxStamina: 100
+}
+[INFO] [WIRING] ✓ Trait effects wired to crew stats 
+
+stdout | tests/integration/phase9-wiring.test.ts > Phase 9: System Wiring Validation > Crew Status System Wiring > should wire status transitions based on stats
+[INFO] [WIRING TEST] Starting system wiring validation 
+[DEBUG] [WIRING] Initial status { hp: 100, status: 'active' }
+[DEBUG] [WIRING] Status after injury { hp: 15, status: 'injured' }
+[INFO] [WIRING] ✓ Status transitions wired to stat thresholds 
+
+stdout | tests/integration/phase9-wiring.test.ts > Phase 9: System Wiring Validation > Store Action Completeness > should have all required Phase 9 store actions
+[INFO] [WIRING TEST] Starting system wiring validation 
+[DEBUG] [WIRING] ✓ Found action: takeShoreLeave 
+[DEBUG] [WIRING] ✓ Found action: setAutoSalvageEnabled 
+[DEBUG] [WIRING] ✓ Found action: assignCrewToRoom 
+[DEBUG] [WIRING] ✓ Found action: runAutoSalvage 
+[DEBUG] [WIRING] ✓ Found action: resetGame 
+[INFO] [WIRING] Store action check complete { required: 5, missing: 0, missingActions: [] }
+
+stdout | tests/integration/phase9-wiring.test.ts > Phase 9: System Wiring Validation > Store Action Completeness > should have all Phase 9 state properties
+[INFO] [WIRING TEST] Starting system wiring validation 
+[DEBUG] [WIRING] ✓ Found state property: crewRoster {
+  value: [
+    {
+      id: 'captain-1',
+      name: 'Player',
+      isPlayer: true,
+      skills: [Object],
+      skillXp: [Object],
+      hp: 100,
+      maxHp: 100
+    }
+  ]
+}
+[DEBUG] [WIRING] ✓ Found state property: credits { value: 2000 }
+[DEBUG] [WIRING] ✓ Found state property: food { value: 0 }
+[DEBUG] [WIRING] ✓ Found state property: drink { value: 9 }
+[DEBUG] [WIRING] ✓ Found state property: beer { value: 10 }
+[DEBUG] [WIRING] ✓ Found state property: wine { value: 10 }
+[DEBUG] [WIRING] ✓ Found state property: autoSalvageEnabled { value: false }
+[DEBUG] [WIRING] ✓ Found state property: autoAssignments { value: {} }
+[INFO] [WIRING] State property check complete { required: 8, missing: 0, missingState: [] }
+
+stdout | tests/integration/phase9-wiring.test.ts > Phase 9: System Wiring Validation > Data Flow Validation > should flow data from UI action through store to state change
+[INFO] [WIRING TEST] Starting system wiring validation 
+[INFO] [WIRING] Testing full data flow: UI → Store → State 
+[DEBUG] [WIRING] Step 1: UI action triggered 
+[DEBUG] [WIRING] Step 2: Store action executing 
+[DEBUG] [WIRING] Step 3: State changed { newStamina: 100, changed: true }
+[INFO] [WIRING] ✓ Data flows correctly through full stack 
+
+stdout | tests/integration/phase9-wiring.test.ts > Phase 9: System Wiring Validation > Data Flow Validation > should validate round-trip data integrity
+[INFO] [WIRING TEST] Starting system wiring validation 
+[DEBUG] [WIRING] Initial crew data {
+  name: '[object Object] lucky',
+  trait1: undefined,
+  trait2: undefined,
+  hp: 100
+}
+[DEBUG] [WIRING] Retrieved crew data {
+  name: '[object Object] lucky',
+  trait1: undefined,
+  trait2: undefined,
+  hp: 100
+}
+[INFO] [WIRING] ✓ Round-trip data integrity maintained 
+
+stdout | tests/integration/phase9-wiring.test.ts > Phase 9: System Wiring Validation > Function Implementation Validation > should have no placeholder/stub implementations
+[INFO] [WIRING TEST] Starting system wiring validation 
+[DEBUG] [WIRING] ✓ takeShoreLeave has substantial implementation { length: 1563 }
+[DEBUG] [WIRING] ✓ runAutoSalvage has substantial implementation { length: 4938 }
+[INFO] [WIRING] Function implementation check { checked: 2, stubs: 0, stubList: [] }
+
+ ✓ tests/unit/survival.test.ts  (17 tests) 131ms
+ ✓ tests/integration/phase9-mutations.test.ts  (9 tests) 130ms
+ ✓ tests/integration/phase9-full-flow.test.ts  (11 tests) 119ms
+ ✓ tests/integration/crew-position-display.test.ts  (11 tests) 136ms
+ ✓ tests/integration/phase9-wiring.test.ts  (13 tests) 128ms
+ ✓ tests/unit/unified-equipment.test.ts  (10 tests) 10ms
+ ✓ tests/unit/ship_layout.test.ts  (3 tests) 10ms
+ ✓ tests/unit/slotManager.edge.test.ts  (4 tests) 7ms
+ ✓ tests/integration/persistence.test.ts  (2 tests) 21ms
+ ✓ tests/integration/wreck_generation_flow.test.ts  (4 tests) 31ms
+ ✓ tests/unit/shipyardStore.test.ts  (2 tests) 13ms
+ ✓ tests/unit/hazard.test.ts  (5 tests) 27ms
+ ✓ tests/unit/wreckGenerator.test.ts  (3 tests) 9ms
+ ❯ tests/integration/salvage-equipment.test.ts  (1 test | 1 failed) 16ms
+   ❯ tests/integration/salvage-equipment.test.ts > Salvage equipment pickup > adds equipment from room to currentRun.collectedEquipment on successful salvage
+     → expected false to be true // Object.is equality
+ ✓ tests/unit/salvage.edge.test.ts  (2 tests) 4ms
+ ✓ tests/unit/mutation.test.ts  (2 tests) 5ms
+stderr | Module.react (file:/home/eric/Typescript/Shipbreakers/node_modules/zustand/esm/index.mjs:41:13)
+[DEPRECATED] Default export is deprecated. Instead use `import { create } from 'zustand'`.
+
+stderr | tests/ui/EquipmentShop.test.tsx > Equipment Shop (UI) > allows buying a reactor and deducts credits / adds to equipment inventory
+[WASM] Module loaded but functions missing
+
+ ✓ tests/ui/EquipmentShop.test.tsx  (1 test) 76ms
+ ✓ tests/game/ShipGrid.test.tsx  (1 test) 53ms
+stderr | Module.react (file:/home/eric/Typescript/Shipbreakers/node_modules/zustand/esm/index.mjs:41:13)
+[DEPRECATED] Default export is deprecated. Instead use `import { create } from 'zustand'`.
+
+stderr | tests/ui/Toast.test.tsx > Toasts UI > renders added toasts and allows dismissal
+`ReactDOMTestUtils.act` is deprecated in favor of `React.act`. Import `act` from `react` instead of `react-dom/test-utils`. See https://react.dev/warnings/react-dom-test-utils for more info.
+
+ ✓ tests/ui/Toast.test.tsx  (1 test) 76ms
+ ✓ tests/ui/CyberButton.test.tsx  (2 tests) 34ms
+ ✓ tests/ui/BilingualLabel.test.tsx  (1 test) 53ms
+ ✓ tests/unit/playerShipLayout.test.ts  (2 tests) 53ms
+ ✓ tests/integration/shore-leave.test.ts  (5 tests) 2173ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/salvage-equipment.test.ts > Salvage equipment pickup > adds equipment from room to currentRun.collectedEquipment on successful salvage
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/integration/salvage-equipment.test.ts:48:28
+     46| 
+     47|     const result = useGameStore.getState().salvageRoom('r1');
+     48|     expect(result.success).toBe(true);
+       |                            ^
+     49| 
+     50|     const s = useGameStore.getState();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+ Test Files  1 failed | 28 passed (29)
+      Tests  1 failed | 200 passed (201)
+   Start at  21:47:20
+   Duration  5.11s (transform 1.46s, setup 3ms, collect 5.99s, tests 3.41s, environment 20.34s, prepare 5.31s)
+

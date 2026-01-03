@@ -115,6 +115,12 @@ Tracking features, polish items, and deferred work for Ship Breakers.
 **Market Events**
 - [ ] Fuel shortage, military surplus, corporate buyout, supply convoy
 
+### Phase 11: UI Fixes & Polish
+- [ ] **Crew UI: Trait Display** - Captain and crew member traits don't show up in crew UI panels
+- [ ] **Character Creation: Name Input Bug** - Typing captain's name causes trait selection to randomly change
+- [ ] **Type Safety: Remaining `as any`** - 17 instances remaining (5 files: fixtures, integration tests)
+- [ ] **Test Coverage** - Complete test suite rewrite for remaining untested files
+
 ### Phase 11+ Ideas
 - [ ] **Advanced Crafting** - Combine equipment for upgrades
 - [ ] **Powered Room States** - Rooms go offline when underpowered

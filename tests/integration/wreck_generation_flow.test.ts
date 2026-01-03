@@ -1,13 +1,18 @@
 import { describe, it, expect } from 'vitest';
 import { generateWreck, generateAvailableWrecks } from '../../src/game/wreckGenerator';
-import { Ship } from '../../src/game/ship';
+import { hasWreckShip } from '../../src/types/utils';
+import type { Ship } from '../../src/game/ship';
 
 describe('Wreck Generation Integration', () => {
   it('generates a wreck with a valid ship layout and unsealed entry', () => {
     // Generate multiple wrecks to ensure consistency
     for (let i = 0; i < 10; i++) {
       const wreck = generateWreck(`seed-integration-${i}`);
-      const ship = (wreck as any).ship as Ship;
+      
+      if (!hasWreckShip(wreck)) {
+        throw new Error('Wreck missing ship');
+      }
+      const ship = wreck.ship;
 
       expect(ship).toBeDefined();
       expect(ship.layout).toBeDefined();
@@ -31,7 +36,11 @@ describe('Wreck Generation Integration', () => {
 
   it('ensures consistency between wreck.rooms and ship.grid', () => {
     const wreck = generateWreck('consistency-seed');
-    const ship = (wreck as any).ship as Ship;
+    
+    if (!hasWreckShip(wreck)) {
+      throw new Error('Wreck missing ship');
+    }
+    const ship = wreck.ship;
 
     // Check a random room from the layout
     const layoutRoom = ship.layout!.rooms[0];
@@ -47,7 +56,11 @@ describe('Wreck Generation Integration', () => {
 
   it('has valid connections for all layout rooms in generateWreck', () => {
     const wreck = generateWreck('connections-test-seed');
-    const ship = (wreck as any).ship as Ship;
+    
+    if (!hasWreckShip(wreck)) {
+      throw new Error('Wreck missing ship');
+    }
+    const ship = wreck.ship;
 
     // All layout rooms should have at least one connection (except single-room wrecks)
     if (ship.layout!.rooms.length > 1) {
@@ -62,7 +75,10 @@ describe('Wreck Generation Integration', () => {
     const wrecks = generateAvailableWrecks(['near'], 'available-connections-test');
     
     for (const wreck of wrecks) {
-      const ship = (wreck as any).ship as Ship;
+      if (!hasWreckShip(wreck)) {
+        throw new Error('Wreck missing ship');
+      }
+      const ship = wreck.ship;
 
       // All layout rooms should have at least one connection
       if (ship.layout!.rooms.length > 1) {

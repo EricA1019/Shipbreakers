@@ -1,6 +1,6 @@
-# Ship Breakers - Prototype MVP
+# Ship Breakers
 
-A roguelike salvage game where you manage a crew salvaging derelict ships to earn enough credits to escape Cinder Station.
+A roguelike salvage game where you manage a crew salvaging derelict ships in a dangerous space graveyard.
 
 ## Quick Start
 
@@ -11,43 +11,80 @@ npm run dev
 
 Open [http://localhost:5173](http://localhost:5173)
 
-## Gameplay
+## Features
 
-- **Goal**: Accumulate 10,000 CR (prototype goal, full game is 250k CR)
-- **Resources**: Credits, Fuel, Crew HP
-- **Core Loop**: Hub → Select Wreck → Travel → Salvage Rooms → Return → Sell Loot
+### Core Gameplay
+- **Salvage Loop**: Travel to wrecks → Salvage rooms → Collect loot → Return → Sell
+- **Crew Management**: Hire, heal, and manage crew members with unique traits
+- **Ship Upgrades**: Install equipment in your ship's rooms
+- **Survival**: Manage food, water, and crew morale
+- **Licensing**: Upgrade your salvage license to access deeper zones
+
+### Game Systems
+- Procedural wreck generation with WASM-based layouts
+- Skill-based hazard resolution (technical, combat, salvage, piloting)
+- Trait and background system for crew identity
+- Shore leave activities for crew recovery
+- Random events during salvage operations
 
 ## Controls
 
-1. **Hub Screen**: View status, select wreck, or sell loot
-2. **Wreck Selection**: Choose from 3 available wrecks (distance vs reward)
-3. **Salvage**: Click rooms to extract loot (hazard checks may damage crew)
-4. **Return**: Come back to station when ready
-5. **Sell**: Convert loot to credits
+| Screen | Action |
+|--------|--------|
+| Hub | Select wreck, manage crew, upgrade ship |
+| Wreck Select | Choose from available wrecks |
+| Salvage | Click rooms/items to salvage |
+| Crew | Manage roster, heal, assign jobs |
+| Shipyard | Install/uninstall equipment |
 
-## Mechanics
-
-- **Fuel**: Consumed by travel (distance × 2 each way)
-- **HP**: Crew health, lost on failed hazard checks
-- **Time**: Limited salvage window per run (20 actions)
-- **Hazards**: Success rate = `(skill × 20) - (hazard × 10)`
-- **Damage**: Failed checks = `hazard × 10` HP
-
-## Lose Conditions
-
-- Crew HP reaches 0 (death)
-- Insufficient fuel to return (stranded)
-
-## Testing
+## Development
 
 ```bash
-npm run test      # Run unit tests
+npm run dev       # Start dev server
 npm run build     # Production build
+npm run test      # Run test suite (200+ tests)
+npm run lint      # Run linter
 ```
 
 ## Tech Stack
 
-- React 19 + TypeScript
+- **React 19** - UI framework
+- **TypeScript 5.9** - Type safety
+- **Zustand** - State management
+- **Vite** - Build tool
+- **Vitest** - Testing
+- **Tailwind CSS** - Styling
+- **Rust/WASM** - Procedural generation
+
+## Project Structure
+
+```
+src/
+├── components/     # React components
+│   ├── screens/    # Full-screen views
+│   ├── ui/         # Reusable UI components
+│   ├── game/       # Game-specific components
+│   └── debug/      # Development tools
+├── game/           # Game logic
+│   ├── data/       # Static data (equipment, traits)
+│   ├── systems/    # Game systems (crew, events)
+│   └── wasm/       # WASM bridge
+├── services/       # Business logic services
+├── stores/         # Zustand stores
+├── types/          # TypeScript types
+│   └── domains/    # Domain-specific type re-exports
+└── utils/          # Utility functions
+```
+
+## Documentation
+
+- [ARCHITECTURE.md](docs/ARCHITECTURE.md) - System architecture
+- [SERVICE_DEPENDENCIES.md](docs/SERVICE_DEPENDENCIES.md) - Service dependency graph
+- [docs/](docs/) - Phase implementation docs
+
+## License
+
+MIT
 - Zustand (state management)
 - Tailwind CSS (styling)
 - Vite (build tool)

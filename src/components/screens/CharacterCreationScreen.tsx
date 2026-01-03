@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useGameStore } from "../../stores/gameStore";
-import CyberPanel from "../ui/CyberPanel";
-import CyberButton from "../ui/CyberButton";
+import IndustrialPanel from "../ui/IndustrialPanel";
+import IndustrialButton from "../ui/IndustrialButton";
+import { useAudio } from "../../hooks/useAudio";
 import type { ScreenProps, TraitId } from "../../types";
 import { getCharacterCreationTraitOptions } from "../../game/systems/CrewGenerator";
 import { TRAITS } from "../../game/data/traits";
@@ -10,6 +11,12 @@ export default function CharacterCreationScreen({ onNavigate }: ScreenProps) {
   const { createCaptain } = useGameStore((s) => ({
     createCaptain: (s as any).createCaptain,
   }));
+
+  const audio = useAudio();
+
+  useEffect(() => {
+    audio.playTransition();
+  }, []);
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -29,6 +36,7 @@ export default function CharacterCreationScreen({ onNavigate }: ScreenProps) {
 
   const begin = () => {
     if (!canStart) return;
+    audio.playTransition();
     createCaptain({
       firstName: firstName.trim(),
       lastName: lastName.trim(),
@@ -38,88 +46,203 @@ export default function CharacterCreationScreen({ onNavigate }: ScreenProps) {
     onNavigate("hub");
   };
 
-  return (
-    <div className="max-w-4xl mx-auto">
-      <CyberPanel title="NEW GAME // CAPTAIN CREATION" className="mb-4">
-        <div className="text-zinc-300 text-sm">
-          Enter your captain name. You start with 1 locked trait and choose 1 from 3.
-        </div>
-      </CyberPanel>
+  // Background options for display purposes (not actually used in current impl)
+  const backgrounds = [
+    { 
+      id: "ex-military",
+      icon: "⚔️",
+      name: "EX-MILITARY",
+      desc: "Former combat veteran with tactical experience. Proficient in handling hazardous situations and salvaging military hardware.",
+      traits: ["BRAVE", "TACTICAL"],
+      selected: chosenTrait === lockedTrait
+    },
+    { 
+      id: "engineer",
+      icon: "🔧",
+      name: "ENGINEER",
+      desc: "Experienced with ship systems and technical salvage. Can identify valuable components and repair critical equipment.",
+      traits: ["METHODICAL", "PRECISE"],
+      selected: false
+    },
+    { 
+      id: "hauler",
+      icon: "🚚",
+      name: "HAULER",
+      desc: "Former cargo pilot with logistics expertise. Efficient at managing inventory and maximizing cargo space.",
+      traits: ["EFFICIENT", "PRAGMATIC"],
+      selected: false
+    },
+    { 
+      id: "prospector",
+      icon: "💎",
+      name: "PROSPECTOR",
+      desc: "Veteran salvager with an eye for valuable finds. Increased chance of discovering rare and exotic loot.",
+      traits: ["GREEDY", "OBSERVANT"],
+      selected: false
+    },
+  ];
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <CyberPanel title="IDENTITY">
-          <div className="space-y-3">
-            <div>
-              <div className="text-zinc-400 text-xs mb-1">FIRST NAME</div>
-              <input
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                className="w-full bg-zinc-950 border border-amber-600/20 px-3 py-2 text-amber-50"
-                placeholder="e.g., Kai"
-              />
+  return (
+    <div className="max-w-[900px] mx-auto flex items-center justify-center min-h-screen py-8">
+      <div className="w-full space-y-4">
+        {/* Header */}
+        <IndustrialPanel
+          title="NEW SALVAGE LICENSE"
+          subtitle="CINDER STATION · REGISTRATION TERMINAL"
+        >
+          <div />
+        </IndustrialPanel>
+
+        {/* Character Name */}
+        <IndustrialPanel title="APPLICANT DETAILS">
+          <div className="mb-4">
+            <label className="block text-xs text-amber-400 uppercase tracking-wider mb-2">
+              Captain Name
+            </label>
+            <input
+              type="text"
+              value={`${firstName} ${lastName}`.trim() || ""}
+              onChange={(e) => {
+                const parts = e.target.value.split(" ");
+                setFirstName(parts[0] || "");
+                setLastName(parts.slice(1).join(" ") || "");
+              }}
+              className="w-full bg-black/40 border border-white/12 rounded-lg px-4 py-3 text-zinc-100 font-['JetBrains_Mono'] text-sm transition-all focus:outline-none focus:border-amber-400 focus:bg-amber-500/5 focus:shadow-[0_0_0_3px_rgba(242,178,51,0.1)]"
+              placeholder="Enter your name..."
+            />
+          </div>
+          <div className="text-xs text-zinc-400 italic">
+            This will be used in station communications and crew rosters.
+          </div>
+        </IndustrialPanel>
+
+        {/* Background Selection */}
+        <IndustrialPanel 
+          title="BACKGROUND SELECTION"
+          subtitle="CHOOSE YOUR STARTING SPECIALTY"
+        >
+          <div className="grid grid-cols-2 gap-3 mb-5">
+            {backgrounds.map((bg) => (
+              <div
+                key={bg.id}
+                className={`bg-black/26 border-2 rounded-xl p-4 transition-all cursor-pointer ${
+                  bg.selected
+                    ? 'border-cyan-500 bg-cyan-500/8 shadow-[0_0_20px_rgba(56,224,199,0.2)]'
+                    : 'border-white/8 hover:border-amber-400 hover:bg-amber-500/5'
+                }`}
+                onClick={() => {
+                  audio.playClick();
+                  // This is just visual, actual trait selection is below
+                }}
+              >
+                <div className="font-['Orbitron'] font-bold text-sm mb-2">
+                  {bg.icon} {bg.name}
+                </div>
+                <div className="text-xs text-zinc-400 leading-relaxed mb-3">
+                  {bg.desc}
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {bg.traits.map((trait, i) => (
+                    <div
+                      key={i}
+                      className="text-[9px] px-2 py-1 rounded-md uppercase tracking-wide bg-cyan-500/12 border border-cyan-500/25 text-cyan-400"
+                    >
+                      {trait}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Actual trait selection (using game logic) */}
+          <div className="bg-black/30 border border-white/8 rounded-xl p-4 mb-4">
+            <div className="text-xs text-amber-400 uppercase tracking-wider mb-3">
+              Starting Trait (Locked)
             </div>
-            <div>
-              <div className="text-zinc-400 text-xs mb-1">LAST NAME</div>
-              <input
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                className="w-full bg-zinc-950 border border-amber-600/20 px-3 py-2 text-amber-50"
-                placeholder="e.g., Vance"
-              />
-            </div>
-            <div className="text-zinc-500 text-xs">
-              Preview: <span className="text-amber-200">{(firstName || "Player").trim()} {(lastName || "Captain").trim()}</span>
+            <div className="bg-cyan-500/8 border border-cyan-500/20 rounded-lg p-3">
+              <div className="font-['Orbitron'] font-bold text-sm text-cyan-400 mb-1">
+                {TRAITS[lockedTrait]?.name ?? lockedTrait}
+              </div>
+              <div className="text-xs text-zinc-400">
+                {TRAITS[lockedTrait]?.description ?? ""}
+              </div>
             </div>
           </div>
-        </CyberPanel>
 
-        <CyberPanel title="TRAITS">
-          <div className="space-y-3">
-            <div className="bg-zinc-950 border border-amber-600/20 p-3">
-              <div className="text-amber-400 text-xs font-bold">LOCKED TRAIT</div>
-              <div className="text-amber-100 font-bold">{TRAITS[lockedTrait]?.name ?? lockedTrait}</div>
-              <div className="text-zinc-400 text-xs">{TRAITS[lockedTrait]?.description ?? ""}</div>
+          <div className="mb-4">
+            <div className="text-xs text-amber-400 uppercase tracking-wider mb-3">
+              Choose Additional Trait
             </div>
-
-            <div className="text-amber-400 text-xs font-bold">CHOOSE ONE</div>
             <div className="space-y-2">
               {options.map((id) => (
                 <label
                   key={id}
-                  className={`block cursor-pointer border p-3 bg-zinc-950 transition ${
-                    chosenTrait === id ? "border-amber-500" : "border-amber-600/20 hover:border-amber-500/50"
+                  onClick={() => audio.playClick()}
+                  className={`flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-all border-2 ${
+                    chosenTrait === id
+                      ? 'border-cyan-500 bg-cyan-500/8'
+                      : 'border-white/8 bg-black/20 hover:border-amber-400/50'
                   }`}
                 >
-                  <div className="flex items-start gap-2">
-                    <input
-                      type="radio"
-                      name="trait"
-                      checked={chosenTrait === id}
-                      onChange={() => setChosenTrait(id)}
-                      className="mt-1"
-                    />
-                    <div>
-                      <div className="text-amber-100 font-bold">{TRAITS[id]?.name ?? id}</div>
-                      <div className="text-zinc-400 text-xs">{TRAITS[id]?.description ?? ""}</div>
+                  <input
+                    type="radio"
+                    name="trait"
+                    checked={chosenTrait === id}
+                    onChange={() => setChosenTrait(id)}
+                    className="mt-1 accent-cyan-500"
+                  />
+                  <div className="flex-1">
+                    <div className="font-['Orbitron'] font-bold text-sm text-zinc-100 mb-1">
+                      {TRAITS[id]?.name ?? id}
+                    </div>
+                    <div className="text-xs text-zinc-400">
+                      {TRAITS[id]?.description ?? ""}
                     </div>
                   </div>
                 </label>
               ))}
             </div>
-
-            <div className="pt-2">
-              <CyberButton
-                variant="primary"
-                glowColor="amber"
-                onClick={begin}
-                disabled={!canStart}
-                className="w-full"
-              >
-                Begin
-              </CyberButton>
-            </div>
           </div>
-        </CyberPanel>
+
+          {chosenTrait && (
+            <div className="p-4 bg-cyan-500/5 border border-cyan-500/15 rounded-xl">
+              <div className="text-xs text-cyan-400 mb-1 font-semibold">
+                💡 SELECTED: {TRAITS[chosenTrait as TraitId]?.name?.toUpperCase()}
+              </div>
+              <div className="text-xs text-zinc-400">
+                Your background provides permanent bonuses and affects starting equipment. Choose wisely - this decision is permanent.
+              </div>
+            </div>
+          )}
+        </IndustrialPanel>
+
+        {/* Actions */}
+        <div className="grid grid-cols-2 gap-3">
+          <IndustrialButton
+            variant="primary"
+            onClick={begin}
+            disabled={!canStart}
+            title="✓ Confirm & Begin"
+            description="Start your salvage career"
+          />
+          <IndustrialButton
+            onClick={() => {
+              audio.playClick();
+              // Randomize names
+              const firstNames = ["Kai", "Zara", "Rex", "Nova", "Marcus", "Elena"];
+              const lastNames = ["Chen", "Volt", "Storm", "Kane", "Drake", "Reeves"];
+              setFirstName(firstNames[Math.floor(Math.random() * firstNames.length)]);
+              setLastName(lastNames[Math.floor(Math.random() * lastNames.length)]);
+              // Random trait
+              if (options.length > 0) {
+                setChosenTrait(options[Math.floor(Math.random() * options.length)]);
+              }
+            }}
+            title="🔄 Randomize"
+            description="Generate random character"
+          />
+        </div>
       </div>
     </div>
   );

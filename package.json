@@ -12,6 +12,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fontsource/orbitron": "^5.2.8",
     "clsx": "^1.2.1",
     "localforage": "^1.10.0",
     "react": "^19.2.0",
@@ -27,6 +28,7 @@
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "@vitejs/plugin-react": "^5.1.1",
+    "@vitest/coverage-v8": "^1.6.1",
     "autoprefixer": "^10.4.14",
     "jsdom": "^27.4.0",
     "postcss": "^8.4.24",

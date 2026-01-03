@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { useGameStore } from '../../src/stores/gameStore';
 import { initializePlayerShip } from '../../src/game/data/playerShip';
-import type { Item } from '../../src/types';
+import { createMockEquipment } from '../fixtures';
+import type { Item, PlayerShipRoom } from '../../src/types';
 import { getShipyardFee } from '../../src/game/systems/slotManager';
 
 describe('Shipyard store actions', () => {
@@ -19,10 +20,11 @@ describe('Shipyard store actions', () => {
     const ship = state.playerShip!;
 
     // Find an engineering slot
-    const engineRoom = ship.grid.flat().find((r: any) => r.roomType === 'engine') as any;
+    const engineRoom = ship.grid.flat().find((r) => 'roomType' in r && r.roomType === 'engine') as PlayerShipRoom | undefined;
+    if (!engineRoom) throw new Error('No engine room found');
     const slot = engineRoom.slots[0];
 
-    const item: Item = {
+    const item = createMockEquipment({
       id: 'test-item-1',
       name: 'Test Engineering Module',
       description: 'Test',
@@ -30,9 +32,8 @@ describe('Shipyard store actions', () => {
       tier: 1,
       rarity: 'common',
       powerDraw: 0,
-      effects: [],
       value: 100,
-    };
+    });
 
     useGameStore.setState({ equipmentInventory: [item], credits: 10000 });
     const beforeCredits = useGameStore.getState().credits;
@@ -45,10 +46,10 @@ describe('Shipyard store actions', () => {
 
     const s2 = useGameStore.getState();
     // slot should be installed
-    const updatedRoom = s2.playerShip!.grid.flat().find((r: any) => r.id === roomId);
-    const updatedSlot = updatedRoom.slots.find((s: any) => s.id === slotId);
-    expect(updatedSlot.installedItem).not.toBeNull();
-    expect(s2.equipmentInventory.find((it: any) => it.id === item.id)).toBeUndefined();
+    const updatedRoom = s2.playerShip!.grid.flat().find((r) => 'id' in r && r.id === roomId) as PlayerShipRoom;
+    const updatedSlot = updatedRoom.slots.find((s) => s.id === slotId);
+    expect(updatedSlot?.installedItem).not.toBeNull();
+    expect(s2.equipmentInventory.find((it) => it.id === item.id)).toBeUndefined();
 
     const fee = getShipyardFee(s2.licenseTier, 'install');
     expect(s2.credits).toBe(beforeCredits - fee);
@@ -58,11 +59,12 @@ describe('Shipyard store actions', () => {
     const state = useGameStore.getState();
     const ship = state.playerShip!;
 
-    const engineRoom = ship.grid.flat().find((r: any) => r.roomType === 'engine') as any;
+    const engineRoom = ship.grid.flat().find((r) => 'roomType' in r && r.roomType === 'engine') as PlayerShipRoom | undefined;
+    if (!engineRoom) throw new Error('No engine room found');
     const slot = engineRoom.slots[0];
 
     // Pre-install an item directly
-    const item: Item = {
+    const item = createMockEquipment({
       id: 'test-item-2',
       name: 'Removable Module',
       description: 'Test',
@@ -70,12 +72,11 @@ describe('Shipyard store actions', () => {
       tier: 1,
       rarity: 'common',
       powerDraw: 0,
-      effects: [],
       value: 200,
-    };
+    });
 
     // Directly install
-    slot.installedItem = item as any;
+    slot.installedItem = item;
     useGameStore.setState({ playerShip: ship, credits: 10000, equipmentInventory: [] });
 
     const beforeCredits = useGameStore.getState().credits;
@@ -83,7 +84,7 @@ describe('Shipyard store actions', () => {
     expect(ok).toBe(true);
 
     const s2 = useGameStore.getState();
-    expect(s2.equipmentInventory.find((it: any) => it.id === item.id)).toBeDefined();
+    expect(s2.equipmentInventory.find((it) => it.id === item.id)).toBeDefined();
     const fee = getShipyardFee(s2.licenseTier, 'uninstall');
     expect(s2.credits).toBe(beforeCredits - fee);
   });

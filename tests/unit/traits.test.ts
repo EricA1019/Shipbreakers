@@ -196,12 +196,12 @@ describe("Trait System Stress Tests", () => {
   });
 
   it("should handle all possible single trait combinations", () => {
-    const allTraits = ["veteran", "greedy", "lucky", "unlucky", "tough", "paranoid", "meticulous", "tireless"];
+    const allTraits: CrewMember['traits'][number][] = ["veteran", "greedy", "lucky", "unlucky", "tough", "paranoid", "meticulous", "tireless"];
 
     for (const trait of allTraits) {
       const crew: CrewMember = {
         ...baseCrew,
-        traits: [trait as any],
+        traits: [trait],
       };
       const effects = calculateTraitEffects(crew);
       expect(typeof effects.skillMod).toBe("number");

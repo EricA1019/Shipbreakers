@@ -1,26 +1,25 @@
 import { useState, useEffect } from "react";
 import { useGameStore } from "../../stores/gameStore";
-import ItemCard from "../ui/ItemCard";
 import FuelDepotModal from "../ui/FuelDepotModal";
 import MedicalBayModal from "../ui/MedicalBayModal";
 import StatsModal from "../ui/StatsModal";
 import SettingsModal from "../ui/SettingsModal";
 import ConfirmationModal from "../ui/ConfirmationModal";
-import CrewRosterPanel from "../ui/CrewRosterPanel";
 import HireCrewModal from "../ui/HireCrewModal";
 import CrewSelectionModal from "../ui/CrewSelectionModal";
 import StationBarPanel from "../ui/StationBarPanel";
 import ShoreLeavePanel from "../ui/ShoreLeavePanel";
-import ShipStatusPanel from "../game/ShipStatusPanel";
-import CyberPanel from "../ui/CyberPanel";
-import CyberButton from "../ui/CyberButton";
-import BilingualLabel from "../ui/BilingualLabel";
-import { HUB_GRAFFITI, pickCorp } from "../../utils/flavorText";
+import IndustrialPanel from "../ui/IndustrialPanel";
+import IndustrialButton from "../ui/IndustrialButton";
+import StatChip from "../ui/StatChip";
+import StatusPill from "../ui/StatusPill";
+import { useAudio } from "../../hooks/useAudio";
 import { LICENSE_TIERS } from "../../types";
 
 import type { ScreenProps } from "../../types";
 
 export default function HubScreen({ onNavigate }: ScreenProps) {
+  const audio = useAudio();
   const [showFuelDepot, setShowFuelDepot] = useState(false);
   const [showMedicalBay, setShowMedicalBay] = useState(false);
   const [showStats, setShowStats] = useState(false);
@@ -33,31 +32,32 @@ export default function HubScreen({ onNavigate }: ScreenProps) {
     initializeGame,
     currentRun,
     sellAllLoot,
-    inventory,
-    sellItem,
     day,
     licenseDaysRemaining,
     licenseFee,
     payLicense,
     licenseTier,
     upgradeLicense,
-    equipmentInventory,
+    crewRoster,
   } = useGameStore((s) => ({
     credits: s.credits,
     fuel: s.fuel,
     initializeGame: s.initializeGame,
     currentRun: s.currentRun,
     sellAllLoot: s.sellAllLoot,
-    inventory: s.inventory,
-    sellItem: s.sellItem,
     day: s.day,
     licenseDaysRemaining: s.licenseDaysRemaining,
     licenseFee: s.licenseFee,
     payLicense: s.payLicense,
     licenseTier: s.licenseTier,
     upgradeLicense: s.upgradeLicense,
-    equipmentInventory: s.equipmentInventory || [],
+    crewRoster: s.crewRoster,
   }));
+
+  // Play transition sound on mount
+  useEffect(() => {
+    audio.playTransition();
+  }, []);
 
   // Determine next tier for upgrade
   const tierProgression: Array<typeof licenseTier> = [
@@ -71,16 +71,16 @@ export default function HubScreen({ onNavigate }: ScreenProps) {
       ? tierProgression[currentTierIndex + 1]
       : null;
 
-  // Local flavor: pick a corp name for the hub (small bilingual label)
-  const corp = pickCorp(day);
-
   const hasLootToSell =
     currentRun?.status === "completed" && currentRun.collectedLoot.length > 0;
   const lootValue = hasLootToSell
     ? currentRun.collectedLoot.reduce((s, l) => s + l.value, 0)
     : 0;
 
+  const fuelPercent = Math.round((fuel / 100) * 100);
+
   const handleSellLoot = () => {
+    audio.playSuccess();
     sellAllLoot();
   };
 
@@ -116,302 +116,315 @@ export default function HubScreen({ onNavigate }: ScreenProps) {
   }, [showStats, showFuelDepot, showMedicalBay]);
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <CyberPanel title="[SHIPBREAKERS] CINDER STATION // HUD" className="mb-4">
-        <div className="flex justify-between items-center">
-          <div className="flex flex-col">
-            <div className="text-amber-100 font-bold text-xl tracking-wider text-glow-amber">
-              STATION STATUS:{" "}
-              <span className="text-green-400 text-glow-green">[NOMINAL]</span>
-            </div>
-            <div className="mt-1 text-xs text-amber-200/60">
-              {HUB_GRAFFITI[day % HUB_GRAFFITI.length]}
-            </div>
-          </div>
-          <div className="flex gap-4 text-sm items-center">
-            <div>
-              💰{" "}
-              <span className="text-amber-100 text-glow-amber">
-                {credits} CR
-              </span>
-            </div>
-            <div>
-              ⛽ <span className="text-orange-100 text-glow-amber">{fuel}</span>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => onNavigate("shipyard")}
-                className="px-3 py-1 bg-zinc-800 border border-amber-600/30 text-amber-400 hover:bg-zinc-700 text-xs rounded"
-              >
-                🔧 SHIPYARD
-              </button>
-              <button
-                onClick={() => onNavigate("shop")}
-                className="px-3 py-1 bg-zinc-800 border border-amber-600/30 text-amber-400 hover:bg-zinc-700 text-xs rounded"
-              >
-                🛒 SHOP
-              </button>
-            </div>
-          </div>
-        </div>
-      </CyberPanel>
+    <div className="max-w-[1400px] mx-auto">
+      {/* TOP STATUS BAR */}
+      <IndustrialPanel
+        title="CINDER STATION // HUB"
+        subtitle={`SALVAGE LICENSE #47832 · TIER: ${licenseTier.toUpperCase()} · STATUS: ACTIVE`}
+        showTape
+        headerRight={
+          <>
+            <StatChip label="DAY" value={day} variant="amber" />
+            <StatChip
+              label="CREDITS"
+              value={`${(credits / 1000).toFixed(1)}K`}
+              variant="cyan"
+            />
+            <StatChip label="FUEL" value={`${fuelPercent}%`} variant="green" />
+          </>
+        }
+      >
+        <></>
+      </IndustrialPanel>
 
-      {/* Sell Loot Banner */}
-      {hasLootToSell && (
-        <CyberPanel
-          variant="warning"
-          title="💰 LOOT READY TO SELL"
-          className="mb-4 animate-pulse"
-        >
-          <div className="text-amber-100 mb-3">
-            You have {currentRun.collectedLoot.length} items worth {lootValue}{" "}
-            CR from your last run.
-          </div>
-          <CyberButton
-            variant="primary"
-            glowColor="amber"
-            onClick={handleSellLoot}
+      <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-4">
+        {/* LEFT COLUMN */}
+        <div>
+          {/* STATION SERVICES */}
+          <IndustrialPanel
+            title="STATION SERVICES"
+            showTape
+            headerRight={<StatusPill icon="dot" label="DOCKED" />}
           >
-            Sell All Loot ({lootValue} CR)
-            {/* Equipment Inventory Banner */}
-            {equipmentInventory.length > 0 && (
-              <CyberPanel
-                variant="default"
-                title="🔧 EQUIPMENT INVENTORY"
-                className="mb-4"
-              >
-                <div className="text-amber-100 mb-3">
-                  You have {equipmentInventory.length} pieces of equipment.
-                  Visit the Shipyard to install them on your ship.
-                </div>
-                <div className="grid grid-cols-4 gap-2 text-xs">
-                  {equipmentInventory.slice(0, 8).map((item) => (
-                    <div
-                      key={item.id}
-                      className="bg-zinc-800 border border-amber-600/20 p-2 rounded"
-                    >
-                      <div className="text-amber-400 font-bold">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <IndustrialButton
+                title="🗺️ Mission Select"
+                description="Browse wrecks & plan runs"
+                variant="primary"
+                onClick={() => onNavigate("select")}
+              />
+              <IndustrialButton
+                title="⛽ Fuel Depot"
+                description="Refuel ship (85 cr/unit)"
+                variant="info"
+                onClick={() => setShowFuelDepot(true)}
+              />
+              <IndustrialButton
+                title="🏥 Medical Bay"
+                description="Heal injured crew (200 cr)"
+                variant="success"
+                onClick={() => setShowMedicalBay(true)}
+              />
+              <IndustrialButton
+                title="🛠️ Ship Equipment"
+                description="Manage loadout & power"
+                variant="info"
+                onClick={() => onNavigate("shipyard")}
+              />
+              <IndustrialButton
+                title="🛒 Equipment Shop"
+                description="Buy reactors, tools, systems"
+                variant="info"
+                onClick={() => onNavigate("shop")}
+              />
+              <IndustrialButton
+                title="👥 Crew Management"
+                description="Roster, skills, assignments"
+                variant="info"
+                onClick={() => onNavigate("crew")}
+              />
+            </div>
+          </IndustrialPanel>
+
+          {/* HAUL MANAGEMENT */}
+          {hasLootToSell && (
+            <IndustrialPanel
+              title="HAUL MANAGEMENT"
+              subtitle={`${currentRun.collectedLoot.length} ITEMS IN CARGO · ${(lootValue / 1000).toFixed(1)}K VALUE`}
+              showTape
+              variant="warning"
+            >
+              <div className="space-y-2 mb-4">
+                {currentRun.collectedLoot.slice(0, 3).map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex justify-between items-center p-3 rounded-xl border border-[rgba(255,255,255,0.08)] bg-[rgba(0,0,0,0.28)]"
+                  >
+                    <div>
+                      <div className="font-semibold text-[13px]">
                         {item.name}
                       </div>
-                      <div className="text-zinc-400">Tier {item.tier}</div>
+                      <div className="text-[11px] text-[var(--muted)]">
+                        {item.rarity} · {item.category}
+                      </div>
                     </div>
-                  ))}
-                </div>
-                {equipmentInventory.length > 8 && (
-                  <div className="mt-2 text-zinc-400 text-xs">
-                    +{equipmentInventory.length - 8} more items
+                    <div
+                      className="font-['Orbitron'] text-lg font-extrabold text-[var(--cyan)]"
+                      style={{ textShadow: "var(--glowC)" }}
+                    >
+                      {(item.value / 1000).toFixed(1)}K
+                    </div>
                   </div>
-                )}
-                <div className="mt-3">
-                  <CyberButton
-                    variant="secondary"
-                    glowColor="amber"
-                    onClick={() => onNavigate("shipyard")}
-                  >
-                    Go to Shipyard
-                  </CyberButton>
-                </div>
-              </CyberPanel>
-            )}
-          </CyberButton>
-        </CyberPanel>
-      )}
+                ))}
+              </div>
+              <IndustrialButton
+                title="💰 Sell All Loot"
+                description={`Cash out entire cargo hold (${lootValue} credits)`}
+                variant="success"
+                fullWidth
+                onClick={handleSellLoot}
+              />
+            </IndustrialPanel>
+          )}
 
-      <div className="grid grid-cols-12 gap-4">
-        <div className="col-span-3 space-y-4">
-          <CyberPanel title="CREW ROSTER">
-            <div className="mb-2 flex justify-end">
-              <button
-                className="text-amber-500 text-xs hover:text-amber-400 border border-amber-600/30 px-2 py-1 rounded"
-                onClick={() => onNavigate("crew")}
-                title="View detailed crew stats"
-              >
-                📋 View All
-              </button>
+          {/* LICENSE STATUS */}
+          <IndustrialPanel
+            title="LICENSE STATUS"
+            showTape
+            variant={licenseDaysRemaining <= 2 ? "warning" : "default"}
+            headerRight={
+              <StatusPill
+                icon="dot"
+                label={`${licenseDaysRemaining} DAYS LEFT`}
+                variant={licenseDaysRemaining <= 2 ? "warning" : "default"}
+              />
+            }
+          >
+            <div className="space-y-4">
+              {/* Current License */}
+              <div>
+                <div className="flex justify-between mb-2">
+                  <span className="text-[11px] text-[var(--muted)] uppercase tracking-wider">
+                    Current: {licenseTier.toUpperCase()}
+                  </span>
+                  <span className="text-[11px] text-[var(--haz)]">
+                    FEE: {licenseFee.toLocaleString()} cr
+                  </span>
+                </div>
+                {licenseDaysRemaining <= 2 && (
+                  <IndustrialButton
+                    title="💳 Pay License Fee"
+                    description="Extend license by 7 days"
+                    variant="primary"
+                    fullWidth
+                    disabled={credits < licenseFee}
+                    onClick={payLicense}
+                  />
+                )}
+              </div>
+
+              {/* Upgrade Option */}
+              {nextTier && (
+                <div>
+                  <div className="flex justify-between mb-2">
+                    <span className="text-[11px] text-[var(--muted)] uppercase tracking-wider">
+                      Upgrade: {nextTier.toUpperCase()}
+                    </span>
+                    <span className="text-[11px] text-[var(--cyan)]">
+                      COST: {LICENSE_TIERS[nextTier].cost.toLocaleString()} cr
+                    </span>
+                  </div>
+                  <IndustrialButton
+                    title="⬆️ Upgrade License Tier"
+                    description="Access high-value zones & better stock"
+                    variant="info"
+                    fullWidth
+                    disabled={credits < LICENSE_TIERS[nextTier].cost}
+                    onClick={() => upgradeLicense(nextTier)}
+                  />
+                </div>
+              )}
             </div>
-            <CrewRosterPanel />
-            <div className="mt-3 flex gap-2">
+          </IndustrialPanel>
+        </div>
+
+        {/* RIGHT COLUMN */}
+        <div>
+          {/* CREW ROSTER */}
+          <IndustrialPanel
+            title="CREW ROSTER"
+            subtitle={`${crewRoster.length} / 4 MEMBERS`}
+            showTape
+            headerRight={<StatusPill icon="dot" label="LINK STABLE" />}
+          >
+            <div className="space-y-3 mb-4">
+              {crewRoster.map((crew) => {
+                const hpPercent = (crew.hp / crew.maxHp) * 100;
+                const staminaPercent = (crew.stamina / 100) * 100;
+                const sanityPercent = (crew.sanity / 100) * 100;
+                const isInjured = hpPercent < 50;
+
+                return (
+                  <div
+                    key={crew.id}
+                    className="rounded-xl border border-[rgba(255,255,255,0.08)] bg-[rgba(0,0,0,0.26)] p-3"
+                  >
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <div className="font-bold text-[13px]">
+                          {crew.name.toUpperCase()}
+                        </div>
+                        <div className="text-[10px] text-[var(--muted)] uppercase tracking-wider mt-1">
+                          {crew.background || "HAULER"}
+                        </div>
+                      </div>
+                      <div
+                        className={`text-[10px] px-2 py-1 rounded-full border ${isInjured ? "border-[rgba(255,75,75,0.25)] bg-[rgba(0,0,0,0.28)] text-[var(--bad)]" : "border-[rgba(113,255,120,0.25)] bg-[rgba(0,0,0,0.28)] text-[var(--ok)]"} uppercase`}
+                      >
+                        {isInjured ? "INJURED" : "ACTIVE"}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 text-[10px]">
+                      <div>
+                        <div className="text-[var(--muted)] uppercase tracking-wider">
+                          HP
+                        </div>
+                        <div
+                          className="h-1 rounded-full bg-[rgba(255,255,255,0.08)] mt-1 overflow-hidden"
+                          style={{ border: "1px solid rgba(0,0,0,0.35)" }}
+                        >
+                          <div
+                            className="h-full"
+                            style={{
+                              width: `${hpPercent}%`,
+                              background: isInjured
+                                ? "linear-gradient(90deg, rgba(255,75,75,0.85), rgba(255,106,42,0.85))"
+                                : "linear-gradient(90deg, rgba(113,255,120,0.85), rgba(56,224,199,0.85))",
+                            }}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[var(--muted)] uppercase tracking-wider">
+                          STAMINA
+                        </div>
+                        <div
+                          className="h-1 rounded-full bg-[rgba(255,255,255,0.08)] mt-1 overflow-hidden"
+                          style={{ border: "1px solid rgba(0,0,0,0.35)" }}
+                        >
+                          <div
+                            className="h-full"
+                            style={{
+                              width: `${staminaPercent}%`,
+                              background:
+                                "linear-gradient(90deg, rgba(113,255,120,0.85), rgba(56,224,199,0.85))",
+                            }}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[var(--muted)] uppercase tracking-wider">
+                          SANITY
+                        </div>
+                        <div
+                          className="h-1 rounded-full bg-[rgba(255,255,255,0.08)] mt-1 overflow-hidden"
+                          style={{ border: "1px solid rgba(0,0,0,0.35)" }}
+                        >
+                          <div
+                            className="h-full"
+                            style={{
+                              width: `${sanityPercent}%`,
+                              background:
+                                "linear-gradient(90deg, rgba(113,255,120,0.85), rgba(56,224,199,0.85))",
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="flex gap-2">
               <HireCrewModal />
               <CrewSelectionModal />
             </div>
-          </CyberPanel>
+          </IndustrialPanel>
 
+          {/* STATION BAR */}
           <StationBarPanel />
           <ShoreLeavePanel />
 
-          <CyberPanel
-            title="LICENSE STATUS"
-            variant={licenseDaysRemaining <= 0 ? "warning" : "default"}
-          >
-            <div className="space-y-2 text-sm">
-              <div className="mb-2">
-                <BilingualLabel en={corp.en} zh={corp.zh} size="sm" />
-              </div>
-              <div className="text-zinc-400">
-                DAY__________{" "}
-                <span className="text-amber-400 text-glow-amber">{day}</span>
-              </div>
-              <div className="text-zinc-400">
-                TIER_________{" "}
-                <span className="text-amber-400 text-glow-amber font-bold">
-                  {licenseTier.toUpperCase()}
-                </span>
-              </div>
-              <div className="text-zinc-400">
-                DAYS_LEFT____{" "}
-                <span
-                  className={
-                    licenseDaysRemaining <= 2
-                      ? "text-red-400 text-glow-red"
-                      : "text-green-400 text-glow-green"
-                  }
-                >
-                  {licenseDaysRemaining}
-                </span>
-              </div>
-
-              {/* License upgrade section */}
-              {nextTier && (
-                <div className="bg-amber-900/20 border border-amber-600/30 p-2 rounded mt-2">
-                  <div className="text-amber-400 text-xs font-bold mb-1 text-glow-amber">
-                    Upgrade Available
-                  </div>
-                  <div className="text-zinc-400 text-xs mb-1">
-                    {LICENSE_TIERS[nextTier].label}
-                  </div>
-                  <CyberButton
-                    onClick={() => upgradeLicense(nextTier)}
-                    disabled={credits < LICENSE_TIERS[nextTier].cost}
-                    variant="primary"
-                    glowColor="amber"
-                    className="w-full text-xs"
-                  >
-                    Upgrade ({LICENSE_TIERS[nextTier].cost} CR)
-                  </CyberButton>
-                </div>
-              )}
-
-              {/* Renewal section */}
-              {licenseDaysRemaining <= 2 && licenseDaysRemaining > 0 && (
-                <CyberButton
-                  onClick={payLicense}
-                  disabled={credits < licenseFee}
-                  variant="danger"
-                  glowColor="amber"
-                  className="w-full mt-2 text-xs"
-                >
-                  Renew License ({licenseFee} CR)
-                </CyberButton>
-              )}
-
-              {licenseDaysRemaining <= 0 && (
-                <div className="mt-2 text-red-500 text-xs font-bold text-glow-red-strong">
-                  ⚠️ LICENSE EXPIRED!
-                </div>
-              )}
+          {/* SYSTEM OPTIONS */}
+          <IndustrialPanel title="SYSTEM" showTape>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <IndustrialButton
+                title="📊 Statistics"
+                description="View career stats"
+                variant="info"
+                onClick={() => setShowStats(true)}
+              />
+              <IndustrialButton
+                title="⚙️ Settings"
+                description="Audio, controls, gameplay"
+                variant="info"
+                onClick={() => setShowSettings(true)}
+              />
+              <IndustrialButton
+                title="📦 Sell Loot"
+                description="Individual item sales"
+                variant="info"
+                onClick={() => onNavigate("sell")}
+              />
+              <IndustrialButton
+                title="🔄 Reset Game"
+                description="Start new career"
+                variant="danger"
+                onClick={handleReset}
+              />
             </div>
-          </CyberPanel>
+          </IndustrialPanel>
         </div>
-
-        <div className="col-span-5">
-          <ShipStatusPanel />
-        </div>
-
-        <CyberPanel
-          title={`INVENTORY (${inventory.length} items)`}
-          className="col-span-4"
-        >
-          {inventory.length > 0 ? (
-            <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto">
-              {inventory.map((item) => (
-                <ItemCard
-                  key={item.id}
-                  item={item}
-                  onSell={() => sellItem(item.id)}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="text-zinc-500 text-sm">No items in inventory</div>
-          )}
-        </CyberPanel>
-      </div>
-
-      <CyberPanel title="MISSION OBJECTIVE" className="mt-4">
-        <div className="flex justify-between items-center">
-          <div>
-            <div className="text-amber-100 font-bold text-glow-amber">
-              TARGET: 10,000 CR (Prototype)
-            </div>
-          </div>
-          <div className="flex gap-2 flex-wrap">
-            <CyberButton
-              variant="primary"
-              glowColor="amber"
-              onClick={() => setShowFuelDepot(true)}
-              className="text-xs relative group"
-            >
-              ⛽ Fuel Depot
-              <span className="hidden group-hover:inline absolute -top-6 left-0 bg-amber-800 px-1 py-0.5 rounded text-[10px] text-amber-100 whitespace-nowrap">
-                (F)
-              </span>
-            </CyberButton>
-            <CyberButton
-              variant="primary"
-              glowColor="green"
-              onClick={() => setShowMedicalBay(true)}
-              className="text-xs relative group"
-            >
-              🏥 Medical Bay
-              <span className="hidden group-hover:inline absolute -top-6 left-0 bg-amber-800 px-1 py-0.5 rounded text-[10px] text-amber-100 whitespace-nowrap">
-                (M)
-              </span>
-            </CyberButton>
-            <CyberButton
-              variant="primary"
-              glowColor="cyan"
-              onClick={() => setShowStats(true)}
-              className="text-xs relative group"
-            >
-              📊 Stats
-              <span className="hidden group-hover:inline absolute -top-6 left-0 bg-amber-800 px-1 py-0.5 rounded text-[10px] text-amber-100 whitespace-nowrap">
-                (S)
-              </span>
-            </CyberButton>
-            <CyberButton
-              variant="secondary"
-              onClick={() => setShowSettings(true)}
-              className="text-xs"
-            >
-              ⚙️ Settings
-            </CyberButton>
-            <CyberButton
-              variant="primary"
-              glowColor="amber"
-              onClick={() => onNavigate("select")}
-              className="text-xs"
-            >
-              🚀 Select Wreck
-            </CyberButton>
-            <CyberButton
-              variant="danger"
-              onClick={handleReset}
-              className="text-xs"
-            >
-              🔄 Reset
-            </CyberButton>
-          </div>
-        </div>
-      </CyberPanel>
-
-      <div className="mt-4">
-        <CyberButton
-          variant="primary"
-          glowColor="amber"
-          onClick={() => onNavigate("sell")}
-        >
-          Sell Loot
-        </CyberButton>
       </div>
 
       <FuelDepotModal

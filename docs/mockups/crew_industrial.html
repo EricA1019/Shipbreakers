@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Crew Management - Industrial Mockup</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;800&display=swap');
+    
+    :root {
+      --bg0: #07080a;
+      --bg1: #0b0d10;
+      --haz: #f2b233;
+      --cyan: #38e0c7;
+      --rust: #ff6a2a;
+      --ok: #71ff78;
+      --bad: #ff4b4b;
+      --text: #e9edf2;
+      --muted: #8b95a5;
+      --glowH: 0 0 12px rgba(242, 178, 51, 0.6);
+      --glowC: 0 0 12px rgba(56, 224, 199, 0.5);
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'JetBrains Mono', monospace;
+      background: radial-gradient(ellipse at top, rgba(15, 20, 35, 1), var(--bg0) 60%);
+      color: var(--text);
+      padding: 20px;
+      min-height: 100vh;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    /* Industrial Panel */
+    .panel {
+      background: rgba(11, 13, 16, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 16px;
+      padding: 0;
+      margin-bottom: 16px;
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .panel-header {
+      padding: 14px 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .panel-title {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 800;
+      font-size: 15px;
+      letter-spacing: 0.8px;
+      color: var(--haz);
+      text-shadow: var(--glowH);
+      text-transform: uppercase;
+    }
+    
+    .panel-subtitle {
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+    
+    .panel-content {
+      padding: 20px;
+    }
+    
+    .tape {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: repeating-linear-gradient(
+        45deg,
+        var(--haz),
+        var(--haz) 10px,
+        rgba(0, 0, 0, 0.6) 10px,
+        rgba(0, 0, 0, 0.6) 20px
+      );
+      opacity: 0.22;
+    }
+    
+    /* Stat Chip */
+    .stat-chip {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 6px 12px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      margin-left: 8px;
+    }
+    
+    .stat-chip-label {
+      font-size: 9px;
+      color: var(--muted);
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    
+    .stat-chip-value {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 800;
+      font-size: 16px;
+      color: var(--cyan);
+      text-shadow: var(--glowC);
+    }
+    
+    /* Crew Card */
+    .crew-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+      gap: 16px;
+    }
+    
+    .crew-card {
+      background: rgba(0, 0, 0, 0.26);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 16px;
+      position: relative;
+      transition: all 0.2s;
+    }
+    
+    .crew-card:hover {
+      border-color: var(--haz);
+      background: rgba(242, 178, 51, 0.04);
+    }
+    
+    .crew-card.captain {
+      border-color: var(--cyan);
+      background: rgba(56, 224, 199, 0.05);
+    }
+    
+    .crew-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+    
+    .crew-name {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 800;
+      font-size: 16px;
+      color: var(--haz);
+      text-shadow: var(--glowH);
+    }
+    
+    .crew-role {
+      font-size: 10px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-top: 2px;
+    }
+    
+    .crew-badge {
+      font-size: 9px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      background: rgba(56, 224, 199, 0.15);
+      border: 1px solid rgba(56, 224, 199, 0.3);
+      color: var(--cyan);
+    }
+    
+    /* Progress Bars */
+    .stat-bars {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin: 16px 0;
+    }
+    
+    .stat-bar-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .stat-bar-label {
+      font-size: 10px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      width: 70px;
+    }
+    
+    .stat-bar-track {
+      flex: 1;
+      height: 8px;
+      background: rgba(0, 0, 0, 0.4);
+      border-radius: 4px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    
+    .stat-bar-fill {
+      height: 100%;
+      transition: width 0.3s;
+      background: var(--ok);
+    }
+    
+    .stat-bar-fill.hp {
+      background: linear-gradient(90deg, var(--bad), var(--rust), var(--ok));
+    }
+    
+    .stat-bar-fill.stamina {
+      background: linear-gradient(90deg, var(--rust), var(--haz), var(--ok));
+    }
+    
+    .stat-bar-fill.sanity {
+      background: linear-gradient(90deg, var(--bad), var(--haz), var(--cyan));
+    }
+    
+    .stat-bar-value {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: 11px;
+      color: var(--text);
+      min-width: 40px;
+      text-align: right;
+    }
+    
+    /* Trait Tags */
+    .trait-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    
+    .trait-tag {
+      font-size: 9px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      background: rgba(56, 224, 199, 0.12);
+      border: 1px solid rgba(56, 224, 199, 0.25);
+      color: var(--cyan);
+    }
+    
+    .trait-tag.negative {
+      background: rgba(255, 75, 75, 0.12);
+      border: 1px solid rgba(255, 75, 75, 0.25);
+      color: var(--bad);
+    }
+    
+    /* Equipment Slots */
+    .equipment-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-top: 12px;
+    }
+    
+    .equipment-slot {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 8px;
+      padding: 8px;
+      font-size: 10px;
+    }
+    
+    .equipment-slot.equipped {
+      border-color: var(--haz);
+      background: rgba(242, 178, 51, 0.05);
+    }
+    
+    .equipment-slot-label {
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+    
+    .equipment-slot-item {
+      color: var(--text);
+      font-weight: 600;
+    }
+    
+    .equipment-slot.empty .equipment-slot-item {
+      color: var(--muted);
+      font-style: italic;
+    }
+    
+    /* Industrial Button */
+    .industrial-btn {
+      background: rgba(11, 13, 16, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      padding: 12px 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      text-align: center;
+      width: 100%;
+    }
+    
+    .industrial-btn:hover {
+      border-color: var(--haz);
+      background: rgba(242, 178, 51, 0.08);
+    }
+    
+    .btn-title {
+      font-weight: 700;
+      font-size: 13px;
+      color: var(--text);
+    }
+    
+    .btn-desc {
+      font-size: 10px;
+      color: var(--muted);
+    }
+    
+    /* Action Grid */
+    .action-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-top: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="panel">
+      <div class="tape"></div>
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">CREW ROSTER</div>
+          <div class="panel-subtitle">PERSONNEL MANAGEMENT · CINDER STATION</div>
+        </div>
+        <div style="display: flex; align-items: center;">
+          <div class="stat-chip">
+            <div class="stat-chip-label">ACTIVE</div>
+            <div class="stat-chip-value">4</div>
+          </div>
+          <div class="stat-chip">
+            <div class="stat-chip-label">MAX</div>
+            <div class="stat-chip-value">6</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Crew Cards -->
+    <div class="crew-grid">
+      <!-- Captain (You) -->
+      <div class="crew-card captain">
+        <div class="crew-header">
+          <div>
+            <div class="crew-name">ZARA CHEN</div>
+            <div class="crew-role">Captain · Ex-Military</div>
+          </div>
+          <div class="crew-badge">CAPTAIN</div>
+        </div>
+
+        <div class="trait-list">
+          <div class="trait-tag">BRAVE</div>
+          <div class="trait-tag">TACTICAL</div>
+        </div>
+
+        <div class="stat-bars">
+          <div class="stat-bar-row">
+            <div class="stat-bar-label">HP</div>
+            <div class="stat-bar-track">
+              <div class="stat-bar-fill hp" style="width: 100%;"></div>
+            </div>
+            <div class="stat-bar-value">5/5</div>
+          </div>
+          <div class="stat-bar-row">
+            <div class="stat-bar-label">STAMINA</div>
+            <div class="stat-bar-track">
+              <div class="stat-bar-fill stamina" style="width: 80%;"></div>
+            </div>
+            <div class="stat-bar-value">8/10</div>
+          </div>
+          <div class="stat-bar-row">
+            <div class="stat-bar-label">SANITY</div>
+            <div class="stat-bar-track">
+              <div class="stat-bar-fill sanity" style="width: 90%;"></div>
+            </div>
+            <div class="stat-bar-value">9/10</div>
+          </div>
+        </div>
+
+        <div class="equipment-grid">
+          <div class="equipment-slot equipped">
+            <div class="equipment-slot-label">Weapon</div>
+            <div class="equipment-slot-item">Plasma Cutter</div>
+          </div>
+          <div class="equipment-slot equipped">
+            <div class="equipment-slot-label">Armor</div>
+            <div class="equipment-slot-item">EVA Suit Mk2</div>
+          </div>
+          <div class="equipment-slot equipped">
+            <div class="equipment-slot-label">Tool</div>
+            <div class="equipment-slot-item">Scanner</div>
+          </div>
+          <div class="equipment-slot empty">
+            <div class="equipment-slot-label">Accessory</div>
+            <div class="equipment-slot-item">Empty</div>
+          </div>
+        </div>
+
+        <div class="action-grid">
+          <button class="industrial-btn">
+            <div class="btn-title">⚙️ Manage Gear</div>
+          </button>
+          <button class="industrial-btn">
+            <div class="btn-title">💊 First Aid</div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Crew Member 1 -->
+      <div class="crew-card">
+        <div class="crew-header">
+          <div>
+            <div class="crew-name">MARCUS VOLT</div>
+            <div class="crew-role">Engineer · Veteran</div>
+          </div>
+        </div>
+
+        <div class="trait-list">
+          <div class="trait-tag">METHODICAL</div>
+          <div class="trait-tag">PRECISE</div>
+          <div class="trait-tag negative">SLOW</div>
+        </div>
+
+        <div class="stat-bars">
+          <div class="stat-bar-row">
+            <div class="stat-bar-label">HP</div>
+            <div class="stat-bar-track">
+              <div class="stat-bar-fill hp" style="width: 75%;"></div>
+            </div>
+            <div class="stat-bar-value">3/4</div>
+          </div>
+          <div class="stat-bar-row">
+            <div class="stat-bar-label">STAMINA</div>
+            <div class="stat-bar-track">
+              <div class="stat-bar-fill stamina" style="width: 60%;"></div>
+            </div>
+            <div class="stat-bar-value">6/10</div>
+          </div>
+          <div class="stat-bar-row">
+            <div class="stat-bar-label">SANITY</div>
+            <div class="stat-bar-track">
+              <div class="stat-bar-fill sanity" style="width: 100%;"></div>
+            </div>
+            <div class="stat-bar-value">10/10</div>
+          </div>
+        </div>
+
+        <div class="equipment-grid">
+          <div class="equipment-slot equipped">
+            <div class="equipment-slot-label">Weapon</div>
+            <div class="equipment-slot-item">Wrench</div>
+          </div>
+          <div class="equipment-slot equipped">
+            <div class="equipment-slot-label">Armor</div>
+            <div class="equipment-slot-item">Work Suit</div>
+          </div>
+          <div class="equipment-slot equipped">
+            <div class="equipment-slot-label">Tool</div>
+            <div class="equipment-slot-item">Repair Kit</div>
+          </div>
+          <div class="equipment-slot equipped">
+            <div class="equipment-slot-label">Accessory</div>
+            <div class="equipment-slot-item">Headlamp</div>
+          </div>
+        </div>
+
+        <div class="action-grid">
+          <button class="industrial-btn">
+            <div class="btn-title">⚙️ Manage Gear</div>
+          </button>
+          <button class="industrial-btn">
+            <div class="btn-title">💊 First Aid</div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Crew Member 2 -->
+      <div class="crew-card">
+        <div class="crew-header">
+          <div>
+            <div class="crew-name">NINA KOWALSKI</div>
+            <div class="crew-role">Medic · Rookie</div>
+          </div>
+        </div>
+
+        <div class="trait-list">
+          <div class="trait-tag">CAREFUL</div>
+          <div class="trait-tag negative">FRAGILE</div>
+        </div>
+
+        <div class="stat-bars">
+          <div class="stat-bar-row">
+            <div class="stat-bar-label">HP</div>
+            <div class="stat-bar-track">
+              <div class="stat-bar-fill hp" style="width: 100%;"></div>
+            </div>
+            <div class="stat-bar-value">3/3</div>
+          </div>
+          <div class="stat-bar-row">
+            <div class="stat-bar-label">STAMINA</div>
+            <div class="stat-bar-track">
+              <div class="stat-bar-fill stamina" style="width: 90%;"></div>
+            </div>
+            <div class="stat-bar-value">9/10</div>
+          </div>
+          <div class="stat-bar-row">
+            <div class="stat-bar-label">SANITY</div>
+            <div class="stat-bar-track">
+              <div class="stat-bar-fill sanity" style="width: 70%;"></div>
+            </div>
+            <div class="stat-bar-value">7/10</div>
+          </div>
+        </div>
+
+        <div class="equipment-grid">
+          <div class="equipment-slot empty">
+            <div class="equipment-slot-label">Weapon</div>
+            <div class="equipment-slot-item">Empty</div>
+          </div>
+          <div class="equipment-slot equipped">
+            <div class="equipment-slot-label">Armor</div>
+            <div class="equipment-slot-item">EVA Suit</div>
+          </div>
+          <div class="equipment-slot equipped">
+            <div class="equipment-slot-label">Tool</div>
+            <div class="equipment-slot-item">Med Kit</div>
+          </div>
+          <div class="equipment-slot empty">
+            <div class="equipment-slot-label">Accessory</div>
+            <div class="equipment-slot-item">Empty</div>
+          </div>
+        </div>
+
+        <div class="action-grid">
+          <button class="industrial-btn">
+            <div class="btn-title">⚙️ Manage Gear</div>
+          </button>
+          <button class="industrial-btn">
+            <div class="btn-title">💊 First Aid</div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Crew Member 3 -->
+      <div class="crew-card">
+        <div class="crew-header">
+          <div>
+            <div class="crew-name">REX "HAULER" HOLT</div>
+            <div class="crew-role">Cargo Specialist</div>
+          </div>
+        </div>
+
+        <div class="trait-list">
+          <div class="trait-tag">EFFICIENT</div>
+          <div class="trait-tag">STRONG</div>
+        </div>
+
+        <div class="stat-bars">
+          <div class="stat-bar-row">
+            <div class="stat-bar-label">HP</div>
+            <div class="stat-bar-track">
+              <div class="stat-bar-fill hp" style="width: 100%;"></div>
+            </div>
+            <div class="stat-bar-value">5/5</div>
+          </div>
+          <div class="stat-bar-row">
+            <div class="stat-bar-label">STAMINA</div>
+            <div class="stat-bar-track">
+              <div class="stat-bar-fill stamina" style="width: 40%;"></div>
+            </div>
+            <div class="stat-bar-value">4/10</div>
+          </div>
+          <div class="stat-bar-row">
+            <div class="stat-bar-label">SANITY</div>
+            <div class="stat-bar-track">
+              <div class="stat-bar-fill sanity" style="width: 85%;"></div>
+            </div>
+            <div class="stat-bar-value">8/10</div>
+          </div>
+        </div>
+
+        <div class="equipment-grid">
+          <div class="equipment-slot equipped">
+            <div class="equipment-slot-label">Weapon</div>
+            <div class="equipment-slot-item">Crowbar</div>
+          </div>
+          <div class="equipment-slot equipped">
+            <div class="equipment-slot-label">Armor</div>
+            <div class="equipment-slot-item">Heavy Suit</div>
+          </div>
+          <div class="equipment-slot empty">
+            <div class="equipment-slot-label">Tool</div>
+            <div class="equipment-slot-item">Empty</div>
+          </div>
+          <div class="equipment-slot equipped">
+            <div class="equipment-slot-label">Accessory</div>
+            <div class="equipment-slot-item">Cargo Harness</div>
+          </div>
+        </div>
+
+        <div class="action-grid">
+          <button class="industrial-btn">
+            <div class="btn-title">⚙️ Manage Gear</div>
+          </button>
+          <button class="industrial-btn">
+            <div class="btn-title">💊 First Aid</div>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="panel" style="margin-top: 20px;">
+      <div class="panel-content" style="padding: 16px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+          <button class="industrial-btn">
+            <div class="btn-title">👥 Hire Crew</div>
+            <div class="btn-desc">Visit recruitment office</div>
+          </button>
+          <button class="industrial-btn">
+            <div class="btn-title">🛡️ Manage Equipment</div>
+            <div class="btn-desc">Open inventory</div>
+          </button>
+          <button class="industrial-btn">
+            <div class="btn-title">← Back to Hub</div>
+            <div class="btn-desc">Return to station</div>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

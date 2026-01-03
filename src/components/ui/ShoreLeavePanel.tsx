@@ -1,6 +1,6 @@
 import { useGameStore } from "../../stores/gameStore";
-import CyberPanel from "./CyberPanel";
-import CyberButton from "./CyberButton";
+import IndustrialPanel from "./IndustrialPanel";
+import IndustrialButton from "./IndustrialButton";
 import { SHORE_LEAVE_OPTIONS } from "../../game/constants";
 
 export default function ShoreLeavePanel() {
@@ -25,41 +25,41 @@ export default function ShoreLeavePanel() {
     (neededBeer === 0 || luxuryDrink >= neededBeer);
 
   return (
-    <CyberPanel title="SHORE LEAVE">
-      <div className="space-y-2 text-xs text-zinc-300">
-        <div className="text-zinc-500">
-          Restore stamina/sanity. Higher tiers may trigger social events.
+    <IndustrialPanel title="SHORE LEAVE" subtitle="CREW RECOVERY OPTIONS">
+      <div className="space-y-3 text-xs">
+        <div className="text-[var(--muted)]">
+          Restore stamina & sanity. Higher tiers may trigger social events.
         </div>
 
-        <div className="grid grid-cols-1 gap-2">
-          <CyberButton
-            variant="secondary"
-            className="text-xs"
+        <div className="space-y-2">
+          <IndustrialButton
+            title="😴 Rest"
+            description={`Basic recovery · ${rest.cost} cr`}
+            variant="info"
+            fullWidth
             onClick={() => takeShoreLeave?.("rest")}
             disabled={!canRest}
-          >
-            Rest — {rest.cost} CR
-          </CyberButton>
+          />
 
-          <CyberButton
-            variant="secondary"
-            className="text-xs"
+          <IndustrialButton
+            title="🎮 Recreation"
+            description={`Better recovery · ${recreation.cost} cr`}
+            variant="info"
+            fullWidth
             onClick={() => takeShoreLeave?.("recreation")}
             disabled={!canRecreation}
-          >
-            Recreation — {recreation.cost} CR
-          </CyberButton>
+          />
 
-          <CyberButton
-            variant="secondary"
-            className="text-xs"
+          <IndustrialButton
+            title="🎉 Party"
+            description={`Full recovery · ${party.cost} cr ${neededBeer ? `+ ${neededBeer} luxury` : ""}`}
+            variant="info"
+            fullWidth
             onClick={() => takeShoreLeave?.("party")}
             disabled={!canParty}
-          >
-            Party — {party.cost} CR {neededBeer ? `(+${neededBeer} luxury)` : ""}
-          </CyberButton>
+          />
         </div>
       </div>
-    </CyberPanel>
+    </IndustrialPanel>
   );
 }

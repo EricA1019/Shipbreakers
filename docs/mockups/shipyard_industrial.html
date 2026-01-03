@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shipyard - Industrial Mockup</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;800&display=swap');
+    
+    :root {
+      --bg0: #07080a;
+      --bg1: #0b0d10;
+      --haz: #f2b233;
+      --cyan: #38e0c7;
+      --rust: #ff6a2a;
+      --ok: #71ff78;
+      --bad: #ff4b4b;
+      --text: #e9edf2;
+      --muted: #8b95a5;
+      --glowH: 0 0 12px rgba(242, 178, 51, 0.6);
+      --glowC: 0 0 12px rgba(56, 224, 199, 0.5);
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'JetBrains Mono', monospace;
+      background: radial-gradient(ellipse at top, rgba(15, 20, 35, 1), var(--bg0) 60%);
+      color: var(--text);
+      padding: 20px;
+      min-height: 100vh;
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    
+    .panel {
+      background: rgba(11, 13, 16, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 16px;
+      padding: 0;
+      margin-bottom: 16px;
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .panel-header {
+      padding: 14px 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .panel-title {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 800;
+      font-size: 15px;
+      letter-spacing: 0.8px;
+      color: var(--haz);
+      text-shadow: var(--glowH);
+      text-transform: uppercase;
+    }
+    
+    .panel-subtitle {
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+    
+    .panel-content {
+      padding: 20px;
+    }
+    
+    .tape {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: repeating-linear-gradient(
+        45deg,
+        var(--haz),
+        var(--haz) 10px,
+        rgba(0, 0, 0, 0.6) 10px,
+        rgba(0, 0, 0, 0.6) 20px
+      );
+      opacity: 0.22;
+    }
+    
+    /* Stat Chip */
+    .stat-chip {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 6px 12px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      margin-left: 8px;
+    }
+    
+    .stat-chip-label {
+      font-size: 9px;
+      color: var(--muted);
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    
+    .stat-chip-value {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 800;
+      font-size: 16px;
+      color: var(--cyan);
+      text-shadow: var(--glowC);
+    }
+    
+    .stat-chip-value.amber {
+      color: var(--haz);
+      text-shadow: var(--glowH);
+    }
+    
+    /* Two Column Layout */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    
+    /* Ship Schematic */
+    .ship-visual {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 12px;
+      padding: 24px;
+      text-align: center;
+      min-height: 300px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .ship-icon {
+      font-size: 120px;
+      opacity: 0.3;
+      margin-bottom: 16px;
+    }
+    
+    .ship-name {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 800;
+      font-size: 18px;
+      color: var(--cyan);
+      text-shadow: var(--glowC);
+      margin-bottom: 8px;
+    }
+    
+    .ship-class {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+    
+    /* Equipment Slot */
+    .slot-grid {
+      display: grid;
+      gap: 12px;
+    }
+    
+    .equipment-slot {
+      background: rgba(0, 0, 0, 0.26);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 16px;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+    
+    .equipment-slot:hover {
+      border-color: var(--haz);
+      background: rgba(242, 178, 51, 0.04);
+    }
+    
+    .equipment-slot.equipped {
+      border-color: var(--cyan);
+      background: rgba(56, 224, 199, 0.05);
+    }
+    
+    .equipment-slot.empty {
+      border-style: dashed;
+      opacity: 0.6;
+    }
+    
+    .slot-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+    
+    .slot-icon {
+      font-size: 32px;
+      margin-bottom: 8px;
+    }
+    
+    .slot-type {
+      font-size: 10px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 6px;
+    }
+    
+    .slot-name {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    
+    .slot-stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    
+    .stat-tag {
+      font-size: 9px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      background: rgba(56, 224, 199, 0.12);
+      border: 1px solid rgba(56, 224, 199, 0.25);
+      color: var(--cyan);
+    }
+    
+    .slot-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    
+    .slot-btn {
+      flex: 1;
+      background: rgba(11, 13, 16, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      padding: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    
+    .slot-btn:hover {
+      border-color: var(--haz);
+      background: rgba(242, 178, 51, 0.08);
+    }
+    
+    .slot-btn.remove:hover {
+      border-color: var(--bad);
+      background: rgba(255, 75, 75, 0.08);
+      color: var(--bad);
+    }
+    
+    .slot-btn.install {
+      border-color: var(--ok);
+      background: rgba(113, 255, 120, 0.12);
+    }
+    
+    .slot-btn.install:hover {
+      background: rgba(113, 255, 120, 0.2);
+      box-shadow: 0 0 16px rgba(113, 255, 120, 0.2);
+    }
+    
+    /* Ship Stats Summary */
+    .stats-summary {
+      background: rgba(0, 0, 0, 0.26);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 16px;
+    }
+    
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    
+    .stat-row:last-child {
+      border-bottom: none;
+    }
+    
+    .stat-label {
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .stat-value {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--cyan);
+    }
+    
+    /* Industrial Button */
+    .industrial-btn {
+      background: rgba(11, 13, 16, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      padding: 14px 20px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      text-align: center;
+      width: 100%;
+    }
+    
+    .industrial-btn:hover {
+      border-color: var(--haz);
+      background: rgba(242, 178, 51, 0.08);
+    }
+    
+    .btn-title {
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--text);
+    }
+    
+    .btn-desc {
+      font-size: 11px;
+      color: var(--muted);
+    }
+    
+    @media (max-width: 1024px) {
+      .two-col {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="panel">
+      <div class="tape"></div>
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">SHIPYARD</div>
+          <div class="panel-subtitle">SHIP CONFIGURATION · EQUIPMENT MANAGEMENT</div>
+        </div>
+        <div style="display: flex; align-items: center;">
+          <div class="stat-chip">
+            <div class="stat-chip-label">CREDITS</div>
+            <div class="stat-chip-value amber">12.5K</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Two Column Layout -->
+    <div class="two-col">
+      <!-- Left: Ship Visual & Stats -->
+      <div>
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">YOUR SHIP</div>
+          </div>
+          <div class="panel-content">
+            <div class="ship-visual">
+              <div class="ship-icon">🚀</div>
+              <div class="ship-name">THE BREAKER</div>
+              <div class="ship-class">Modified Hauler · Class B</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">SHIP STATS</div>
+          </div>
+          <div class="panel-content">
+            <div class="stats-summary">
+              <div class="stat-row">
+                <span class="stat-label">Cargo Capacity</span>
+                <span class="stat-value">20 slots</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">Fuel Efficiency</span>
+                <span class="stat-value">+15%</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">Scanner Range</span>
+                <span class="stat-value">4 tiles</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">Life Support</span>
+                <span class="stat-value">Enhanced</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">Equipment Slots</span>
+                <span class="stat-value">4 / 5 used</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Equipment Slots -->
+      <div>
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">INSTALLED EQUIPMENT</div>
+          </div>
+          <div class="panel-content">
+            <div class="slot-grid">
+              <!-- Slot 1 (Equipped) -->
+              <div class="equipment-slot equipped">
+                <div class="slot-type">CARGO SYSTEM</div>
+                <div class="slot-header">
+                  <div>
+                    <div class="slot-icon">📦</div>
+                    <div class="slot-name">Expanded Cargo Bay Mk2</div>
+                  </div>
+                </div>
+                <div style="font-size: 11px; color: var(--muted); line-height: 1.4;">
+                  Enhanced storage system with magnetic clamps and automated sorting.
+                </div>
+                <div class="slot-stats">
+                  <div class="stat-tag">+5 CAPACITY</div>
+                  <div class="stat-tag">AUTO-SORT</div>
+                </div>
+                <div class="slot-actions">
+                  <button class="slot-btn">📋 Details</button>
+                  <button class="slot-btn remove">🗑️ Remove</button>
+                </div>
+              </div>
+
+              <!-- Slot 2 (Equipped) -->
+              <div class="equipment-slot equipped">
+                <div class="slot-type">NAVIGATION SYSTEM</div>
+                <div class="slot-header">
+                  <div>
+                    <div class="slot-icon">🗺️</div>
+                    <div class="slot-name">Precision Nav Computer</div>
+                  </div>
+                </div>
+                <div style="font-size: 11px; color: var(--muted); line-height: 1.4;">
+                  Advanced navigation with optimized route calculation for fuel savings.
+                </div>
+                <div class="slot-stats">
+                  <div class="stat-tag">-15% FUEL COST</div>
+                  <div class="stat-tag">FAST TRAVEL</div>
+                </div>
+                <div class="slot-actions">
+                  <button class="slot-btn">📋 Details</button>
+                  <button class="slot-btn remove">🗑️ Remove</button>
+                </div>
+              </div>
+
+              <!-- Slot 3 (Equipped) -->
+              <div class="equipment-slot equipped">
+                <div class="slot-type">SENSOR ARRAY</div>
+                <div class="slot-header">
+                  <div>
+                    <div class="slot-icon">📡</div>
+                    <div class="slot-name">Long-Range Scanner</div>
+                  </div>
+                </div>
+                <div style="font-size: 11px; color: var(--muted); line-height: 1.4;">
+                  Enhanced sensor suite for detecting valuable salvage and hazards.
+                </div>
+                <div class="slot-stats">
+                  <div class="stat-tag">+2 RANGE</div>
+                  <div class="stat-tag">HAZARD DETECT</div>
+                </div>
+                <div class="slot-actions">
+                  <button class="slot-btn">📋 Details</button>
+                  <button class="slot-btn remove">🗑️ Remove</button>
+                </div>
+              </div>
+
+              <!-- Slot 4 (Equipped) -->
+              <div class="equipment-slot equipped">
+                <div class="slot-type">LIFE SUPPORT</div>
+                <div class="slot-header">
+                  <div>
+                    <div class="slot-icon">🫁</div>
+                    <div class="slot-name">Enhanced Life Support</div>
+                  </div>
+                </div>
+                <div style="font-size: 11px; color: var(--muted); line-height: 1.4;">
+                  Upgraded oxygen recycling and medical bay for crew health.
+                </div>
+                <div class="slot-stats">
+                  <div class="stat-tag">+1 HP REGEN</div>
+                  <div class="stat-tag">+20% RECOVERY</div>
+                </div>
+                <div class="slot-actions">
+                  <button class="slot-btn">📋 Details</button>
+                  <button class="slot-btn remove">🗑️ Remove</button>
+                </div>
+              </div>
+
+              <!-- Slot 5 (Empty) -->
+              <div class="equipment-slot empty">
+                <div class="slot-type">UTILITY SLOT</div>
+                <div class="slot-header">
+                  <div>
+                    <div class="slot-icon">➕</div>
+                    <div class="slot-name">Empty Slot</div>
+                  </div>
+                </div>
+                <div style="font-size: 11px; color: var(--muted); line-height: 1.4; font-style: italic;">
+                  Install additional equipment to enhance ship capabilities.
+                </div>
+                <div class="slot-actions">
+                  <button class="slot-btn install">🔧 Install Equipment</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="panel">
+      <div class="panel-content" style="padding: 16px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+          <button class="industrial-btn">
+            <div class="btn-title">🛒 Browse Equipment</div>
+            <div class="btn-desc">Visit equipment shop</div>
+          </button>
+          <button class="industrial-btn">
+            <div class="btn-title">🔧 Ship Upgrades</div>
+            <div class="btn-desc">View available improvements</div>
+          </button>
+          <button class="industrial-btn">
+            <div class="btn-title">← Back to Station</div>
+            <div class="btn-desc">Return to hub</div>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

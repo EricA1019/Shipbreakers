@@ -12,6 +12,34 @@
   font-display: swap;
 }
 @font-face {
+  font-family: 'JetBrains Mono';
+  src: url('/fonts/jetbrains-mono/JetBrainsMono-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('/fonts/jetbrains-mono/JetBrainsMono-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('/fonts/jetbrains-mono/JetBrainsMono-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('/fonts/jetbrains-mono/JetBrainsMono-ExtraBold.woff2') format('woff2');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
   font-family: 'Noto Sans Mono CJK SC';
   src: url('/fonts/noto-cjk/NotoSansMonoCJKsc-Regular.otf') format('opentype');
   font-weight: 400;
@@ -20,14 +48,39 @@
 }
 
 :root {
+  /* Industrial "Breaker" Color Palette */
+  --bg0: #07080a;
+  --bg1: #0b0d10;
+  --panel: #0f1216cc;
+  --plate: #0c0f13;
+  --line: #2a2f37;
+  --line2: #151a21;
+  
+  --haz: #f2b233;   /* hazard amber */
+  --cyan: #38e0c7;  /* scan teal */
+  --rust: #ff6a2a;  /* heat/oxide */
+  --ok: #71ff78;    /* safe */
+  --bad: #ff4b4b;   /* danger */
+  
+  --text: #e9edf2;
+  --muted: #8b95a5;
+  --muted2: #586173;
+  
+  --shadow: 0 18px 60px rgba(0,0,0,.55);
+  --glowA: 0 0 18px rgba(242,178,51,.14);
+  --glowC: 0 0 18px rgba(56,224,199,.12);
+  
+  --radius: 14px;
+  --radius2: 18px;
+
   /* Primary UI font (mono for UI readability), fallback to system CJK-safe fonts */
   font-family: 'JetBrains Mono', 'Noto Sans Mono CJK SC', ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace;
   line-height: 1.5;
   font-weight: 400;
 
   color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  color: var(--text);
+  background-color: var(--bg0);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -50,6 +103,29 @@ body {
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
+  background: radial-gradient(1200px 700px at 20% 15%, rgba(56,224,199,.10), transparent 55%),
+              radial-gradient(900px 600px at 85% 20%, rgba(242,178,51,.10), transparent 55%),
+              radial-gradient(900px 700px at 35% 90%, rgba(255,106,42,.08), transparent 55%),
+              linear-gradient(180deg, var(--bg0), var(--bg1));
+}
+
+/* Subtle scan sweep overlay */
+body::after {
+  content: "";
+  position: fixed;
+  inset: -60px 0 0 0;
+  height: 180px;
+  background: linear-gradient(180deg, rgba(56,224,199,.0), rgba(56,224,199,.10), rgba(56,224,199,.0));
+  filter: blur(2px);
+  animation: sweep 6.5s linear infinite;
+  pointer-events: none;
+  opacity: .35;
+  z-index: 9999;
+}
+
+@keyframes sweep {
+  0% { transform: translateY(-320px); }
+  100% { transform: translateY(calc(100vh + 320px)); }
 }
 
 h1 {

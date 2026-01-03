@@ -1,8 +1,20 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { useGameStore } from "../../src/stores/gameStore";
+import { createMockCrew, createMockStats, createMockSettings } from "../fixtures";
 
 describe("Survival Penalties", () => {
   beforeEach(() => {
+    const crew = createMockCrew({
+      id: "crew1",
+      firstName: "Test",
+      lastName: "Crew",
+      name: "Test Crew",
+      background: "station_rat",
+      skills: { technical: 2, combat: 2, salvage: 2, piloting: 2 },
+      currentJob: "idle",
+      status: "active",
+    });
+
     useGameStore.setState({
       credits: 10000,
       fuel: 100,
@@ -14,33 +26,14 @@ describe("Survival Penalties", () => {
       crewEfficiencyPenalty: 0,
       day: 1,
       licenseDaysRemaining: 14,
-      crewRoster: [
-        {
-          id: "crew1",
-          firstName: "Test",
-          lastName: "Crew",
-          name: "Test Crew",
-          background: "station_rat" as any,
-          traits: [],
-          skills: { technical: 2, combat: 2, salvage: 2, piloting: 2 },
-          skillXp: { technical: 0, combat: 0, salvage: 0, piloting: 0 },
-          hp: 100,
-          maxHp: 100,
-          stamina: 100,
-          maxStamina: 100,
-          sanity: 100,
-          maxSanity: 100,
-          currentJob: "idle",
-          status: "active",
-        },
-      ],
-      crew: null as any,
+      crewRoster: [crew],
+      crew: crew,
       currentRun: null,
       availableWrecks: [],
       inventory: [],
       equipmentInventory: [],
-      stats: { daysPlayed: 1 } as any,
-      settings: {} as any,
+      stats: createMockStats({ daysPlayed: 1 }),
+      settings: createMockSettings(),
     });
   });
 
@@ -156,6 +149,17 @@ describe("Survival Penalties", () => {
 
 describe("Stat Consumption and Recovery", () => {
   beforeEach(() => {
+    const crew = createMockCrew({
+      id: "crew1",
+      firstName: "Test",
+      lastName: "Crew",
+      name: "Test Crew",
+      background: "station_rat",
+      skills: { technical: 2, combat: 2, salvage: 2, piloting: 2 },
+      currentJob: "idle",
+      status: "active",
+    });
+
     useGameStore.setState({
       credits: 10000,
       fuel: 100,
@@ -167,33 +171,14 @@ describe("Stat Consumption and Recovery", () => {
       crewEfficiencyPenalty: 0,
       day: 1,
       licenseDaysRemaining: 14,
-      crewRoster: [
-        {
-          id: "crew1",
-          firstName: "Test",
-          lastName: "Crew",
-          name: "Test Crew",
-          background: "station_rat" as any,
-          traits: [],
-          skills: { technical: 2, combat: 2, salvage: 2, piloting: 2 },
-          skillXp: { technical: 0, combat: 0, salvage: 0, piloting: 0 },
-          hp: 100,
-          maxHp: 100,
-          stamina: 100,
-          maxStamina: 100,
-          sanity: 100,
-          maxSanity: 100,
-          currentJob: "idle",
-          status: "active",
-        },
-      ],
-      crew: null as any,
+      crewRoster: [crew],
+      crew: crew,
       currentRun: null,
       availableWrecks: [],
       inventory: [],
       equipmentInventory: [],
-      stats: { daysPlayed: 1 } as any,
-      settings: {} as any,
+      stats: createMockStats({ daysPlayed: 1 }),
+      settings: createMockSettings(),
     });
   });
 
@@ -306,26 +291,18 @@ describe("Stat Consumption and Recovery", () => {
 
 describe("Survival System Stress Tests", () => {
   it("should handle large crew (10 members) over 30 days", () => {
-    const largeCrew = Array.from({ length: 10 }, (_, i) => ({
-      id: `crew${i}`,
-      firstName: `Crew${i}`,
-      lastName: "Member",
-      name: `Crew${i} Member`,
-      background: "station_rat" as any,
-      traits: [],
-      skills: { technical: 2, combat: 2, salvage: 2, piloting: 2 },
-      skillXp: { technical: 0, combat: 0, salvage: 0, piloting: 0 },
-      hp: 100,
-      maxHp: 100,
-      stamina: 100,
-      maxStamina: 100,
-      sanity: 100,
-      maxSanity: 100,
-      morale: 50,
-      status: "active" as const,
-      currentJob: "idle" as const,
-      position: { location: "station" as const },
-    }));
+    const largeCrew = Array.from({ length: 10 }, (_, i) => 
+      createMockCrew({
+        id: `crew${i}`,
+        firstName: `Crew${i}`,
+        lastName: "Member",
+        name: `Crew${i} Member`,
+        background: "station_rat",
+        skills: { technical: 2, combat: 2, salvage: 2, piloting: 2 },
+        status: "active",
+        currentJob: "idle",
+      })
+    );
 
     useGameStore.setState({
       crewRoster: largeCrew,
@@ -353,29 +330,19 @@ describe("Survival System Stress Tests", () => {
   });
 
   it("should handle alternating starvation and recovery", () => {
+    const crew = createMockCrew({
+      id: "crew1",
+      firstName: "Test",
+      lastName: "Crew",
+      name: "Test Crew",
+      background: "station_rat",
+      skills: { technical: 2, combat: 2, salvage: 2, piloting: 2 },
+      status: "active",
+      currentJob: "idle",
+    });
+
     useGameStore.setState({
-      crewRoster: [
-        {
-          id: "crew1",
-          firstName: "Test",
-          lastName: "Crew",
-          name: "Test Crew",
-          background: "station_rat" as any,
-          traits: [],
-          skills: { technical: 2, combat: 2, salvage: 2, piloting: 2 },
-          skillXp: { technical: 0, combat: 0, salvage: 0, piloting: 0 },
-          hp: 100,
-          maxHp: 100,
-          stamina: 100,
-          maxStamina: 100,
-          sanity: 100,
-          maxSanity: 100,
-          morale: 50,
-          status: "active" as const,
-          currentJob: "idle" as const,
-          position: { location: "station" as const },
-        },
-      ],
+      crewRoster: [crew],
       food: 0,
       drink: 100,
     });
@@ -415,29 +382,19 @@ describe("Survival System Stress Tests", () => {
   });
 
   it("should handle rapid provision consumption cycles (100 days)", () => {
+    const crew = createMockCrew({
+      id: "crew1",
+      firstName: "Test",
+      lastName: "Crew",
+      name: "Test Crew",
+      background: "station_rat",
+      skills: { technical: 2, combat: 2, salvage: 2, piloting: 2 },
+      status: "active",
+      currentJob: "idle",
+    });
+
     useGameStore.setState({
-      crewRoster: [
-        {
-          id: "crew1",
-          firstName: "Test",
-          lastName: "Crew",
-          name: "Test Crew",
-          background: "station_rat" as any,
-          traits: [],
-          skills: { technical: 2, combat: 2, salvage: 2, piloting: 2 },
-          skillXp: { technical: 0, combat: 0, salvage: 0, piloting: 0 },
-          hp: 100,
-          maxHp: 100,
-          stamina: 100,
-          maxStamina: 100,
-          sanity: 100,
-          maxSanity: 100,
-          morale: 50,
-          status: "active" as const,
-          currentJob: "idle" as const,
-          position: { location: "station" as const },
-        },
-      ],
+      crewRoster: [crew],
       food: 100,
       drink: 100,
     });
@@ -459,29 +416,19 @@ describe("Survival System Stress Tests", () => {
 
 describe("Survival System Long-Term Stability", () => {
   it("should maintain crew health over 365 days with adequate supplies", () => {
+    const crew = createMockCrew({
+      id: "crew1",
+      firstName: "Test",
+      lastName: "Crew",
+      name: "Test Crew",
+      background: "station_rat",
+      skills: { technical: 2, combat: 2, salvage: 2, piloting: 2 },
+      status: "active",
+      currentJob: "idle",
+    });
+
     useGameStore.setState({
-      crewRoster: [
-        {
-          id: "crew1",
-          firstName: "Test",
-          lastName: "Crew",
-          name: "Test Crew",
-          background: "station_rat" as any,
-          traits: [],
-          skills: { technical: 2, combat: 2, salvage: 2, piloting: 2 },
-          skillXp: { technical: 0, combat: 0, salvage: 0, piloting: 0 },
-          hp: 100,
-          maxHp: 100,
-          stamina: 100,
-          maxStamina: 100,
-          sanity: 100,
-          maxSanity: 100,
-          morale: 50,
-          status: "active" as const,
-          currentJob: "idle" as const,
-          position: { location: "station" as const },
-        },
-      ],
+      crewRoster: [crew],
       food: 365, // 1 year
       drink: 365,
     });
@@ -502,29 +449,19 @@ describe("Survival System Long-Term Stability", () => {
   });
 
   it("should handle crew scaling from 1 to 10 members dynamically", () => {
+    const captain = createMockCrew({
+      id: "crew1",
+      firstName: "Captain",
+      lastName: "One",
+      name: "Captain One",
+      background: "station_rat",
+      skills: { technical: 2, combat: 2, salvage: 2, piloting: 2 },
+      status: "active",
+      currentJob: "idle",
+    });
+
     useGameStore.setState({
-      crewRoster: [
-        {
-          id: "crew1",
-          firstName: "Captain",
-          lastName: "One",
-          name: "Captain One",
-          background: "station_rat" as any,
-          traits: [],
-          skills: { technical: 2, combat: 2, salvage: 2, piloting: 2 },
-          skillXp: { technical: 0, combat: 0, salvage: 0, piloting: 0 },
-          hp: 100,
-          maxHp: 100,
-          stamina: 100,
-          maxStamina: 100,
-          sanity: 100,
-          maxSanity: 100,
-          morale: 50,
-          status: "active" as const,
-          currentJob: "idle" as const,
-          position: { location: "station" as const },
-        },
-      ],
+      crewRoster: [captain],
       food: 500,
       drink: 500,
     });
@@ -532,26 +469,16 @@ describe("Survival System Long-Term Stability", () => {
     // Gradually add crew members
     for (let crewCount = 1; crewCount < 10; crewCount++) {
       // Add a new crew member
-      const newCrew = {
+      const newCrew = createMockCrew({
         id: `crew${crewCount + 1}`,
         firstName: `Crew${crewCount}`,
         lastName: "Member",
         name: `Crew${crewCount} Member`,
-        background: "station_rat" as any,
-        traits: [],
+        background: "station_rat",
         skills: { technical: 2, combat: 2, salvage: 2, piloting: 2 },
-        skillXp: { technical: 0, combat: 0, salvage: 0, piloting: 0 },
-        hp: 100,
-        maxHp: 100,
-        stamina: 100,
-        maxStamina: 100,
-        sanity: 100,
-        maxSanity: 100,
-        morale: 50,
-        status: "active" as const,
-        currentJob: "idle" as const,
-        position: { location: "station" as const },
-      };
+        status: "active",
+        currentJob: "idle",
+      });
       const state = useGameStore.getState();
       useGameStore.setState({ crewRoster: [...state.crewRoster, newCrew] });
 
@@ -569,29 +496,19 @@ describe("Survival System Long-Term Stability", () => {
   });
 
   it("should handle extreme resource scarcity over 20 days", () => {
+    const crew = createMockCrew({
+      id: "crew1",
+      firstName: "Test",
+      lastName: "Crew",
+      name: "Test Crew",
+      background: "station_rat",
+      skills: { technical: 2, combat: 2, salvage: 2, piloting: 2 },
+      status: "active",
+      currentJob: "idle",
+    });
+
     useGameStore.setState({
-      crewRoster: [
-        {
-          id: "crew1",
-          firstName: "Test",
-          lastName: "Crew",
-          name: "Test Crew",
-          background: "station_rat" as any,
-          traits: [],
-          skills: { technical: 2, combat: 2, salvage: 2, piloting: 2 },
-          skillXp: { technical: 0, combat: 0, salvage: 0, piloting: 0 },
-          hp: 100,
-          maxHp: 100,
-          stamina: 100,
-          maxStamina: 100,
-          sanity: 100,
-          maxSanity: 100,
-          morale: 50,
-          status: "active" as const,
-          currentJob: "idle" as const,
-          position: { location: "station" as const },
-        },
-      ],
+      crewRoster: [crew],
       food: 5, // Only 5 days
       drink: 10, // 10 days
     });

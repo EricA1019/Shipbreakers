@@ -1,0 +1,710 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SHIPBREAKERS // SALVAGE OPS</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg0:#07080a;
+      --bg1:#0b0d10;
+      --panel:#0f1216cc;
+      --plate:#0c0f13;
+      --line:#2a2f37;
+      --line2:#151a21;
+
+      --haz:#f2b233;
+      --cyan:#38e0c7;
+      --rust:#ff6a2a;
+      --ok:#71ff78;
+      --bad:#ff4b4b;
+
+      --text:#e9edf2;
+      --muted:#8b95a5;
+      --muted2:#586173;
+
+      --shadow: 0 18px 60px rgba(0,0,0,.55);
+      --glowA: 0 0 18px rgba(242,178,51,.14);
+      --glowC: 0 0 18px rgba(56,224,199,.12);
+
+      --radius: 14px;
+      --radius2: 18px;
+    }
+
+    *{ box-sizing:border-box; margin:0; padding:0; }
+    html,body{ height:100%; }
+    body{
+      color:var(--text);
+      background: radial-gradient(1200px 700px at 20% 15%, rgba(56,224,199,.10), transparent 55%),
+                  radial-gradient(900px 600px at 85% 20%, rgba(242,178,51,.10), transparent 55%),
+                  radial-gradient(900px 700px at 35% 90%, rgba(255,106,42,.08), transparent 55%),
+                  linear-gradient(180deg, var(--bg0), var(--bg1));
+      font-family: "JetBrains Mono", ui-monospace, monospace;
+      font-size: 14px;
+      overflow-x:hidden;
+      padding: 20px;
+    }
+
+    body::after{
+      content:"";
+      position:fixed; inset:-60px 0 0 0;
+      height:180px;
+      background: linear-gradient(180deg, rgba(56,224,199,.0), rgba(56,224,199,.10), rgba(56,224,199,.0));
+      filter: blur(2px);
+      animation: sweep 6.5s linear infinite;
+      pointer-events:none;
+      opacity:.35;
+      z-index:9999;
+    }
+    @keyframes sweep{
+      0%{ transform: translateY(-320px); }
+      100%{ transform: translateY(calc(100vh + 320px)); }
+    }
+
+    .wrap{
+      max-width: 1600px;
+      margin: 0 auto;
+    }
+
+    /* Industrial Panel */
+    .panel{
+      position:relative;
+      border-radius: var(--radius2);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,0)),
+        linear-gradient(180deg, rgba(15,18,22,.92), rgba(9,10,13,.92));
+      border: 1px solid rgba(255,255,255,.07);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      margin-bottom: 14px;
+    }
+    .panel .rim{
+      position:absolute; inset:0;
+      border-radius: inherit;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,.65);
+      pointer-events:none;
+    }
+    .panel .tape{
+      height:10px;
+      background: repeating-linear-gradient(45deg, rgba(242,178,51,.95) 0 10px, rgba(0,0,0,.78) 10px 20px);
+      opacity:.22;
+      border-bottom:1px solid rgba(255,255,255,.06);
+    }
+    .panel .hdr{
+      padding: 12px 16px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+    .panel .title{
+      font-family:"Orbitron", sans-serif;
+      letter-spacing:.14em;
+      font-weight:800;
+      font-size: 18px;
+      color: var(--haz);
+      text-shadow: var(--glowA);
+    }
+    .panel .subtitle{
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+      margin-top:4px;
+    }
+    .panel .body{
+      padding: 12px 16px 16px;
+    }
+
+    /* Stats Chips */
+    .chips{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .chip{
+      min-width: 110px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.09);
+      background: linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,.15));
+      padding: 8px 10px;
+      position:relative;
+      overflow:hidden;
+    }
+    .chip::before{
+      content:"";
+      position:absolute; inset:0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.06), transparent);
+      transform: translateX(-120%);
+      animation: shine 4.8s ease-in-out infinite;
+      opacity:.5;
+    }
+    @keyframes shine{
+      0%,65%{ transform: translateX(-120%); }
+      100%{ transform: translateX(120%); }
+    }
+    .chip .k{
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing:.10em;
+      text-transform:uppercase;
+    }
+    .chip .v{
+      font-family:"Orbitron", sans-serif;
+      font-size: 20px;
+      font-weight:800;
+      letter-spacing:.02em;
+      margin-top:2px;
+    }
+    .chip.haz .v{ color: var(--haz); text-shadow: var(--glowA); }
+    .chip.cyn .v{ color: var(--cyan); text-shadow: var(--glowC); }
+    .chip.ok  .v{ color: var(--ok); }
+    .chip.bad .v{ color: var(--bad); }
+    .chip.rst .v{ color: var(--rust); }
+
+    /* Status Pills */
+    .pill{
+      display:inline-flex;
+      gap:8px;
+      align-items:center;
+      padding: 6px 10px;
+      border-radius:999px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.30);
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing:.08em;
+      text-transform:uppercase;
+    }
+    .dot{
+      width:8px; height:8px;
+      border-radius:999px;
+      background: var(--ok);
+      box-shadow: 0 0 12px rgba(113,255,120,.35);
+      animation: pulse 1.6s ease-in-out infinite;
+    }
+    @keyframes pulse{
+      0%,100%{ transform: scale(1); opacity:.8; }
+      50%{ transform: scale(1.25); opacity:1; }
+    }
+
+    /* Layout */
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr 320px;
+      gap:14px;
+    }
+    @media (max-width: 1200px){
+      .grid{ grid-template-columns: 1fr; }
+    }
+
+    /* Ship Deck Map */
+    .mapWrap{
+      border-radius: var(--radius);
+      border: 1px solid rgba(255,255,255,.08);
+      background:
+        radial-gradient(800px 350px at 50% 40%, rgba(56,224,199,.07), transparent 60%),
+        linear-gradient(180deg, rgba(0,0,0,.50), rgba(0,0,0,.18));
+      padding: 14px;
+      position:relative;
+      overflow:hidden;
+      min-height: 400px;
+    }
+    .mapWrap .watermark{
+      position:absolute; right:12px; top:12px;
+      font-size:10px; color: rgba(255,255,255,.12);
+      letter-spacing:.22em;
+      text-transform:uppercase;
+      font-family:"Orbitron", sans-serif;
+      pointer-events:none;
+    }
+    .map{
+      position:relative;
+      height: 380px;
+      border-radius: 12px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,0)),
+        radial-gradient(circle at 40% 50%, rgba(242,178,51,.06), transparent 60%),
+        rgba(0,0,0,.35);
+      border: 1px solid rgba(242,178,51,.16);
+      overflow:hidden;
+    }
+    .shipOutline{
+      position:absolute; inset:16px 20px;
+      border-radius: 18px;
+      border: 1px dashed rgba(242,178,51,.18);
+      transform: skewX(-2deg);
+      pointer-events:none;
+    }
+    .mapGrid{
+      position:absolute; inset:0;
+      background-image:
+        linear-gradient(rgba(242,178,51,.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(242,178,51,.06) 1px, transparent 1px);
+      background-size: 28px 28px;
+      opacity:.35;
+      pointer-events:none;
+    }
+
+    .room{
+      position:absolute;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(12,15,19,.55);
+      cursor:pointer;
+      overflow:hidden;
+      transition: transform .12s ease, border-color .12s ease, box-shadow .12s ease, background .12s ease;
+      padding: 8px;
+    }
+    .room:hover{ transform: translateY(-1px); border-color: rgba(255,255,255,.22); }
+    .room.selected{
+      border-color: rgba(56,224,199,.55);
+      box-shadow: var(--glowC);
+      background: rgba(56,224,199,.10);
+    }
+    .room .name{
+      font-size: 10px;
+      letter-spacing:.14em;
+      text-transform:uppercase;
+      color: rgba(233,237,242,.88);
+      font-family:"Orbitron", sans-serif;
+      line-height:1.2;
+      margin-bottom:4px;
+    }
+    .badge{
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.35);
+      color: var(--muted);
+      white-space:nowrap;
+      display:inline-block;
+    }
+    .badge.danger{ border-color:rgba(255,75,75,.25); color:var(--bad); }
+    .badge.warning{ border-color:rgba(242,178,51,.25); color:var(--haz); }
+
+    /* Crew Card */
+    .crewCard{
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.08);
+      background: rgba(0,0,0,.26);
+      padding: 10px;
+      margin-bottom:10px;
+    }
+    .crewCard .top{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      margin-bottom:10px;
+    }
+    .crewCard .name{
+      font-weight:700;
+      font-size:12px;
+    }
+    .crewCard .role{
+      font-size:10px;
+      color:var(--muted);
+      text-transform:uppercase;
+      letter-spacing:.10em;
+      margin-top:3px;
+    }
+    .crewCard .badge{
+      font-size:10px;
+      padding: 4px 8px;
+      border-radius:999px;
+      border: 1px solid rgba(113,255,120,.25);
+      background: rgba(0,0,0,.28);
+      color:var(--ok);
+      text-transform:uppercase;
+    }
+    .crewCard .stats{
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap:8px;
+      font-size:10px;
+      margin-bottom:10px;
+    }
+    .crewCard .stat .label{
+      color:var(--muted);
+      text-transform:uppercase;
+      letter-spacing:.08em;
+    }
+    .crewCard .stat .bar{
+      height:4px;
+      border-radius:99px;
+      background:rgba(255,255,255,.08);
+      margin-top:4px;
+      overflow:hidden;
+    }
+    .crewCard .stat .fill{
+      height:100%;
+      background:linear-gradient(90deg, rgba(113,255,120,.85), rgba(56,224,199,.85));
+    }
+    .crewCard .inventory{
+      border-top:1px solid rgba(255,255,255,.06);
+      padding-top:8px;
+      font-size:11px;
+      color:var(--muted);
+    }
+    .crewCard .item{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-top:6px;
+      padding:6px 8px;
+      border-radius:8px;
+      background:rgba(0,0,0,.25);
+    }
+    .crewCard .item .itemName{
+      color:var(--text);
+      font-size:11px;
+    }
+    .crewCard .item .itemValue{
+      font-family:"Orbitron", sans-serif;
+      font-size:14px;
+      font-weight:800;
+      color:var(--cyan);
+      text-shadow: var(--glowC);
+    }
+
+    /* Buttons */
+    .btn{
+      cursor:pointer;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.10);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,0)),
+        rgba(0,0,0,.22);
+      padding: 10px 12px;
+      text-align:center;
+      position:relative;
+      overflow:hidden;
+      transition: transform .12s ease, border-color .12s ease, box-shadow .12s ease;
+      font-family:"Orbitron", sans-serif;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      font-size: 12px;
+      font-weight:800;
+      width:100%;
+      margin-bottom:8px;
+    }
+    .btn:hover{ 
+      transform: translateY(-1px); 
+      border-color: rgba(242,178,51,.28); 
+      box-shadow: var(--glowA); 
+    }
+    .btn.primary{ color: var(--haz); }
+    .btn.success{ color: var(--ok); }
+    .btn.danger{ color: var(--bad); }
+    .btn.info{ color: var(--cyan); }
+
+    .smallBtn{
+      cursor:pointer;
+      padding: 6px 10px;
+      border-radius:8px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.35);
+      color:var(--text);
+      font-size:10px;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      transition: all .12s ease;
+    }
+    .smallBtn:hover{
+      border-color: rgba(242,178,51,.35);
+      box-shadow: var(--glowA);
+    }
+
+    /* Cargo Summary */
+    .cargoSummary{
+      border-radius: var(--radius);
+      border: 1px solid rgba(255,255,255,.08);
+      background: rgba(0,0,0,.30);
+      padding: 12px;
+      margin-bottom:12px;
+    }
+    .cargoSummary .header{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:10px;
+    }
+    .cargoSummary .title{
+      font-family:"Orbitron", sans-serif;
+      letter-spacing:.12em;
+      text-transform:uppercase;
+      font-size: 12px;
+      font-weight:800;
+      color:var(--haz);
+    }
+    .cargoSummary .count{
+      font-size:11px;
+      color:var(--muted);
+    }
+    .cargoSummary .progress{
+      height:6px;
+      border-radius:99px;
+      background:rgba(255,255,255,.08);
+      overflow:hidden;
+      border:1px solid rgba(0,0,0,.4);
+    }
+    .cargoSummary .progressFill{
+      height:100%;
+      width:65%;
+      background:linear-gradient(90deg, rgba(242,178,51,.85), rgba(56,224,199,.85));
+      box-shadow: 0 0 12px rgba(242,178,51,.22);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    
+    <!-- TOP STATUS BAR -->
+    <div class="panel">
+      <div class="tape"></div>
+      <div class="hdr">
+        <div>
+          <div class="title">SALVAGE OPS // HMS VALIANT</div>
+          <div class="subtitle">WAR-ERA RETROFIT · ZONE 7-G · DANGER: 5/5</div>
+        </div>
+        <div class="chips">
+          <div class="chip haz">
+            <div class="k">FUEL</div>
+            <div class="v">78%</div>
+          </div>
+          <div class="chip cyn">
+            <div class="k">CARGO</div>
+            <div class="v">13 / 20</div>
+          </div>
+          <div class="chip ok">
+            <div class="k">VALUE</div>
+            <div class="v">12.4K</div>
+          </div>
+          <div class="chip rst">
+            <div class="k">HAZARDS</div>
+            <div class="v">8</div>
+          </div>
+        </div>
+      </div>
+      <div class="rim"></div>
+    </div>
+
+    <div class="grid">
+      <!-- LEFT: DECK MAP & OPERATIONS -->
+      <div>
+        <div class="panel">
+          <div class="tape"></div>
+          <div class="hdr">
+            <div>
+              <div class="title">DECK SCANNER</div>
+              <div class="subtitle">GHOSTLINE v3.1 · ALL SYSTEMS NOMINAL</div>
+            </div>
+            <div class="pill"><span class="dot"></span> SCAN ACTIVE</div>
+          </div>
+          <div class="body">
+            <div class="mapWrap">
+              <div class="watermark">SCANNER · v3.1</div>
+              <div class="map">
+                <div class="mapGrid"></div>
+                <div class="shipOutline"></div>
+                
+                <!-- Room Examples -->
+                <div class="room" style="left:42px; top:20px; width:110px; height:64px;">
+                  <div class="name">BRIDGE</div>
+                  <div class="badge warning">LOCKED</div>
+                </div>
+                
+                <div class="room" style="left:162px; top:20px; width:88px; height:64px;">
+                  <div class="name">QUARTERS</div>
+                  <div class="badge">CLEAR</div>
+                </div>
+                
+                <div class="room selected" style="left:42px; top:94px; width:100px; height:90px;">
+                  <div class="name">REACTOR</div>
+                  <div class="badge danger">RADIATION</div>
+                </div>
+                
+                <div class="room" style="left:150px; top:94px; width:100px; height:90px;">
+                  <div class="name">WEAPONS</div>
+                  <div class="badge danger">UXO</div>
+                </div>
+                
+                <div class="room" style="left:98px; top:198px; width:110px; height:54px;">
+                  <div class="name">CARGO</div>
+                  <div class="badge warning">BREACH</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="rim"></div>
+        </div>
+
+        <!-- OPERATIONS -->
+        <div class="panel">
+          <div class="tape"></div>
+          <div class="hdr">
+            <div class="title">OPERATIONS</div>
+          </div>
+          <div class="body">
+            <button class="btn primary">🤖 AUTO-SALVAGE</button>
+            <button class="btn success">🔄 RETURN TO STATION</button>
+            <button class="btn danger">🚨 EMERGENCY EVAC</button>
+          </div>
+          <div class="rim"></div>
+        </div>
+      </div>
+
+      <!-- RIGHT: CREW & CARGO -->
+      <div>
+        <!-- CREW STATUS -->
+        <div class="panel">
+          <div class="tape"></div>
+          <div class="hdr">
+            <div class="title">CREW STATUS</div>
+            <div class="pill"><span class="dot"></span> LINK STABLE</div>
+          </div>
+          <div class="body">
+            <div class="crewCard">
+              <div class="top">
+                <div>
+                  <div class="name">JAX "TORCHER" VENN</div>
+                  <div class="role">CUTTER</div>
+                </div>
+                <div class="badge">ACTIVE</div>
+              </div>
+              <div class="stats">
+                <div class="stat">
+                  <div class="label">HP</div>
+                  <div class="bar"><div class="fill" style="width:100%;"></div></div>
+                </div>
+                <div class="stat">
+                  <div class="label">STAM</div>
+                  <div class="bar"><div class="fill" style="width:85%;"></div></div>
+                </div>
+                <div class="stat">
+                  <div class="label">SAN</div>
+                  <div class="bar"><div class="fill" style="width:92%;"></div></div>
+                </div>
+              </div>
+              <div class="inventory">
+                <div style="text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">INVENTORY: 1 / 1</div>
+                <div class="item">
+                  <div class="itemName">Reactor Core</div>
+                  <div class="itemValue">8.5K</div>
+                  <button class="smallBtn">→ SHIP</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="crewCard">
+              <div class="top">
+                <div>
+                  <div class="name">MIRA CHEN</div>
+                  <div class="role">TECH SPEC</div>
+                </div>
+                <div class="badge">ACTIVE</div>
+              </div>
+              <div class="stats">
+                <div class="stat">
+                  <div class="label">HP</div>
+                  <div class="bar"><div class="fill" style="width:100%;"></div></div>
+                </div>
+                <div class="stat">
+                  <div class="label">STAM</div>
+                  <div class="bar"><div class="fill" style="width:100%;"></div></div>
+                </div>
+                <div class="stat">
+                  <div class="label">SAN</div>
+                  <div class="bar"><div class="fill" style="width:78%;"></div></div>
+                </div>
+              </div>
+              <div class="inventory">
+                <div style="text-transform:uppercase;letter-spacing:.08em;color:var(--muted);">INVENTORY: EMPTY</div>
+              </div>
+            </div>
+
+            <div class="crewCard">
+              <div class="top">
+                <div>
+                  <div class="name">KOLE RUST</div>
+                  <div class="role">HAULER</div>
+                </div>
+                <div class="badge" style="border-color:rgba(255,75,75,.25);color:var(--bad);">INJURED</div>
+              </div>
+              <div class="stats">
+                <div class="stat">
+                  <div class="label">HP</div>
+                  <div class="bar"><div class="fill" style="width:45%;background:linear-gradient(90deg, rgba(255,75,75,.85), rgba(255,106,42,.85));"></div></div>
+                </div>
+                <div class="stat">
+                  <div class="label">STAM</div>
+                  <div class="bar"><div class="fill" style="width:60%;"></div></div>
+                </div>
+                <div class="stat">
+                  <div class="label">SAN</div>
+                  <div class="bar"><div class="fill" style="width:55%;"></div></div>
+                </div>
+              </div>
+              <div class="inventory">
+                <div style="text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">INVENTORY: 1 / 1</div>
+                <div class="item">
+                  <div class="itemName">Encrypted Datapad</div>
+                  <div class="itemValue">1.2K</div>
+                  <button class="smallBtn">→ SHIP</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="rim"></div>
+        </div>
+
+        <!-- CARGO SUMMARY -->
+        <div class="panel">
+          <div class="tape"></div>
+          <div class="hdr">
+            <div class="title">SHIP CARGO</div>
+          </div>
+          <div class="body">
+            <div class="cargoSummary">
+              <div class="header">
+                <div class="title">CAPACITY</div>
+                <div class="count">13 / 20</div>
+              </div>
+              <div class="progress">
+                <div class="progressFill"></div>
+              </div>
+            </div>
+            <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;">
+              LOOT INVENTORY
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <div class="item" style="display:flex;justify-content:space-between;align-items:center;padding:8px;border-radius:8px;background:rgba(0,0,0,.25);">
+                <div style="font-size:11px;">Titanium Plates</div>
+                <div style="font-family:Orbitron;font-size:14px;font-weight:800;color:var(--cyan);text-shadow:var(--glowC);">2.8K</div>
+              </div>
+              <div class="item" style="display:flex;justify-content:space-between;align-items:center;padding:8px;border-radius:8px;background:rgba(0,0,0,.25);">
+                <div style="font-size:11px;">Power Cells (3x)</div>
+                <div style="font-family:Orbitron;font-size:14px;font-weight:800;color:var(--cyan);text-shadow:var(--glowC);">0.9K</div>
+              </div>
+              <div class="item" style="display:flex;justify-content:space-between;align-items:center;padding:8px;border-radius:8px;background:rgba(0,0,0,.25);">
+                <div style="font-size:11px;">Medical Supplies</div>
+                <div style="font-family:Orbitron;font-size:14px;font-weight:800;color:var(--cyan);text-shadow:var(--glowC);">0.6K</div>
+              </div>
+            </div>
+          </div>
+          <div class="rim"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

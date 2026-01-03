@@ -11,6 +11,10 @@ done
 # Source URLs (woff2/ttf/otf)
 JETBRAINS_WOFF2="https://raw.githubusercontent.com/JetBrains/JetBrainsMono/master/fonts/webfonts/JetBrainsMono-Regular.woff2"
 JETBRAINS_TTF="https://raw.githubusercontent.com/JetBrains/JetBrainsMono/master/fonts/ttf/JetBrainsMono-Regular.ttf"
+JETBRAINS_MEDIUM_WOFF2="https://raw.githubusercontent.com/JetBrains/JetBrainsMono/master/fonts/webfonts/JetBrainsMono-Medium.woff2"
+JETBRAINS_SEMIBOLD_WOFF2="https://raw.githubusercontent.com/JetBrains/JetBrainsMono/master/fonts/webfonts/JetBrainsMono-SemiBold.woff2"
+JETBRAINS_BOLD_WOFF2="https://raw.githubusercontent.com/JetBrains/JetBrainsMono/master/fonts/webfonts/JetBrainsMono-Bold.woff2"
+JETBRAINS_EXTRABOLD_WOFF2="https://raw.githubusercontent.com/JetBrains/JetBrainsMono/master/fonts/webfonts/JetBrainsMono-ExtraBold.woff2"
 NOTO_OTF="https://raw.githubusercontent.com/notofonts/noto-cjk/main/Sans/Mono/NotoSansMonoCJKsc-Regular.otf"
 
 download_all() {
@@ -23,6 +27,10 @@ download_all() {
 
 download_all "$JETBRAINS_WOFF2" "fonts/jetbrains-mono/JetBrainsMono-Regular.woff2"
 download_all "$JETBRAINS_TTF" "fonts/jetbrains-mono/JetBrainsMono-Regular.ttf"
+download_all "$JETBRAINS_MEDIUM_WOFF2" "fonts/jetbrains-mono/JetBrainsMono-Medium.woff2"
+download_all "$JETBRAINS_SEMIBOLD_WOFF2" "fonts/jetbrains-mono/JetBrainsMono-SemiBold.woff2"
+download_all "$JETBRAINS_BOLD_WOFF2" "fonts/jetbrains-mono/JetBrainsMono-Bold.woff2"
+download_all "$JETBRAINS_EXTRABOLD_WOFF2" "fonts/jetbrains-mono/JetBrainsMono-ExtraBold.woff2"
 download_all "$NOTO_OTF" "fonts/noto-cjk/NotoSansMonoCJKsc-Regular.otf"
 
 for target in "${TARGETS[@]}"; do

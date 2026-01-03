@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Game Over - Industrial Mockup</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;800&display=swap');
+    
+    :root {
+      --bg0: #07080a;
+      --bg1: #0b0d10;
+      --haz: #f2b233;
+      --cyan: #38e0c7;
+      --rust: #ff6a2a;
+      --ok: #71ff78;
+      --bad: #ff4b4b;
+      --text: #e9edf2;
+      --muted: #8b95a5;
+      --glowH: 0 0 12px rgba(242, 178, 51, 0.6);
+      --glowC: 0 0 12px rgba(56, 224, 199, 0.5);
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'JetBrains Mono', monospace;
+      background: radial-gradient(ellipse at center, rgba(255, 75, 75, 0.15), var(--bg0) 50%);
+      color: var(--text);
+      padding: 20px;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .container {
+      max-width: 700px;
+      width: 100%;
+    }
+    
+    /* Industrial Panel */
+    .panel {
+      background: rgba(11, 13, 16, 0.9);
+      border: 2px solid rgba(255, 75, 75, 0.3);
+      border-radius: 16px;
+      padding: 0;
+      margin-bottom: 16px;
+      box-shadow: 
+        inset 0 1px 2px rgba(0, 0, 0, 0.5),
+        0 0 40px rgba(255, 75, 75, 0.2);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .panel-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: relative;
+    }
+    
+    .panel-title {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 800;
+      font-size: 24px;
+      letter-spacing: 1px;
+      color: var(--bad);
+      text-shadow: 0 0 16px rgba(255, 75, 75, 0.7);
+      text-transform: uppercase;
+    }
+    
+    .panel-subtitle {
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+    
+    .panel-content {
+      padding: 24px;
+    }
+    
+    /* Hazard Tape */
+    .tape {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: repeating-linear-gradient(
+        45deg,
+        var(--bad),
+        var(--bad) 12px,
+        rgba(0, 0, 0, 0.8) 12px,
+        rgba(0, 0, 0, 0.8) 24px
+      );
+      opacity: 0.4;
+    }
+    
+    /* Stat Cards */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin: 24px 0;
+    }
+    
+    .stat-card {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+    }
+    
+    .stat-label {
+      font-size: 10px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+    
+    .stat-value {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 800;
+      font-size: 28px;
+      color: var(--cyan);
+      text-shadow: var(--glowC);
+    }
+    
+    .stat-value.bad {
+      color: var(--bad);
+      text-shadow: 0 0 12px rgba(255, 75, 75, 0.6);
+    }
+    
+    /* Reason Box */
+    .reason-box {
+      background: rgba(255, 75, 75, 0.08);
+      border: 1px solid rgba(255, 75, 75, 0.25);
+      border-radius: 12px;
+      padding: 20px;
+      margin: 20px 0;
+      text-align: center;
+    }
+    
+    .reason-icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
+    
+    .reason-text {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: 18px;
+      color: var(--bad);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+    
+    .reason-detail {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+    
+    /* Achievement List */
+    .achievement-list {
+      background: rgba(0, 0, 0, 0.26);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 16px;
+      margin: 20px 0;
+    }
+    
+    .achievement-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    
+    .achievement-item:last-child {
+      border-bottom: none;
+    }
+    
+    .achievement-label {
+      font-size: 13px;
+      color: var(--text);
+    }
+    
+    .achievement-value {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--haz);
+    }
+    
+    /* Industrial Button */
+    .industrial-btn {
+      background: rgba(11, 13, 16, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      padding: 16px 24px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      text-align: center;
+      width: 100%;
+      margin-bottom: 12px;
+    }
+    
+    .industrial-btn:hover {
+      border-color: var(--haz);
+      background: rgba(242, 178, 51, 0.08);
+      transform: translateY(-1px);
+    }
+    
+    .industrial-btn.primary {
+      border-color: var(--haz);
+      background: rgba(242, 178, 51, 0.15);
+    }
+    
+    .industrial-btn.primary:hover {
+      background: rgba(242, 178, 51, 0.25);
+      box-shadow: 0 0 24px rgba(242, 178, 51, 0.3);
+    }
+    
+    .btn-title {
+      font-weight: 700;
+      font-size: 16px;
+      color: var(--text);
+    }
+    
+    .btn-desc {
+      font-size: 12px;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Main Panel -->
+    <div class="panel">
+      <div class="tape"></div>
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">⚠️ MISSION FAILURE</div>
+          <div class="panel-subtitle">CAREER TERMINATED · SALVAGE LICENSE REVOKED</div>
+        </div>
+      </div>
+      <div class="panel-content">
+        <!-- Reason -->
+        <div class="reason-box">
+          <div class="reason-icon">☠️</div>
+          <div class="reason-text">TOTAL PARTY WIPE</div>
+          <div class="reason-detail">All crew members incapacitated · No survivors</div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stat-grid">
+          <div class="stat-card">
+            <div class="stat-label">Days Survived</div>
+            <div class="stat-value">47</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Total Earned</div>
+            <div class="stat-value">28.4K</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Missions Run</div>
+            <div class="stat-value">23</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Final Debt</div>
+            <div class="stat-value class="bad">-5.2K</div>
+          </div>
+        </div>
+
+        <!-- Career Summary -->
+        <div style="margin: 24px 0;">
+          <div style="font-size: 12px; color: var(--haz); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; text-align: center;">
+            CAREER SUMMARY
+          </div>
+          <div class="achievement-list">
+            <div class="achievement-item">
+              <span class="achievement-label">Wrecks Salvaged</span>
+              <span class="achievement-value">23</span>
+            </div>
+            <div class="achievement-item">
+              <span class="achievement-label">Items Collected</span>
+              <span class="achievement-value">487</span>
+            </div>
+            <div class="achievement-item">
+              <span class="achievement-label">Rooms Explored</span>
+              <span class="achievement-value">142</span>
+            </div>
+            <div class="achievement-item">
+              <span class="achievement-label">Crew Hired</span>
+              <span class="achievement-value">8</span>
+            </div>
+            <div class="achievement-item">
+              <span class="achievement-label">Injuries Sustained</span>
+              <span class="achievement-value">34</span>
+            </div>
+            <div class="achievement-item">
+              <span class="achievement-label">License Tier Reached</span>
+              <span class="achievement-value">STANDARD</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Message -->
+        <div style="background: rgba(0, 0, 0, 0.26); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 12px; padding: 16px; margin: 20px 0; text-align: center;">
+          <div style="font-size: 12px; color: var(--muted); font-style: italic;">
+            "Another crew bites the dust. Should've been more careful out there, breaker. 
+            The void doesn't forgive mistakes."
+          </div>
+          <div style="font-size: 10px; color: var(--muted); margin-top: 8px; opacity: 0.7;">
+            — Station Administrator
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div style="margin-top: 28px;">
+          <button class="industrial-btn primary">
+            <div class="btn-title">🔄 New Career</div>
+            <div class="btn-desc">Start fresh with a new salvage license</div>
+          </button>
+          <button class="industrial-btn">
+            <div class="btn-title">📊 View Full Stats</div>
+            <div class="btn-desc">Complete career statistics</div>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

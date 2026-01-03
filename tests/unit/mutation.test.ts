@@ -1,13 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import { generateRoom } from '../../src/game/wreckGenerator';
 import { SeededRandom } from '../../src/game/random';
+import type { WreckType } from '../../src/types';
 
 describe('mutation tests and purity checks', () => {
   it('generateRoom should not modify external loot pool array reference', () => {
     const rnd = new SeededRandom('seed-mutation');
     const used = new Set<string>(['Armory']);
     const beforeSize = used.size;
-    const room = generateRoom(rnd, 'military' as any, 1, used);
+    const room = generateRoom(rnd, 'military' as WreckType, 1, used);
     // function should add name to used set (intended mutation) but not replace the set object
     expect(used.size).toBeGreaterThanOrEqual(beforeSize);
     expect(typeof room).toBe('object');

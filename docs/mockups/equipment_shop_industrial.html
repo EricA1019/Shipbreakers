@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Equipment Shop - Industrial Mockup</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;800&display=swap');
+    
+    :root {
+      --bg0: #07080a;
+      --bg1: #0b0d10;
+      --haz: #f2b233;
+      --cyan: #38e0c7;
+      --rust: #ff6a2a;
+      --ok: #71ff78;
+      --bad: #ff4b4b;
+      --text: #e9edf2;
+      --muted: #8b95a5;
+      --glowH: 0 0 12px rgba(242, 178, 51, 0.6);
+      --glowC: 0 0 12px rgba(56, 224, 199, 0.5);
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'JetBrains Mono', monospace;
+      background: radial-gradient(ellipse at top, rgba(15, 20, 35, 1), var(--bg0) 60%);
+      color: var(--text);
+      padding: 20px;
+      min-height: 100vh;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    .panel {
+      background: rgba(11, 13, 16, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 16px;
+      padding: 0;
+      margin-bottom: 16px;
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .panel-header {
+      padding: 14px 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .panel-title {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 800;
+      font-size: 15px;
+      letter-spacing: 0.8px;
+      color: var(--haz);
+      text-shadow: var(--glowH);
+      text-transform: uppercase;
+    }
+    
+    .panel-subtitle {
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+    
+    .panel-content {
+      padding: 20px;
+    }
+    
+    .tape {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: repeating-linear-gradient(
+        45deg,
+        var(--haz),
+        var(--haz) 10px,
+        rgba(0, 0, 0, 0.6) 10px,
+        rgba(0, 0, 0, 0.6) 20px
+      );
+      opacity: 0.22;
+    }
+    
+    /* Stat Chip */
+    .stat-chip {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 6px 12px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      margin-left: 8px;
+    }
+    
+    .stat-chip-label {
+      font-size: 9px;
+      color: var(--muted);
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    
+    .stat-chip-value {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 800;
+      font-size: 16px;
+      color: var(--haz);
+      text-shadow: var(--glowH);
+    }
+    
+    /* Category Tabs */
+    .category-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      overflow-x: auto;
+    }
+    
+    .category-tab {
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--muted);
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    
+    .category-tab:hover {
+      border-color: var(--haz);
+      color: var(--haz);
+    }
+    
+    .category-tab.active {
+      background: rgba(242, 178, 51, 0.15);
+      border-color: var(--haz);
+      color: var(--haz);
+    }
+    
+    /* Item Grid */
+    .item-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 14px;
+    }
+    
+    .shop-item {
+      background: rgba(0, 0, 0, 0.26);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 16px;
+      transition: all 0.2s;
+      position: relative;
+    }
+    
+    .shop-item:hover {
+      border-color: var(--haz);
+      background: rgba(242, 178, 51, 0.04);
+      transform: translateY(-2px);
+    }
+    
+    .shop-item.owned {
+      border-color: var(--ok);
+      background: rgba(113, 255, 120, 0.05);
+    }
+    
+    .owned-badge {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      font-size: 9px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      background: rgba(113, 255, 120, 0.15);
+      border: 1px solid rgba(113, 255, 120, 0.3);
+      color: var(--ok);
+    }
+    
+    .item-icon {
+      font-size: 40px;
+      margin-bottom: 12px;
+    }
+    
+    .item-name {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+    
+    .item-type {
+      font-size: 9px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+    
+    .item-desc {
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.5;
+      margin-bottom: 12px;
+      min-height: 44px;
+    }
+    
+    .item-stats {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 12px;
+    }
+    
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      margin-bottom: 4px;
+    }
+    
+    .stat-row:last-child {
+      margin-bottom: 0;
+    }
+    
+    .stat-label {
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .stat-value {
+      color: var(--cyan);
+      font-weight: 700;
+    }
+    
+    .stat-value.positive {
+      color: var(--ok);
+    }
+    
+    .item-price {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 800;
+      font-size: 20px;
+      color: var(--haz);
+      text-shadow: var(--glowH);
+      text-align: center;
+      margin-bottom: 12px;
+    }
+    
+    /* Buy Button */
+    .buy-btn {
+      background: rgba(11, 13, 16, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      padding: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text);
+      width: 100%;
+    }
+    
+    .buy-btn:hover {
+      border-color: var(--ok);
+      background: rgba(113, 255, 120, 0.12);
+      box-shadow: 0 0 16px rgba(113, 255, 120, 0.2);
+    }
+    
+    .buy-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    
+    .buy-btn:disabled:hover {
+      border-color: rgba(255, 255, 255, 0.12);
+      background: rgba(11, 13, 16, 0.8);
+      box-shadow: none;
+    }
+    
+    /* Industrial Button */
+    .industrial-btn {
+      background: rgba(11, 13, 16, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      padding: 14px 20px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      text-align: center;
+      width: 100%;
+    }
+    
+    .industrial-btn:hover {
+      border-color: var(--haz);
+      background: rgba(242, 178, 51, 0.08);
+    }
+    
+    .btn-title {
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--text);
+    }
+    
+    .btn-desc {
+      font-size: 11px;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="panel">
+      <div class="tape"></div>
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">EQUIPMENT SHOP</div>
+          <div class="panel-subtitle">STATION OUTFITTERS · GEAR & SUPPLIES</div>
+        </div>
+        <div style="display: flex; align-items: center;">
+          <div class="stat-chip">
+            <div class="stat-chip-label">CREDITS</div>
+            <div class="stat-chip-value">12.5K</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Categories -->
+    <div class="panel">
+      <div class="panel-content" style="padding: 16px;">
+        <div class="category-tabs">
+          <div class="category-tab active">ALL</div>
+          <div class="category-tab">WEAPONS</div>
+          <div class="category-tab">ARMOR</div>
+          <div class="category-tab">TOOLS</div>
+          <div class="category-tab">ACCESSORIES</div>
+          <div class="category-tab">CONSUMABLES</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Shop Items -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">AVAILABLE EQUIPMENT</div>
+      </div>
+      <div class="panel-content">
+        <div class="item-grid">
+          <!-- Item 1 (Owned) -->
+          <div class="shop-item owned">
+            <div class="owned-badge">OWNED</div>
+            <div class="item-icon">🔫</div>
+            <div class="item-name">Plasma Cutter</div>
+            <div class="item-type">WEAPON · MILITARY GRADE</div>
+            <div class="item-desc">
+              High-powered cutting tool. Effective against sealed doors and UXO hazards.
+            </div>
+            <div class="item-stats">
+              <div class="stat-row">
+                <span class="stat-label">Damage</span>
+                <span class="stat-value positive">+2</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">UXO Safety</span>
+                <span class="stat-value positive">+30%</span>
+              </div>
+            </div>
+            <div class="item-price">1,800₵</div>
+            <button class="buy-btn" disabled>ALREADY OWNED</button>
+          </div>
+
+          <!-- Item 2 -->
+          <div class="shop-item">
+            <div class="item-icon">🛡️</div>
+            <div class="item-name">EVA Suit Mk3</div>
+            <div class="item-type">ARMOR · ADVANCED</div>
+            <div class="item-desc">
+              Military-grade EVA suit with enhanced radiation shielding and life support.
+            </div>
+            <div class="item-stats">
+              <div class="stat-row">
+                <span class="stat-label">HP Bonus</span>
+                <span class="stat-value positive">+2</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">Rad Resist</span>
+                <span class="stat-value positive">+50%</span>
+              </div>
+            </div>
+            <div class="item-price">2,400₵</div>
+            <button class="buy-btn">🛒 PURCHASE</button>
+          </div>
+
+          <!-- Item 3 -->
+          <div class="shop-item">
+            <div class="item-icon">🔧</div>
+            <div class="item-name">Advanced Repair Kit</div>
+            <div class="item-type">TOOL · ENGINEERING</div>
+            <div class="item-desc">
+              Professional-grade repair tools for fixing critical ship systems.
+            </div>
+            <div class="item-stats">
+              <div class="stat-row">
+                <span class="stat-label">Repair Speed</span>
+                <span class="stat-value positive">+40%</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">Success Rate</span>
+                <span class="stat-value positive">+25%</span>
+              </div>
+            </div>
+            <div class="item-price">950₵</div>
+            <button class="buy-btn">🛒 PURCHASE</button>
+          </div>
+
+          <!-- Item 4 -->
+          <div class="shop-item">
+            <div class="item-icon">📡</div>
+            <div class="item-name">Enhanced Scanner</div>
+            <div class="item-type">TOOL · SCIENCE</div>
+            <div class="item-desc">
+              Long-range scanner for detecting valuable loot and hidden compartments.
+            </div>
+            <div class="item-stats">
+              <div class="stat-row">
+                <span class="stat-label">Scan Range</span>
+                <span class="stat-value positive">+2 tiles</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">Rare Find</span>
+                <span class="stat-value positive">+15%</span>
+              </div>
+            </div>
+            <div class="item-price">1,200₵</div>
+            <button class="buy-btn">🛒 PURCHASE</button>
+          </div>
+
+          <!-- Item 5 -->
+          <div class="shop-item">
+            <div class="item-icon">💡</div>
+            <div class="item-name">Tactical Headlamp</div>
+            <div class="item-type">ACCESSORY · UTILITY</div>
+            <div class="item-desc">
+              High-intensity lamp for exploring dark sections of wrecks.
+            </div>
+            <div class="item-stats">
+              <div class="stat-row">
+                <span class="stat-label">Visibility</span>
+                <span class="stat-value positive">+3 tiles</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">Battery Life</span>
+                <span class="stat-value">Unlimited</span>
+              </div>
+            </div>
+            <div class="item-price">480₵</div>
+            <button class="buy-btn">🛒 PURCHASE</button>
+          </div>
+
+          <!-- Item 6 -->
+          <div class="shop-item">
+            <div class="item-icon">💊</div>
+            <div class="item-name">Med Pack (5x)</div>
+            <div class="item-type">CONSUMABLE · MEDICAL</div>
+            <div class="item-desc">
+              Emergency medical supplies for treating injuries during salvage operations.
+            </div>
+            <div class="item-stats">
+              <div class="stat-row">
+                <span class="stat-label">HP Restore</span>
+                <span class="stat-value positive">+2 HP each</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">Quantity</span>
+                <span class="stat-value">5 uses</span>
+              </div>
+            </div>
+            <div class="item-price">350₵</div>
+            <button class="buy-btn">🛒 PURCHASE</button>
+          </div>
+
+          <!-- Item 7 -->
+          <div class="shop-item">
+            <div class="item-icon">🎒</div>
+            <div class="item-name">Cargo Expansion</div>
+            <div class="item-type">ACCESSORY · CAPACITY</div>
+            <div class="item-desc">
+              Additional cargo harness system for increased carrying capacity.
+            </div>
+            <div class="item-stats">
+              <div class="stat-row">
+                <span class="stat-label">Cargo Space</span>
+                <span class="stat-value positive">+4 slots</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">Weight</span>
+                <span class="stat-value">Light</span>
+              </div>
+            </div>
+            <div class="item-price">1,600₵</div>
+            <button class="buy-btn">🛒 PURCHASE</button>
+          </div>
+
+          <!-- Item 8 (Too expensive) -->
+          <div class="shop-item">
+            <div class="item-icon">🚀</div>
+            <div class="item-name">Jetpack Module</div>
+            <div class="item-type">ACCESSORY · MOBILITY</div>
+            <div class="item-desc">
+              Personal thrust system for rapid traversal in zero-G environments.
+            </div>
+            <div class="item-stats">
+              <div class="stat-row">
+                <span class="stat-label">Movement</span>
+                <span class="stat-value positive">+50%</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-label">Fuel Cost</span>
+                <span class="stat-value">+2 per use</span>
+              </div>
+            </div>
+            <div class="item-price">8,500₵</div>
+            <button class="buy-btn" disabled>INSUFFICIENT FUNDS</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="panel">
+      <div class="panel-content" style="padding: 16px;">
+        <button class="industrial-btn">
+          <div class="btn-title">← Back to Station</div>
+          <div class="btn-desc">Return to hub</div>
+        </button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wreck Select - Industrial Mockup</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;800&display=swap');
+    
+    :root {
+      --bg0: #07080a;
+      --bg1: #0b0d10;
+      --haz: #f2b233;
+      --cyan: #38e0c7;
+      --rust: #ff6a2a;
+      --ok: #71ff78;
+      --bad: #ff4b4b;
+      --text: #e9edf2;
+      --muted: #8b95a5;
+      --glowH: 0 0 12px rgba(242, 178, 51, 0.6);
+      --glowC: 0 0 12px rgba(56, 224, 199, 0.5);
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'JetBrains Mono', monospace;
+      background: radial-gradient(ellipse at top, rgba(15, 20, 35, 1), var(--bg0) 60%);
+      color: var(--text);
+      padding: 20px;
+      min-height: 100vh;
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    
+    /* Industrial Panel */
+    .panel {
+      background: rgba(11, 13, 16, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 16px;
+      padding: 0;
+      margin-bottom: 16px;
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .panel-header {
+      padding: 14px 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: relative;
+    }
+    
+    .panel-title {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 800;
+      font-size: 15px;
+      letter-spacing: 0.8px;
+      color: var(--haz);
+      text-shadow: var(--glowH);
+      text-transform: uppercase;
+    }
+    
+    .panel-subtitle {
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+    
+    .panel-content {
+      padding: 20px;
+    }
+    
+    /* Hazard Tape */
+    .tape {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: repeating-linear-gradient(
+        45deg,
+        var(--haz),
+        var(--haz) 10px,
+        rgba(0, 0, 0, 0.6) 10px,
+        rgba(0, 0, 0, 0.6) 20px
+      );
+      opacity: 0.22;
+    }
+    
+    /* Stat Chips */
+    .stat-chip {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 6px 12px;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      margin-left: 8px;
+    }
+    
+    .stat-chip-label {
+      font-size: 9px;
+      color: var(--muted);
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    
+    .stat-chip-value {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 800;
+      font-size: 16px;
+    }
+    
+    .stat-chip.amber .stat-chip-value {
+      color: var(--haz);
+      text-shadow: var(--glowH);
+    }
+    
+    .stat-chip.cyan .stat-chip-value {
+      color: var(--cyan);
+      text-shadow: var(--glowC);
+    }
+    
+    /* Status Pill */
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      background: rgba(0, 0, 0, 0.28);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 999px;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--ok);
+      animation: pulse 1.6s ease-in-out infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    
+    /* Wreck Cards */
+    .wreck-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 16px;
+    }
+    
+    .wreck-card {
+      background: rgba(0, 0, 0, 0.26);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .wreck-card:hover {
+      border-color: var(--haz);
+      background: rgba(242, 178, 51, 0.05);
+      transform: translateY(-2px);
+    }
+    
+    .wreck-card.selected {
+      border-color: var(--cyan);
+      background: rgba(56, 224, 199, 0.08);
+      box-shadow: 0 0 20px rgba(56, 224, 199, 0.2);
+    }
+    
+    .wreck-type-badge {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      font-size: 9px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 600;
+    }
+    
+    .wreck-type-badge.military {
+      background: rgba(255, 75, 75, 0.15);
+      border: 1px solid rgba(255, 75, 75, 0.3);
+      color: var(--bad);
+    }
+    
+    .wreck-type-badge.industrial {
+      background: rgba(255, 106, 42, 0.15);
+      border: 1px solid rgba(255, 106, 42, 0.3);
+      color: var(--rust);
+    }
+    
+    .wreck-type-badge.science {
+      background: rgba(56, 224, 199, 0.15);
+      border: 1px solid rgba(56, 224, 199, 0.3);
+      color: var(--cyan);
+    }
+    
+    .wreck-name {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--haz);
+      margin-bottom: 8px;
+      text-shadow: var(--glowH);
+    }
+    
+    .wreck-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin: 12px 0;
+    }
+    
+    .wreck-stat {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 6px;
+      padding: 8px;
+      text-align: center;
+    }
+    
+    .wreck-stat-label {
+      font-size: 9px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+    
+    .wreck-stat-value {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--cyan);
+    }
+    
+    .wreck-hazards {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 12px;
+    }
+    
+    .hazard-tag {
+      font-size: 9px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      background: rgba(255, 75, 75, 0.12);
+      border: 1px solid rgba(255, 75, 75, 0.25);
+      color: var(--bad);
+    }
+    
+    /* Industrial Button */
+    .industrial-btn {
+      background: rgba(11, 13, 16, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      padding: 14px 20px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      text-align: left;
+    }
+    
+    .industrial-btn:hover {
+      border-color: var(--haz);
+      background: rgba(242, 178, 51, 0.08);
+      transform: translateY(-1px);
+    }
+    
+    .industrial-btn.primary {
+      border-color: var(--haz);
+      background: rgba(242, 178, 51, 0.12);
+    }
+    
+    .industrial-btn.primary:hover {
+      background: rgba(242, 178, 51, 0.2);
+      box-shadow: 0 0 20px rgba(242, 178, 51, 0.3);
+    }
+    
+    .btn-title {
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--text);
+    }
+    
+    .btn-desc {
+      font-size: 11px;
+      color: var(--muted);
+    }
+    
+    /* Filter Tags */
+    .filter-tags {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    
+    .filter-tag {
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--muted);
+      transition: all 0.2s;
+    }
+    
+    .filter-tag:hover {
+      border-color: var(--haz);
+      color: var(--haz);
+    }
+    
+    .filter-tag.active {
+      background: rgba(242, 178, 51, 0.15);
+      border-color: var(--haz);
+      color: var(--haz);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="panel">
+      <div class="tape"></div>
+      <div class="panel-header">
+        <div>
+          <div class="panel-title">MISSION SELECT</div>
+          <div class="panel-subtitle">AVAILABLE SALVAGE CONTRACTS · CINDER STATION</div>
+        </div>
+        <div style="display: flex; align-items: center;">
+          <div class="stat-chip amber">
+            <div class="stat-chip-label">CREDITS</div>
+            <div class="stat-chip-value">12.5K</div>
+          </div>
+          <div class="stat-chip cyan">
+            <div class="stat-chip-label">FUEL</div>
+            <div class="stat-chip-value">85</div>
+          </div>
+        </div>
+      </div>
+      <div class="panel-content" style="padding: 0;"></div>
+    </div>
+
+    <!-- Filters -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">FILTERS</div>
+        <div class="status-pill">
+          <div class="status-dot"></div>
+          <span>12 CONTRACTS</span>
+        </div>
+      </div>
+      <div class="panel-content">
+        <div style="margin-bottom: 12px;">
+          <div style="font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px;">TYPE</div>
+          <div class="filter-tags">
+            <div class="filter-tag active">ALL</div>
+            <div class="filter-tag">MILITARY</div>
+            <div class="filter-tag">INDUSTRIAL</div>
+            <div class="filter-tag">SCIENCE</div>
+            <div class="filter-tag">CIVILIAN</div>
+          </div>
+        </div>
+        <div>
+          <div style="font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px;">TIER</div>
+          <div class="filter-tags">
+            <div class="filter-tag active">ALL</div>
+            <div class="filter-tag">T1</div>
+            <div class="filter-tag">T2</div>
+            <div class="filter-tag">T3</div>
+            <div class="filter-tag">T4</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Wreck Grid -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">AVAILABLE WRECKS</div>
+      </div>
+      <div class="panel-content">
+        <div class="wreck-grid">
+          <!-- Wreck Card 1 (Selected) -->
+          <div class="wreck-card selected">
+            <div class="wreck-type-badge military">MILITARY · T2</div>
+            <div class="wreck-name">UTS VALOR</div>
+            <div style="font-size: 11px; color: var(--muted); margin-bottom: 12px;">
+              Destroyer-class vessel · 15 AU
+            </div>
+            <div class="wreck-stats">
+              <div class="wreck-stat">
+                <div class="wreck-stat-label">SIZE</div>
+                <div class="wreck-stat-value">12</div>
+              </div>
+              <div class="wreck-stat">
+                <div class="wreck-stat-label">VALUE</div>
+                <div class="wreck-stat-value">8.2K</div>
+              </div>
+              <div class="wreck-stat">
+                <div class="wreck-stat-label">FUEL</div>
+                <div class="wreck-stat-value">23</div>
+              </div>
+            </div>
+            <div class="wreck-hazards">
+              <div class="hazard-tag">RADIATION</div>
+              <div class="hazard-tag">UXO</div>
+              <div class="hazard-tag">BREACH</div>
+            </div>
+          </div>
+
+          <!-- Wreck Card 2 -->
+          <div class="wreck-card">
+            <div class="wreck-type-badge industrial">INDUSTRIAL · T1</div>
+            <div class="wreck-name">HAULER-7</div>
+            <div style="font-size: 11px; color: var(--muted); margin-bottom: 12px;">
+              Cargo hauler · 8 AU
+            </div>
+            <div class="wreck-stats">
+              <div class="wreck-stat">
+                <div class="wreck-stat-label">SIZE</div>
+                <div class="wreck-stat-value">8</div>
+              </div>
+              <div class="wreck-stat">
+                <div class="wreck-stat-label">VALUE</div>
+                <div class="wreck-stat-value">3.5K</div>
+              </div>
+              <div class="wreck-stat">
+                <div class="wreck-stat-label">FUEL</div>
+                <div class="wreck-stat-value">12</div>
+              </div>
+            </div>
+            <div class="wreck-hazards">
+              <div class="hazard-tag">FIRE</div>
+            </div>
+          </div>
+
+          <!-- Wreck Card 3 -->
+          <div class="wreck-card">
+            <div class="wreck-type-badge science">SCIENCE · T3</div>
+            <div class="wreck-name">RESEARCH-12</div>
+            <div style="font-size: 11px; color: var(--muted); margin-bottom: 12px;">
+              Research vessel · 22 AU
+            </div>
+            <div class="wreck-stats">
+              <div class="wreck-stat">
+                <div class="wreck-stat-label">SIZE</div>
+                <div class="wreck-stat-value">16</div>
+              </div>
+              <div class="wreck-stat">
+                <div class="wreck-stat-label">VALUE</div>
+                <div class="wreck-stat-value">12.8K</div>
+              </div>
+              <div class="wreck-stat">
+                <div class="wreck-stat-label">FUEL</div>
+                <div class="wreck-stat-value">34</div>
+              </div>
+            </div>
+            <div class="wreck-hazards">
+              <div class="hazard-tag">ANOMALY</div>
+              <div class="hazard-tag">RADIATION</div>
+            </div>
+          </div>
+
+          <!-- Wreck Card 4 -->
+          <div class="wreck-card">
+            <div class="wreck-type-badge industrial">INDUSTRIAL · T2</div>
+            <div class="wreck-name">MINING RIG 04</div>
+            <div style="font-size: 11px; color: var(--muted); margin-bottom: 12px;">
+              Mining platform · 18 AU
+            </div>
+            <div class="wreck-stats">
+              <div class="wreck-stat">
+                <div class="wreck-stat-label">SIZE</div>
+                <div class="wreck-stat-value">14</div>
+              </div>
+              <div class="wreck-stat">
+                <div class="wreck-stat-label">VALUE</div>
+                <div class="wreck-stat-value">9.4K</div>
+              </div>
+              <div class="wreck-stat">
+                <div class="wreck-stat-label">FUEL</div>
+                <div class="wreck-stat-value">28</div>
+              </div>
+            </div>
+            <div class="wreck-hazards">
+              <div class="hazard-tag">UNSTABLE</div>
+              <div class="hazard-tag">DEBRIS</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="panel">
+      <div class="panel-content" style="padding: 16px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+          <button class="industrial-btn primary">
+            <div class="btn-title">🚀 Begin Salvage</div>
+            <div class="btn-desc">Launch to selected wreck</div>
+          </button>
+          <button class="industrial-btn">
+            <div class="btn-title">📊 Wreck Details</div>
+            <div class="btn-desc">View full manifest</div>
+          </button>
+          <button class="industrial-btn">
+            <div class="btn-title">← Back to Station</div>
+            <div class="btn-desc">Return to hub</div>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

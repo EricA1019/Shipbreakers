@@ -15,7 +15,7 @@ describe('Player ship layout', () => {
 
   it('ShipGrid renders rooms for player ship layout', () => {
     const ship = initializePlayerShip('player-ship');
-    const { container } = render(React.createElement(ShipGrid as any, { ship: ship as any }));
+    const { container } = render(React.createElement(ShipGrid, { ship: ship }));
     const rooms = container.querySelectorAll('[data-testid="room"]');
     expect(rooms.length).toBeGreaterThanOrEqual(4);
   });

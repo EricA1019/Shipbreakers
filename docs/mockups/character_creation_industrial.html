@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Character Creation - Industrial Mockup</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;800&display=swap');
+    
+    :root {
+      --bg0: #07080a;
+      --bg1: #0b0d10;
+      --haz: #f2b233;
+      --cyan: #38e0c7;
+      --rust: #ff6a2a;
+      --ok: #71ff78;
+      --bad: #ff4b4b;
+      --text: #e9edf2;
+      --muted: #8b95a5;
+      --glowH: 0 0 12px rgba(242, 178, 51, 0.6);
+      --glowC: 0 0 12px rgba(56, 224, 199, 0.5);
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'JetBrains Mono', monospace;
+      background: radial-gradient(ellipse at top, rgba(15, 20, 35, 1), var(--bg0) 60%);
+      color: var(--text);
+      padding: 20px;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .container {
+      max-width: 900px;
+      width: 100%;
+    }
+    
+    /* Industrial Panel */
+    .panel {
+      background: rgba(11, 13, 16, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 16px;
+      padding: 0;
+      margin-bottom: 16px;
+      box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .panel-header {
+      padding: 18px 24px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      position: relative;
+    }
+    
+    .panel-title {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 800;
+      font-size: 20px;
+      letter-spacing: 1px;
+      color: var(--haz);
+      text-shadow: var(--glowH);
+      text-transform: uppercase;
+    }
+    
+    .panel-subtitle {
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+    
+    .panel-content {
+      padding: 24px;
+    }
+    
+    /* Hazard Tape */
+    .tape {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: repeating-linear-gradient(
+        45deg,
+        var(--haz),
+        var(--haz) 10px,
+        rgba(0, 0, 0, 0.6) 10px,
+        rgba(0, 0, 0, 0.6) 20px
+      );
+      opacity: 0.22;
+    }
+    
+    /* Form Group */
+    .form-group {
+      margin-bottom: 24px;
+    }
+    
+    .form-label {
+      font-size: 11px;
+      color: var(--haz);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+      display: block;
+    }
+    
+    .form-input {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      padding: 12px 16px;
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    
+    .form-input:focus {
+      outline: none;
+      border-color: var(--haz);
+      background: rgba(242, 178, 51, 0.05);
+      box-shadow: 0 0 0 3px rgba(242, 178, 51, 0.1);
+    }
+    
+    /* Background Options */
+    .background-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    
+    .background-option {
+      background: rgba(0, 0, 0, 0.26);
+      border: 2px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+    }
+    
+    .background-option:hover {
+      border-color: var(--haz);
+      background: rgba(242, 178, 51, 0.05);
+    }
+    
+    .background-option.selected {
+      border-color: var(--cyan);
+      background: rgba(56, 224, 199, 0.08);
+      box-shadow: 0 0 20px rgba(56, 224, 199, 0.2);
+    }
+    
+    .background-title {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    
+    .background-desc {
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.5;
+      margin-bottom: 12px;
+    }
+    
+    .background-bonuses {
+      font-size: 10px;
+      color: var(--cyan);
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      padding-top: 8px;
+    }
+    
+    .bonus-item {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+    
+    /* Trait Tags */
+    .trait-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    
+    .trait-tag {
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      background: rgba(56, 224, 199, 0.12);
+      border: 1px solid rgba(56, 224, 199, 0.25);
+      color: var(--cyan);
+    }
+    
+    /* Industrial Button */
+    .industrial-btn {
+      background: rgba(11, 13, 16, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      padding: 16px 24px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      text-align: center;
+      width: 100%;
+    }
+    
+    .industrial-btn:hover {
+      border-color: var(--haz);
+      background: rgba(242, 178, 51, 0.08);
+      transform: translateY(-1px);
+    }
+    
+    .industrial-btn.primary {
+      border-color: var(--haz);
+      background: rgba(242, 178, 51, 0.15);
+    }
+    
+    .industrial-btn.primary:hover {
+      background: rgba(242, 178, 51, 0.25);
+      box-shadow: 0 0 24px rgba(242, 178, 51, 0.3);
+    }
+    
+    .btn-title {
+      font-weight: 700;
+      font-size: 16px;
+      color: var(--text);
+    }
+    
+    .btn-desc {
+      font-size: 12px;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="panel">
+      <div class="tape"></div>
+      <div class="panel-header">
+        <div class="panel-title">NEW SALVAGE LICENSE</div>
+        <div class="panel-subtitle">CINDER STATION · REGISTRATION TERMINAL</div>
+      </div>
+      <div class="panel-content" style="padding: 0;"></div>
+    </div>
+
+    <!-- Character Name -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title" style="font-size: 14px;">APPLICANT DETAILS</div>
+      </div>
+      <div class="panel-content">
+        <div class="form-group">
+          <label class="form-label">Captain Name</label>
+          <input type="text" class="form-input" placeholder="Enter your name..." value="Zara Chen">
+        </div>
+        <div style="font-size: 11px; color: var(--muted); font-style: italic;">
+          This will be used in station communications and crew rosters.
+        </div>
+      </div>
+    </div>
+
+    <!-- Background Selection -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title" style="font-size: 14px;">BACKGROUND SELECTION</div>
+        <div class="panel-subtitle">CHOOSE YOUR STARTING SPECIALTY</div>
+      </div>
+      <div class="panel-content">
+        <div class="background-grid">
+          <!-- Ex-Military (Selected) -->
+          <div class="background-option selected">
+            <div class="background-title">⚔️ EX-MILITARY</div>
+            <div class="background-desc">
+              Former combat veteran with tactical experience. Proficient in handling hazardous situations and salvaging military hardware.
+            </div>
+            <div class="background-bonuses">
+              <div class="bonus-item">
+                <span>Combat training</span>
+                <span style="color: var(--ok);">+1 HP</span>
+              </div>
+              <div class="bonus-item">
+                <span>UXO handling</span>
+                <span style="color: var(--ok);">+20% safety</span>
+              </div>
+            </div>
+            <div class="trait-list" style="margin-top: 12px;">
+              <div class="trait-tag">BRAVE</div>
+              <div class="trait-tag">TACTICAL</div>
+            </div>
+          </div>
+
+          <!-- Engineer -->
+          <div class="background-option">
+            <div class="background-title">🔧 ENGINEER</div>
+            <div class="background-desc">
+              Experienced with ship systems and technical salvage. Can identify valuable components and repair critical equipment.
+            </div>
+            <div class="background-bonuses">
+              <div class="bonus-item">
+                <span>Tech expertise</span>
+                <span style="color: var(--ok);">+15% loot value</span>
+              </div>
+              <div class="bonus-item">
+                <span>System knowledge</span>
+                <span style="color: var(--ok);">ID rare items</span>
+              </div>
+            </div>
+            <div class="trait-list" style="margin-top: 12px;">
+              <div class="trait-tag">METHODICAL</div>
+              <div class="trait-tag">PRECISE</div>
+            </div>
+          </div>
+
+          <!-- Hauler -->
+          <div class="background-option">
+            <div class="background-title">🚚 HAULER</div>
+            <div class="background-desc">
+              Former cargo pilot with logistics expertise. Efficient at managing inventory and maximizing cargo space.
+            </div>
+            <div class="background-bonuses">
+              <div class="bonus-item">
+                <span>Cargo efficiency</span>
+                <span style="color: var(--ok);">+2 capacity</span>
+              </div>
+              <div class="bonus-item">
+                <span>Route planning</span>
+                <span style="color: var(--ok);">-10% fuel cost</span>
+              </div>
+            </div>
+            <div class="trait-list" style="margin-top: 12px;">
+              <div class="trait-tag">EFFICIENT</div>
+              <div class="trait-tag">PRAGMATIC</div>
+            </div>
+          </div>
+
+          <!-- Prospector -->
+          <div class="background-option">
+            <div class="background-title">💎 PROSPECTOR</div>
+            <div class="background-desc">
+              Veteran salvager with an eye for valuable finds. Increased chance of discovering rare and exotic loot.
+            </div>
+            <div class="background-bonuses">
+              <div class="bonus-item">
+                <span>Loot sense</span>
+                <span style="color: var(--ok);">+10% rare drops</span>
+              </div>
+              <div class="bonus-item">
+                <span>Keen eye</span>
+                <span style="color: var(--ok);">Find hidden items</span>
+              </div>
+            </div>
+            <div class="trait-list" style="margin-top: 12px;">
+              <div class="trait-tag">GREEDY</div>
+              <div class="trait-tag">OBSERVANT</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top: 20px; padding: 16px; background: rgba(56, 224, 199, 0.05); border: 1px solid rgba(56, 224, 199, 0.15); border-radius: 10px;">
+          <div style="font-size: 11px; color: var(--cyan); margin-bottom: 4px; font-weight: 600;">
+            💡 SELECTED: EX-MILITARY
+          </div>
+          <div style="font-size: 11px; color: var(--muted);">
+            Your background provides permanent bonuses and affects starting equipment. Choose wisely - this decision is permanent.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+      <button class="industrial-btn primary">
+        <div class="btn-title">✓ Confirm & Begin</div>
+        <div class="btn-desc">Start your salvage career</div>
+      </button>
+      <button class="industrial-btn">
+        <div class="btn-title">🔄 Randomize</div>
+        <div class="btn-desc">Generate random character</div>
+      </button>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { ShipGrid } from "../game/ShipGrid";
 import PowerGauge from "../ui/PowerGauge";
 import { useGameStore } from "../../stores/gameStore";
@@ -11,6 +11,10 @@ import {
   isOverPowerBudget,
   canInstall,
 } from "../../game/systems/slotManager";
+import IndustrialPanel from "../ui/IndustrialPanel";
+import IndustrialButton from "../ui/IndustrialButton";
+import StatChip from "../ui/StatChip";
+import { useAudio } from "../../hooks/useAudio";
 
 /**
  * Type guard for PlayerShipRoom
@@ -36,6 +40,11 @@ export const ShipyardScreen: React.FC<ScreenProps> = ({ onNavigate }) => {
   const installItemOnShip = useGameStore((s) => s.installItemOnShip);
   const uninstallItemFromShip = useGameStore((s) => s.uninstallItemFromShip);
   const addToast = useUiStore((s) => s.addToast);
+  const audio = useAudio();
+
+  useEffect(() => {
+    audio.playTransition();
+  }, []);
 
   // Combine equippable loot from inventory with equipment inventory
   const allEquippableItems = useMemo(() => {
@@ -43,13 +52,22 @@ export const ShipyardScreen: React.FC<ScreenProps> = ({ onNavigate }) => {
     return [...equipmentInventory, ...equippableLoot] as (Loot | Item)[];
   }, [equipmentInventory, lootInventory]);
 
-  if (!playerShip) return <div className="p-6">No player ship available.</div>;
+  if (!playerShip) {
+    return (
+      <IndustrialPanel title="SHIPYARD">
+        <div className="text-zinc-500 text-sm">No ship systems available</div>
+      </IndustrialPanel>
+    );
+  }
 
   const powerUsed = calculatePowerUsed(playerShip);
   const powerCapacity = getShipPowerCapacity(playerShip);
+  const isOver = isOverPowerBudget(playerShip);
 
-  const openManage = (roomId: string, slotId: string) =>
+  const openManage = (roomId: string, slotId: string) => {
+    audio.playClick();
     setManageTarget({ roomId, slotId });
+  };
   const closeManage = () => setManageTarget(null);
 
   const handleInstall = (itemId: string) => {
@@ -60,10 +78,13 @@ export const ShipyardScreen: React.FC<ScreenProps> = ({ onNavigate }) => {
       itemId,
     );
     if (!ok) {
+      audio.playError();
       addToast({
         message: "Cannot install: check power, slot type, or credits",
         type: "error",
       });
+    } else {
+      audio.playSuccess();
     }
     closeManage();
   };
@@ -71,15 +92,17 @@ export const ShipyardScreen: React.FC<ScreenProps> = ({ onNavigate }) => {
   const handleUninstall = () => {
     if (!manageTarget) return;
     const ok = uninstallItemFromShip(manageTarget.roomId, manageTarget.slotId);
-    if (!ok)
+    if (!ok) {
+      audio.playError();
       addToast({
         message: "Cannot uninstall: insufficient credits or error",
         type: "error",
       });
+    } else {
+      audio.playSuccess();
+    }
     closeManage();
   };
-
-  const isOver = isOverPowerBudget(playerShip);
 
   let manageSlot: ItemSlot | null = null;
   let manageRoomName = "";
@@ -92,149 +115,186 @@ export const ShipyardScreen: React.FC<ScreenProps> = ({ onNavigate }) => {
   }
 
   return (
-    <div className="p-6">
-      <div className="mb-4 flex items-center justify-between">
-        <div className="font-mono text-amber-200 text-lg">🔧 SHIPYARD</div>
-        {onNavigate && (
-          <button
-            onClick={() => onNavigate("hub")}
-            className="bg-zinc-800 border border-amber-600/20 text-amber-100 px-3 py-1 rounded hover:bg-zinc-700"
-          >
-            ← Back to Hub
-          </button>
-        )}
-      </div>
-
-      <div className="grid grid-cols-3 gap-6">
-        <div className="col-span-2">
-          <div className="mb-4">
-            <PowerGauge used={powerUsed} capacity={powerCapacity} />
-          </div>
-          <ShipGrid
-            ship={playerShip}
-            crewRoster={crewRoster}
-            locationFilter="ship"
-            onRoomClick={(r) => setSelectedRoom(r as PlayerShipRoom)}
+    <div className="max-w-[1400px] mx-auto">
+      {/* Header */}
+      <IndustrialPanel
+        title="SHIPYARD"
+        subtitle="VESSEL CONFIGURATION · CINDER STATION"
+      >
+        <div className="flex items-center gap-2">
+          <StatChip 
+            label="POWER DRAW" 
+            value={`${powerUsed}/${powerCapacity}`} 
+            variant={isOver ? "red" : "cyan"}
+          />
+          <StatChip 
+            label="CREDITS" 
+            value={`${(credits / 1000).toFixed(1)}K`} 
+            variant="amber" 
           />
         </div>
+      </IndustrialPanel>
 
-        <div className="col-span-1">
-          <div className="bg-zinc-900 border border-amber-600/20 p-4 rounded">
-            <div className="font-mono text-amber-200 text-sm">
-              SHIPYARD — ROOM
-            </div>
-            {selectedRoom ? (
-              <div className="mt-3">
-                <div className="font-mono text-amber-100">
-                  {selectedRoom.name} — {selectedRoom.roomType}
+      <div className="grid grid-cols-3 gap-4">
+        {/* Ship grid - left side */}
+        <div className="col-span-2 space-y-4">
+          <IndustrialPanel title="SHIP LAYOUT">
+            <ShipGrid
+              ship={playerShip}
+              crewRoster={crewRoster}
+              locationFilter="ship"
+              onRoomClick={(r) => {
+                audio.playClick();
+                setSelectedRoom(r as PlayerShipRoom);
+              }}
+            />
+          </IndustrialPanel>
+        </div>
+
+        {/* Right panel - Room management */}
+        <div className="space-y-4">
+          {/* Room selector */}
+          <IndustrialPanel title={selectedRoom ? selectedRoom.name.toUpperCase() : "SELECT ROOM"}>
+            {selectedRoom && isPlayerShipRoom(selectedRoom) ? (
+              <div className="space-y-2">
+                <div className="text-[10px] text-zinc-400 uppercase tracking-wider mb-2">
+                  {selectedRoom.roomType}
                 </div>
-                <div className="mt-2">
-                  {(selectedRoom.slots || []).map((slot: ItemSlot) => (
-                    <div
-                      key={slot.id}
-                      className={`flex items-center justify-between p-2 rounded mb-2 ${isOver ? "border border-red-600" : "bg-zinc-800"}`}
-                    >
-                      <div className="text-xs font-mono">
-                        <div className="uppercase text-amber-200 text-[11px]">
+                {(selectedRoom.slots || []).map((slot: ItemSlot) => (
+                  <div
+                    key={slot.id}
+                    className={`p-2.5 rounded-md border transition-all ${
+                      isOver 
+                        ? "border-red-500/30 bg-red-500/5" 
+                        : "border-white/8 bg-black/26"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-[9px] text-zinc-400 uppercase tracking-wider">
                           {slot.type}
                         </div>
-                        <div className="text-amber-100 text-sm">
-                          {slot.installedItem
-                            ? slot.installedItem.name
-                            : "Empty"}
+                        <div className="text-xs font-['Orbitron'] font-bold text-amber-400 mt-1">
+                          {slot.installedItem ? slot.installedItem.name : "EMPTY SLOT"}
                         </div>
                       </div>
-                      <div>
-                        <button
-                          onClick={() => openManage(selectedRoom.id, slot.id)}
-                          className="bg-amber-600 text-zinc-900 px-2 py-1 text-xs rounded"
-                        >
-                          Manage
-                        </button>
-                      </div>
+                      <IndustrialButton
+                        onClick={() => openManage(selectedRoom.id, slot.id)}
+                        title="⚙️"
+                        description=""
+                      />
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
               </div>
             ) : (
-              <div className="mt-3 text-amber-300 text-sm">
-                Select a room to view slots.
-              </div>
+              <div className="text-zinc-500 text-sm">Select a room to view slots</div>
             )}
-          </div>
+          </IndustrialPanel>
 
+          {/* Management panel */}
           {manageSlot && (
-            <div className="mt-4 bg-zinc-900 border border-amber-600/20 p-4 rounded">
-              <div className="font-mono text-amber-200 text-sm">
-                Manage Slot
-              </div>
-              <div className="mt-2 text-amber-100 font-mono">
-                {manageRoomName} — {manageSlot.type}
-              </div>
-              <div className="mt-3">
-                {manageSlot.installedItem ? (
+            <IndustrialPanel title={`${manageRoomName} — ${manageSlot.type}`}>
+              {manageSlot.installedItem ? (
+                <div className="space-y-3">
                   <div>
-                    <div className="mb-2">
-                      Installed: {manageSlot.installedItem.name}
+                    <div className="text-[9px] text-zinc-400 uppercase tracking-wider mb-1">
+                      INSTALLED
                     </div>
-                    <button
-                      onClick={handleUninstall}
-                      className="bg-red-600 text-white px-3 py-1 rounded"
-                    >
-                      Uninstall (Fee)
-                    </button>
+                    <div className="text-xs font-['Orbitron'] font-bold text-cyan-400">
+                      {manageSlot.installedItem.name}
+                    </div>
                   </div>
-                ) : (
-                  <div>
-                    <div className="mb-2">Install from inventory:</div>
-                    {allEquippableItems
-                      .filter(
-                        (it) =>
-                          it.slotType === manageSlot?.type ||
-                          manageSlot?.type === "cargo",
-                      )
-                      .map((it) => {
-                        const check = manageSlot
-                          ? canInstall(playerShip, manageSlot, it)
-                          : { success: false, message: "No slot selected" };
-                        const disabled = !check.success || credits <= 0;
-                        return (
-                          <div
-                            key={it.id}
-                            className={`flex items-center justify-between p-2 rounded mb-2 ${disabled ? "opacity-50" : "bg-zinc-800"}`}
-                            title={check.message ?? ""}
-                          >
-                            <div className="text-xs font-mono">
-                              <div className="text-amber-100">
-                                {it.name} ({it.tier})
-                              </div>
-                            </div>
-                            <div>
-                              <button
-                                disabled={disabled}
-                                onClick={() => handleInstall(it.id)}
-                                className="bg-amber-600 text-zinc-900 px-2 py-1 text-xs rounded"
-                              >
-                                Install
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    {allEquippableItems.filter(
+                  <IndustrialButton
+                    variant="danger"
+                    onClick={handleUninstall}
+                    title="🔧 Uninstall"
+                    description="Remove from slot"
+                  />
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="text-[9px] text-zinc-400 uppercase tracking-wider">
+                    Available Equipment
+                  </div>
+                  {allEquippableItems
+                    .filter(
                       (it) =>
-                        !(
-                          it.slotType === manageSlot?.type ||
-                          manageSlot?.type === "cargo"
-                        ),
-                    ).length === 0 || null}
-                  </div>
-                )}
-              </div>
-            </div>
+                        it.slotType === manageSlot?.type ||
+                        manageSlot?.type === "cargo",
+                    )
+                    .map((it) => {
+                      const check = manageSlot
+                        ? canInstall(playerShip, manageSlot, it)
+                        : { success: false, message: "No slot selected" };
+                      const disabled = !check.success;
+                      return (
+                        <div
+                          key={it.id}
+                          className={`p-2 rounded-md border transition-all ${
+                            disabled
+                              ? "opacity-50 border-white/6 bg-black/20"
+                              : "border-white/8 bg-black/26 hover:border-amber-400 hover:bg-amber-500/4"
+                          }`}
+                          title={check.message ?? ""}
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="min-w-0">
+                              <div className="text-xs font-['Orbitron'] font-bold text-amber-400 truncate">
+                                {it.name}
+                              </div>
+                              <div className="text-[9px] text-zinc-400">T{it.tier}</div>
+                            </div>
+                            <button
+                              disabled={disabled}
+                              onClick={() => {
+                                if (!disabled) {
+                                  audio.playClick();
+                                  handleInstall(it.id);
+                                }
+                              }}
+                              className={`px-2 py-1 text-xs uppercase tracking-wide rounded-md font-['Orbitron'] font-bold transition-all whitespace-nowrap ${
+                                disabled
+                                  ? "bg-zinc-700/30 text-zinc-500 cursor-not-allowed"
+                                  : "bg-amber-500/15 border border-amber-500 text-amber-400 hover:bg-amber-500/25"
+                              }`}
+                            >
+                              ⚙️
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
+            </IndustrialPanel>
           )}
         </div>
       </div>
+
+      {/* Power Gauge full width */}
+      <IndustrialPanel title="POWER STATUS">
+        <PowerGauge used={powerUsed} capacity={powerCapacity} />
+        {isOver && (
+          <div className="mt-3 p-2 bg-red-500/15 border border-red-500/30 rounded-md">
+            <div className="text-[10px] text-red-400 uppercase tracking-wide">
+              ⚠️ POWER OVERLOAD - CRITICAL SYSTEMS AT RISK
+            </div>
+          </div>
+        )}
+      </IndustrialPanel>
+
+      {/* Back button */}
+      <IndustrialPanel>
+        <IndustrialButton
+          onClick={() => {
+            audio.playTransition();
+            onNavigate("hub");
+          }}
+          title="← Back to Station"
+          description="Return to hub"
+        />
+      </IndustrialPanel>
     </div>
   );
 };

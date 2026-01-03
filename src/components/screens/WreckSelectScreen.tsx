@@ -3,21 +3,32 @@ import { useGameStore } from "../../stores/gameStore";
 import GraveyardMap from "../ui/GraveyardMap";
 import ZoneUnlockModal from "../ui/ZoneUnlockModal";
 import VictoryModal from "../ui/VictoryModal";
-import WreckDetailsPanel from "../ui/WreckDetailsPanel";
-import CyberPanel from "../ui/CyberPanel";
-import CyberButton from "../ui/CyberButton";
+import IndustrialPanel from "../ui/IndustrialPanel";
+import IndustrialButton from "../ui/IndustrialButton";
+import StatChip from "../ui/StatChip";
+import StatusPill from "../ui/StatusPill";
+import HazardTag from "../ui/HazardTag";
 import { ScanningProgress } from "../ui/VisualEffects";
 import { getWreckPreview } from "../../game/wreckGenerator";
+import { useAudio } from "../../hooks/useAudio";
 
 import type { ScreenProps } from "../../types";
 
 export default function WreckSelectScreen({ onNavigate }: ScreenProps) {
   const [selectedWreckId, setSelectedWreckId] = useState<string | null>(null);
-  const [showMap, setShowMap] = useState(true);
+  const [showMap, setShowMap] = useState(false);
   const [showZoneModal, setShowZoneModal] = useState(false);
   const [showVictoryModal, setShowVictoryModal] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
-  const [scanKey, setScanKey] = useState(0);
+  const [scanKey, _setScanKey] = useState(0);
+  const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [tierFilter, setTierFilter] = useState<string>("all");
+
+  const audio = useAudio();
+
+  useEffect(() => {
+    audio.playTransition();
+  }, []);
 
   const {
     availableWrecks,
@@ -111,12 +122,20 @@ export default function WreckSelectScreen({ onNavigate }: ScreenProps) {
   }, [selectedWreckId, availableWrecks, showMap]);
 
   const handleSelectFromMap = (wreckId: string) => {
+    audio.playClick();
     setSelectedWreckId(wreckId);
     setShowMap(false);
   };
 
+  // Filter wrecks
+  const filteredWrecks = availableWrecks.filter((w) => {
+    if (typeFilter !== "all" && w.type !== typeFilter) return false;
+    if (tierFilter !== "all" && w.tier.toString() !== tierFilter) return false;
+    return true;
+  });
+
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="max-w-[1400px] mx-auto">
       {/* Zone unlock modal */}
       {showZoneModal && lastUnlockedZone && (
         <ZoneUnlockModal
@@ -143,41 +162,18 @@ export default function WreckSelectScreen({ onNavigate }: ScreenProps) {
       )}
 
       {/* Header */}
-      <CyberPanel title="SALVAGE ASSIGNMENT" className="mb-4">
-        <div className="flex items-center gap-2 justify-end">
-          <button
-            onClick={() => setShowMap(!showMap)}
-            className={`px-3 py-1 text-xs font-bold transition ${
-              showMap
-                ? "bg-amber-600 text-zinc-900"
-                : "bg-zinc-700 text-amber-400 border border-amber-600/30"
-            }`}
-          >
-            {showMap ? "🗺️ MAP" : "📋 LIST"} (M)
-          </button>
-          <button
-            className="bg-zinc-700 px-3 py-1 text-xs border border-amber-600/30 hover:bg-zinc-600"
-            onClick={() => {
-              if (isScanning) return;
-              if (credits >= 50) {
-                setIsScanning(true);
-                setScanKey((k) => k + 1);
-              }
-            }}
-          >
-            🔍 Scan (50 CR)
-          </button>
-          <button
-            className="bg-zinc-700 px-3 py-1 text-xs border border-amber-600/30 hover:bg-zinc-600"
-            onClick={() => onNavigate("hub")}
-          >
-            🏠 Back
-          </button>
+      <IndustrialPanel
+        title="MISSION SELECT"
+        subtitle="AVAILABLE SALVAGE CONTRACTS · CINDER STATION"
+      >
+        <div className="flex items-center gap-2">
+          <StatChip label="CREDITS" value={`${(credits / 1000).toFixed(1)}K`} variant="amber" />
+          <StatChip label="FUEL" value={useGameStore.getState().fuel} variant="cyan" />
         </div>
-      </CyberPanel>
+      </IndustrialPanel>
 
       {isScanning && (
-        <CyberPanel className="mb-4">
+        <IndustrialPanel className="my-4">
           <ScanningProgress
             key={scanKey}
             label="SCANNING FOR WRECKS..."
@@ -185,9 +181,61 @@ export default function WreckSelectScreen({ onNavigate }: ScreenProps) {
             onComplete={() => {
               scanForWrecks();
               setIsScanning(false);
+              audio.playNotification();
             }}
           />
-        </CyberPanel>
+        </IndustrialPanel>
+      )}
+
+      {/* Filters */}
+      {!showMap && (
+        <IndustrialPanel title="FILTERS">
+          <div className="flex items-center justify-between">
+            <StatusPill variant="default" label={`${filteredWrecks.length} CONTRACTS`} />
+          </div>
+          <div className="mt-4 mb-3">
+            <div className="text-[10px] text-zinc-400 uppercase tracking-wider mb-2">TYPE</div>
+            <div className="flex flex-wrap gap-2">
+              {['all', 'military', 'industrial', 'science', 'civilian'].map((type) => (
+                <button
+                  key={type}
+                  onClick={() => {
+                    audio.playClick();
+                    setTypeFilter(type);
+                  }}
+                  className={`px-3 py-1.5 rounded-md text-xs uppercase tracking-wide transition-all ${
+                    typeFilter === type
+                      ? 'bg-amber-500/15 border border-amber-500 text-amber-400'
+                      : 'bg-black/30 border border-white/8 text-zinc-400 hover:border-amber-400 hover:text-amber-400'
+                  }`}
+                >
+                  {type}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <div className="text-[10px] text-zinc-400 uppercase tracking-wider mb-2">TIER</div>
+            <div className="flex flex-wrap gap-2">
+              {['all', '1', '2', '3', '4'].map((tier) => (
+                <button
+                  key={tier}
+                  onClick={() => {
+                    audio.playClick();
+                    setTierFilter(tier);
+                  }}
+                  className={`px-3 py-1.5 rounded-md text-xs uppercase tracking-wide transition-all ${
+                    tierFilter === tier
+                      ? 'bg-amber-500/15 border border-amber-500 text-amber-400'
+                      : 'bg-black/30 border border-white/8 text-zinc-400 hover:border-amber-400 hover:text-amber-400'
+                  }`}
+                >
+                  {tier === 'all' ? 'ALL' : `T${tier}`}
+                </button>
+              ))}
+            </div>
+          </div>
+        </IndustrialPanel>
       )}
 
       {showMap ? (
@@ -201,149 +249,157 @@ export default function WreckSelectScreen({ onNavigate }: ScreenProps) {
           />
 
           {/* Details below map */}
-          {selectedWreck &&
-            (() => {
-              const preview = wreckPreviews.find(
-                (p) => p.id === selectedWreckId,
-              );
-              return (
-                <div className="bg-zinc-800 border border-amber-600/20 p-4 rounded">
-                  <div className="text-amber-400 font-bold mb-3">
-                    {selectedWreck.name}
-                  </div>
-                  <div className="text-zinc-300 text-sm space-y-1">
-                    <div>
-                      Distance:{" "}
-                      <span className="text-amber-300 font-mono">
-                        {selectedWreck.distance} AU
-                      </span>
-                    </div>
-                    <div>
-                      Type:{" "}
-                      <span className="text-amber-300">
-                        {selectedWreck.type.toUpperCase()}
-                      </span>
-                    </div>
-                    <div>
-                      Rooms:{" "}
-                      <span className="text-amber-300">
-                        {selectedWreck.rooms.length}
-                      </span>
-                    </div>
-                    {preview && (
-                      <div>
-                        Estimated Mass:{" "}
-                        <span className="text-amber-300">
-                          {preview.estimatedMass.toUpperCase()}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => {
-                      if (selectedWreckId) {
-                        startRun(selectedWreckId);
-                        onNavigate("travel");
-                      }
-                    }}
-                    className="mt-4 w-full bg-amber-600 text-zinc-900 font-bold py-2 hover:bg-amber-500 transition"
-                  >
-                    🚀 LAUNCH (Enter)
-                  </button>
-                </div>
-              );
-            })()}
+          {selectedWreck && (
+            <IndustrialPanel title={selectedWreck.name.toUpperCase()}>
+              <div className="grid grid-cols-3 gap-4 mb-4">
+                <StatChip label="SIZE" value={selectedWreck.rooms.length} variant="cyan" />
+                <StatChip 
+                  label="VALUE" 
+                  value={`${(selectedWreck.rooms.reduce((sum, room) => 
+                    sum + room.loot.reduce((s, item) => s + (item.value ?? 0), 0), 0
+                  ) / 1000).toFixed(1)}K`}
+                  variant="amber" 
+                />
+                <StatChip label="FUEL" value={selectedWreck.distance} variant="cyan" />
+              </div>
+              <div className="text-xs text-zinc-400 mb-3">
+                {selectedWreck.type.toUpperCase()} · {selectedWreck.distance} AU
+              </div>
+              <IndustrialButton
+                variant="primary"
+                onClick={() => {
+                  if (selectedWreckId) {
+                    audio.playTransition();
+                    startRun(selectedWreckId);
+                    onNavigate("travel");
+                  }
+                }}
+                title="🚀 LAUNCH"
+                description="Begin salvage operation"
+              />
+            </IndustrialPanel>
+          )}
         </div>
       ) : (
         // List view
-        <div className="grid grid-cols-3 gap-4">
-          {/* Wreck List */}
-          <div className="col-span-2 space-y-3">
-            {availableWrecks.map((w, index) => {
-              const totalValue = w.rooms.reduce(
-                (sum, room) =>
-                  sum + room.loot.reduce((s, item) => s + (item.value ?? 0), 0),
-                0,
-              );
+        <>
+          <IndustrialPanel title="AVAILABLE WRECKS">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4">
+              {filteredWrecks.map((w) => {
+                const totalValue = w.rooms.reduce(
+                  (sum, room) =>
+                    sum + room.loot.reduce((s, item) => s + (item.value ?? 0), 0),
+                  0,
+                );
 
-              return (
-                <div
-                  key={w.id}
-                  onClick={() => setSelectedWreckId(w.id)}
-                  className="cursor-pointer"
-                >
-                  <CyberPanel
-                    variant={selectedWreckId === w.id ? "default" : "default"}
-                    className={`transition-all ${
-                      selectedWreckId === w.id
-                        ? "border-amber-500 border-2"
-                        : "hover:border-amber-500/50"
+                const hazards = [...new Set(
+                  w.rooms.map((room) => room.hazardType)
+                )];
+
+                const isSelected = selectedWreckId === w.id;
+
+                return (
+                  <div
+                    key={w.id}
+                    onClick={() => {
+                      audio.playClick();
+                      setSelectedWreckId(w.id);
+                    }}
+                    className={`bg-black/26 border rounded-xl p-4 cursor-pointer transition-all relative overflow-hidden ${
+                      isSelected
+                        ? 'border-cyan-500 bg-cyan-500/8 shadow-[0_0_20px_rgba(56,224,199,0.2)]'
+                        : 'border-white/8 hover:border-amber-400 hover:bg-amber-500/4 hover:-translate-y-0.5'
                     }`}
                   >
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <div className="text-amber-100 font-bold flex items-center gap-2 text-glow-amber">
-                          {w.name}
-                          {index < 9 && (
-                            <span className="text-amber-600 text-xs bg-zinc-900 px-2 py-0.5 rounded">
-                              [{index + 1}]
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-zinc-400 text-xs mt-2 space-y-0.5 font-mono">
-                          <div>
-                            TYPE______ {w.type.toUpperCase()}{" "}
-                            <span className="text-amber-300">
-                              •{" "}
-                              {{
-                                military: "军事",
-                                science: "科学",
-                                industrial: "工业",
-                                luxury: "豪华",
-                                civilian: "平民",
-                              }[w.type] ?? ""}
-                            </span>
-                          </div>
-                          <div>TIER______ {w.tier}</div>
-                          <div>DISTANCE__ {w.distance} AU</div>
-                          <div>ROOMS_____ {w.rooms.length}</div>
-                          <div>
-                            VALUE_____{" "}
-                            <span className="text-amber-500 text-glow-amber">
-                              {totalValue.toLocaleString()} CR
-                            </span>
-                          </div>
+                    {/* Type Badge */}
+                    <div
+                      className={`absolute top-3 right-3 text-[9px] px-2 py-1 rounded-md uppercase tracking-wide ${
+                        w.type === 'military'
+                          ? 'bg-red-500/15 border border-red-500/30 text-red-400'
+                          : w.type === 'industrial'
+                          ? 'bg-orange-500/15 border border-orange-500/30 text-orange-400'
+                          : w.type === 'science'
+                          ? 'bg-cyan-500/15 border border-cyan-500/30 text-cyan-400'
+                          : 'bg-zinc-500/15 border border-zinc-500/30 text-zinc-400'
+                      }`}
+                    >
+                      {w.type} · T{w.tier}
+                    </div>
+
+                    <div className="font-['Orbitron'] font-extrabold text-base text-amber-400 glow-amber mb-2 pr-20">
+                      {w.name}
+                    </div>
+                    <div className="text-xs text-zinc-400 mb-3">
+                      {w.type.charAt(0).toUpperCase() + w.type.slice(1)} vessel · {w.distance} AU
+                    </div>
+
+                    {/* Stats */}
+                    <div className="grid grid-cols-3 gap-2 mb-3">
+                      <div className="bg-black/30 border border-white/6 rounded-md p-2 text-center">
+                        <div className="text-[9px] text-zinc-400 uppercase tracking-wide mb-1">SIZE</div>
+                        <div className="font-['Orbitron'] font-bold text-sm text-cyan-400">{w.rooms.length}</div>
+                      </div>
+                      <div className="bg-black/30 border border-white/6 rounded-md p-2 text-center">
+                        <div className="text-[9px] text-zinc-400 uppercase tracking-wide mb-1">VALUE</div>
+                        <div className="font-['Orbitron'] font-bold text-sm text-cyan-400">
+                          {(totalValue / 1000).toFixed(1)}K
                         </div>
                       </div>
+                      <div className="bg-black/30 border border-white/6 rounded-md p-2 text-center">
+                        <div className="text-[9px] text-zinc-400 uppercase tracking-wide mb-1">FUEL</div>
+                        <div className="font-['Orbitron'] font-bold text-sm text-cyan-400">{w.distance}</div>
+                      </div>
                     </div>
-                  </CyberPanel>
-                </div>
-              );
-            })}
-          </div>
 
-          {/* Details Panel */}
-          <div className="space-y-3">
-            {selectedWreck && (
-              <>
-                <WreckDetailsPanel wreck={selectedWreck} />
-                <CyberButton
-                  variant="primary"
-                  glowColor="amber"
-                  onClick={() => {
-                    if (selectedWreckId) {
-                      startRun(selectedWreckId);
-                      onNavigate("travel");
-                    }
-                  }}
-                  className="w-full"
-                >
-                  🚀 LAUNCH (Enter)
-                </CyberButton>
-              </>
-            )}
-          </div>
-        </div>
+                    {/* Hazards */}
+                    {hazards.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {hazards.map((hazard, i) => (
+                          <HazardTag key={i} label={hazard.toUpperCase()} />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </IndustrialPanel>
+
+          {/* Actions */}
+          <IndustrialPanel>
+            <div className="grid grid-cols-3 gap-3">
+              <IndustrialButton
+                variant="primary"
+                onClick={() => {
+                  if (selectedWreckId) {
+                    audio.playTransition();
+                    startRun(selectedWreckId);
+                    onNavigate("travel");
+                  }
+                }}
+                disabled={!selectedWreckId}
+                title="🚀 Begin Salvage"
+                description="Launch to selected wreck"
+              />
+              <IndustrialButton
+                onClick={() => {
+                  audio.playClick();
+                  setShowMap(true);
+                }}
+                title="📊 Map View"
+                description="View graveyard map"
+              />
+              <IndustrialButton
+                onClick={() => {
+                  audio.playTransition();
+                  onNavigate("hub");
+                }}
+                title="← Back to Station"
+                description="Return to hub"
+              />
+            </div>
+          </IndustrialPanel>
+        </>
       )}
     </div>
   );

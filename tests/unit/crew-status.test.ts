@@ -1,9 +1,21 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { useGameStore } from "../../src/stores/gameStore";
 import type { CrewMember } from "../../src/types";
+import { createMockCrew, createMockStats, createMockSettings } from "../fixtures";
 
 describe("Crew Status Transitions", () => {
   beforeEach(() => {
+    const crew = createMockCrew({
+      id: "crew1",
+      firstName: "Test",
+      lastName: "Crew",
+      name: "Test Crew",
+      background: "station_rat",
+      skills: { technical: 2, combat: 2, salvage: 2, piloting: 2 },
+      currentJob: "idle",
+      status: "active",
+    });
+
     useGameStore.setState({
       credits: 10000,
       fuel: 100,
@@ -15,33 +27,14 @@ describe("Crew Status Transitions", () => {
       crewEfficiencyPenalty: 0,
       day: 1,
       licenseDaysRemaining: 14,
-      crewRoster: [
-        {
-          id: "crew1",
-          firstName: "Test",
-          lastName: "Crew",
-          name: "Test Crew",
-          background: "station_rat" as any,
-          traits: [],
-          skills: { technical: 2, combat: 2, salvage: 2, piloting: 2 },
-          skillXp: { technical: 0, combat: 0, salvage: 0, piloting: 0 },
-          hp: 100,
-          maxHp: 100,
-          stamina: 100,
-          maxStamina: 100,
-          sanity: 100,
-          maxSanity: 100,
-          currentJob: "idle",
-          status: "active",
-        },
-      ],
-      crew: null as any,
+      crewRoster: [crew],
+      crew: crew,
       currentRun: null,
       availableWrecks: [],
       inventory: [],
       equipmentInventory: [],
-      stats: { daysPlayed: 1 } as any,
-      settings: {} as any,
+      stats: createMockStats({ daysPlayed: 1 }),
+      settings: createMockSettings(),
     });
   });
 

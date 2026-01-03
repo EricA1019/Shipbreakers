@@ -1,12 +1,11 @@
 import React from "react";
-import type { Ship as ShipType, GridRoom, GridPosition, CrewMember } from "../../types";
+import type { Ship as ShipType, GridRoom, CrewMember } from "../../types";
 import { hasShipLayout } from "../../types";
 import ScannerEffect from "../ui/ScannerEffect";
 import CrewDot from "./CrewDot";
 
 interface ShipGridProps {
   ship: ShipType;
-  currentRoom?: GridPosition;
   crewRoster?: CrewMember[];
   hideShipName?: boolean;
   allowedRoomIds?: Set<string>;
@@ -17,7 +16,6 @@ interface ShipGridProps {
 
 export const ShipGrid: React.FC<ShipGridProps> = ({
   ship,
-  currentRoom,
   crewRoster,
   hideShipName = false,
   allowedRoomIds,
@@ -71,11 +69,6 @@ export const ShipGrid: React.FC<ShipGridProps> = ({
               const gridRoom = gridRooms.find(
                 (g) => g.position.x === r.x && g.position.y === r.y
               );
-              const isCurrent =
-                currentRoom &&
-                gridRoom &&
-                currentRoom.x === gridRoom.position.x &&
-                currentRoom.y === gridRoom.position.y;
 
               const left = ((r.x - minX) / width) * 100;
               const top = ((r.y - minY) / height) * 100;
@@ -102,9 +95,7 @@ export const ShipGrid: React.FC<ShipGridProps> = ({
                                   ? "bg-purple-900/20 border-purple-500/30"
                                   : "bg-zinc-800 border-amber-600/20";
 
-              const borderClass = isCurrent
-                ? "border-amber-500 shadow-[0_0_10px_rgba(251,191,36,0.5)]"
-                : "border-amber-600/30 hover:border-amber-500/50 hover:shadow-[0_0_8px_rgba(251,191,36,0.2)]";
+              const borderClass = "border-amber-600/30 hover:border-amber-500/50 hover:shadow-[0_0_8px_rgba(251,191,36,0.2)]";
 
               // Add pulsing red border for sealed rooms
               const sealedClass = gridRoom?.sealed
@@ -126,11 +117,6 @@ export const ShipGrid: React.FC<ShipGridProps> = ({
                     height: `${hPerc}%`,
                   }}
                 >
-                  {isCurrent && (
-                    <div className="absolute -left-2 -top-2 bg-amber-500 text-zinc-900 text-[10px] font-black px-2 py-0.5 rounded shadow-lg z-10">
-                      YOU
-                    </div>
-                  )}
                   {gridRoom?.sealed && (
                     <div className="absolute -right-1 -top-1 bg-red-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow-lg z-10">
                       🔒
@@ -202,10 +188,6 @@ export const ShipGrid: React.FC<ShipGridProps> = ({
         {ship.grid
           .flatMap((row) => row)
           .map((room) => {
-            const isCurrent =
-              currentRoom &&
-              currentRoom.x === room.position.x &&
-              currentRoom.y === room.position.y;
             const isEntry =
               room.position.x === ship.entryPosition.x &&
               room.position.y === ship.entryPosition.y;
@@ -223,19 +205,12 @@ export const ShipGrid: React.FC<ShipGridProps> = ({
                     ? "border-red-600/60 animate-pulse shadow-[0_0_8px_rgba(220,38,38,0.3)] cursor-pointer"
                     : !isAllowed
                       ? "border-zinc-700 opacity-40 cursor-not-allowed"
-                      : isCurrent
-                        ? "border-amber-500 shadow-[0_0_10px_rgba(251,191,36,0.5)] cursor-pointer"
-                        : room.looted
-                          ? "border-zinc-700 opacity-50 cursor-not-allowed"
-                          : "border-amber-600/30 hover:border-amber-500/50 hover:shadow-[0_0_8px_rgba(251,191,36,0.2)] cursor-pointer"
+                      : room.looted
+                        ? "border-zinc-700 opacity-50 cursor-not-allowed"
+                        : "border-amber-600/30 hover:border-amber-500/50 hover:shadow-[0_0_8px_rgba(251,191,36,0.2)] cursor-pointer"
                 }`}
                 style={{ minHeight: 64 }}
               >
-                {isCurrent && (
-                  <div className="absolute -left-2 -top-2 bg-amber-500 text-zinc-900 text-[10px] font-black px-2 py-0.5 rounded shadow-lg z-10">
-                    YOU
-                  </div>
-                )}
                 {room.sealed && (
                   <div className="absolute -right-1 -top-1 bg-red-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow-lg z-10">
                     🔒

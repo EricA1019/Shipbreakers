@@ -151,6 +151,7 @@ export interface CrewMember {
   hiredDay?: number;
   hireCost?: number;
   customDotColor?: string;
+  inventory: Loot[]; // Items currently held by this crew member (max 1)
 }
 
 // Backwards-compatible alias until rest of codebase migrates
@@ -170,6 +171,7 @@ export interface Loot {
   tier?: 1 | 2 | 3 | 4 | 5;
   powerDraw?: number;
   effects?: ItemEffect[];
+  compatibleRoomTypes?: string[]; // Room types where this can be installed (undefined = sell-only)
 }
 
 /**
@@ -337,8 +339,7 @@ export interface RunState {
   wreckId: string;
   status: "traveling" | "salvaging" | "returning" | "completed";
   timeRemaining: number;
-  collectedLoot: Loot[];
-  collectedEquipment?: (Loot | Item)[]; // Now supports unified inventory
+  collectedLoot: Loot[]; // Unified storage for all items (equipment and materials)
   stats: RunStats;
 }
 
@@ -360,6 +361,10 @@ export interface GameSettings {
   confirmDialogs: boolean;
   showTooltips: boolean;
   showKeyboardHints: boolean;
+  // Crew work safety thresholds
+  minCrewHpPercent: number; // Default 50 - crew won't work below this HP%
+  minCrewStamina: number; // Default 20 - crew won't work below this stamina
+  minCrewSanity: number; // Default 20 - crew won't work below this sanity
 }
 
 // UI Toast notifications used across the app

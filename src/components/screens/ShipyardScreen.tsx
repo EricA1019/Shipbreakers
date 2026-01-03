@@ -114,7 +114,6 @@ export const ShipyardScreen: React.FC<ScreenProps> = ({ onNavigate }) => {
             ship={playerShip}
             crewRoster={crewRoster}
             locationFilter="ship"
-            currentRoom={selectedRoom as any}
             onRoomClick={(r) => setSelectedRoom(r as PlayerShipRoom)}
           />
         </div>

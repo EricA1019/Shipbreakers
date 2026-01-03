@@ -121,6 +121,7 @@ export function generateCrewMember(
     currentJob: "idle",
     status: "active",
     ...overrides,
+    inventory: [],
   };
 }
 

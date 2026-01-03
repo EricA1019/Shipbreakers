@@ -119,6 +119,73 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               {settings.showKeyboardHints ? "ON" : "OFF"}
             </button>
           </div>
+
+          {/* Crew Work Thresholds Section */}
+          <div className="mt-4 pt-4 border-t border-amber-600/30">
+            <div className="text-amber-400 font-bold text-sm mb-3">
+              Crew Work Thresholds
+            </div>
+            <div className="text-zinc-400 text-xs mb-3">
+              Minimum stats required for crew to work during auto-salvage
+            </div>
+
+            {/* Min HP % */}
+            <div className="bg-zinc-800 border border-amber-600/20 p-3 rounded mb-2">
+              <div className="flex justify-between items-center mb-2">
+                <div className="text-amber-100 text-sm">Minimum HP %</div>
+                <div className="text-green-400 font-mono text-sm font-bold">
+                  {settings.minCrewHpPercent || 50}%
+                </div>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                step="5"
+                value={settings.minCrewHpPercent || 50}
+                onChange={(e) => updateSettings({ minCrewHpPercent: parseInt(e.target.value) })}
+                className="w-full"
+              />
+            </div>
+
+            {/* Min Stamina */}
+            <div className="bg-zinc-800 border border-amber-600/20 p-3 rounded mb-2">
+              <div className="flex justify-between items-center mb-2">
+                <div className="text-amber-100 text-sm">Minimum Stamina</div>
+                <div className="text-cyan-400 font-mono text-sm font-bold">
+                  {settings.minCrewStamina || 20}
+                </div>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                step="5"
+                value={settings.minCrewStamina || 20}
+                onChange={(e) => updateSettings({ minCrewStamina: parseInt(e.target.value) })}
+                className="w-full"
+              />
+            </div>
+
+            {/* Min Sanity */}
+            <div className="bg-zinc-800 border border-amber-600/20 p-3 rounded mb-2">
+              <div className="flex justify-between items-center mb-2">
+                <div className="text-amber-100 text-sm">Minimum Sanity</div>
+                <div className="text-purple-400 font-mono text-sm font-bold">
+                  {settings.minCrewSanity || 20}
+                </div>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                step="5"
+                value={settings.minCrewSanity || 20}
+                onChange={(e) => updateSettings({ minCrewSanity: parseInt(e.target.value) })}
+                className="w-full"
+              />
+            </div>
+          </div>
         </div>
 
         {/* Help Section */}

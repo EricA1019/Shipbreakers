@@ -35,10 +35,11 @@ import {
   DAILY_FOOD_PER_CREW,
   DAILY_DRINK_PER_CREW,
   TRAVEL_EVENT_CHANCE,
-  SALVAGE_EVENT_CHANCE,
+  // Keep commented out for potential future use
+  // SALVAGE_EVENT_CHANCE,
   DAILY_EVENT_CHANCE,
-  STAMINA_PER_SALVAGE,
-  SANITY_LOSS_BASE,
+  // STAMINA_PER_SALVAGE,
+  // SANITY_LOSS_BASE,
   STAMINA_RECOVERY_STATION,
   SANITY_RECOVERY_STATION,
 } from "../game/constants";
@@ -141,6 +142,77 @@ interface GameActions {
 
   resolveActiveEvent: (choiceId: string) => void;
   dismissActiveEvent: () => void;
+  getCrewAvailability: (crewId: string) => { available: boolean; reason?: string };
+  transferItemToShip: (crewId: string, itemId: string) => boolean;
+  transferAllItemsToShip: (crewId: string) => boolean;
+  emergencyEvacuate: () => void;
+}
+
+// Helper: Check if crew member is available for work based on stats and thresholds
+function getCrewAvailability(
+  crew: CrewMember,
+  settings: GameState["settings"]
+): { available: boolean; reason?: string } {
+  // Check if inventory is full
+  if (crew.inventory && crew.inventory.length >= 1) {
+    return { available: false, reason: `Carrying item (${crew.inventory[0].name})` };
+  }
+  // Check HP threshold
+  if (crew.hp < (crew.maxHp * settings.minCrewHpPercent) / 100) {
+    const hpPercent = Math.floor((crew.hp / crew.maxHp) * 100);
+    return { available: false, reason: `HP too low (${hpPercent}%)` };
+  }
+  // Check stamina threshold
+  if (crew.stamina < settings.minCrewStamina) {
+    return { available: false, reason: `Stamina depleted (${crew.stamina}/${crew.maxStamina})` };
+  }
+  // Check sanity threshold
+  if (crew.sanity < settings.minCrewSanity) {
+    return { available: false, reason: `Sanity critical (${crew.sanity}/${crew.maxSanity})` };
+  }
+  // Crew is available
+  return { available: true };
+}
+
+// Helper: Select best crew member for a room based on skills, health, and availability
+function selectBestCrewForRoom(
+  room: any,
+  crewRoster: CrewMember[],
+  settings: GameState["settings"]
+): { crew: CrewMember | null; unavailableReasons: string[] } {
+  const unavailableReasons: string[] = [];
+  const availableCrew: Array<{ crew: CrewMember; score: number }> = [];
+
+  for (const crew of crewRoster) {
+    const availability = getCrewAvailability(crew, settings);
+    
+    if (!availability.available) {
+      unavailableReasons.push(`${crew.name}: ${availability.reason}`);
+      continue;
+    }
+
+    // Calculate score based on relevant skill for this room's hazard
+    const matchingSkill = SKILL_HAZARD_MAP[room.hazardType as any] as keyof typeof STARTING_SKILLS;
+    let score = crew.skills[matchingSkill] || 0;
+
+    // Bonus for salvage skill (always useful)
+    score += crew.skills.salvage * 0.5;
+
+    // Bonus for higher HP, stamina, and sanity (prefer healthier crew)
+    score += (crew.hp / crew.maxHp) * 2;
+    score += (crew.stamina / crew.maxStamina) * 1;
+    score += (crew.sanity / crew.maxSanity) * 1;
+
+    availableCrew.push({ crew, score });
+  }
+
+  if (availableCrew.length === 0) {
+    return { crew: null, unavailableReasons };
+  }
+
+  // Sort by score descending and return best crew
+  availableCrew.sort((a, b) => b.score - a.score);
+  return { crew: availableCrew[0].crew, unavailableReasons: [] };
 }
 
 // Helper: Determine crew status based on stats (priority: mortality > needs > tasks)
@@ -176,6 +248,7 @@ export const useGameStore = create<GameState & GameActions>()(
           maxSanity: BASE_SANITY,
           currentJob: "idle" as const,
           status: "active" as const,
+          inventory: [],
         } as CrewMember,
       ],
       crew: {
@@ -224,6 +297,9 @@ export const useGameStore = create<GameState & GameActions>()(
         confirmDialogs: true,
         showTooltips: true,
         showKeyboardHints: true,
+        minCrewHpPercent: 50,
+        minCrewStamina: 20,
+        minCrewSanity: 20,
       },
       cargoSwapPending: null,
 
@@ -286,6 +362,7 @@ export const useGameStore = create<GameState & GameActions>()(
               currentJob: "idle" as const,
               status: "active" as const,
               position: { location: "station" },
+              inventory: [], // Empty inventory at game start
             } as CrewMember,
           ],
           selectedCrewId: "captain-1",
@@ -308,6 +385,7 @@ export const useGameStore = create<GameState & GameActions>()(
             currentJob: "idle",
             status: "active",
             position: { location: "station" },
+            inventory: [], // Empty inventory at game start
           } as any,
           hireCandidates: [],
           availableWrecks: generateAvailableWrecks(["near"]),
@@ -335,6 +413,9 @@ export const useGameStore = create<GameState & GameActions>()(
             confirmDialogs: true,
             showTooltips: true,
             showKeyboardHints: true,
+            minCrewHpPercent: 50,
+            minCrewStamina: 20,
+            minCrewSanity: 20,
           },
 
           // Reset to new game state - show character creation
@@ -415,6 +496,70 @@ export const useGameStore = create<GameState & GameActions>()(
 
       dismissActiveEvent: () => {
         set({ activeEvent: null });
+      },
+
+      getCrewAvailability: (crewId: string) => {
+        const state = get();
+        const crew = state.crewRoster.find((c) => c.id === crewId);
+        if (!crew) {
+          return { available: false, reason: "Crew not found" };
+        }
+        return getCrewAvailability(crew, state.settings);
+      },
+
+      transferItemToShip: (crewId: string, itemId: string) => {
+        const state = get();
+        const crew = state.crewRoster.find((c) => c.id === crewId);
+        if (!crew) return false;
+
+        const item = crew.inventory.find((i) => i.id === itemId);
+        if (!item) return false;
+
+        const run = state.currentRun;
+        if (!run) return false;
+
+        // Check ship cargo capacity
+        const ship = state.playerShip;
+        const capacity = ship?.cargoCapacity ?? 10;
+        const currentLoaded = run.collectedLoot.length;
+        
+        if (currentLoaded >= capacity) {
+          // Trigger cargo swap modal
+          set({ cargoSwapPending: { newItem: item, source: "salvage" } });
+          return false;
+        }
+
+        // Move item from crew to ship
+        set((s) => ({
+          crewRoster: s.crewRoster.map((c) =>
+            c.id === crewId
+              ? { ...c, inventory: c.inventory.filter((i) => i.id !== itemId) }
+              : c
+          ),
+          crew: s.crewRoster.find((c) => c.id === crewId) ?? s.crew,
+          currentRun: s.currentRun ? {
+            ...s.currentRun,
+            collectedLoot: s.currentRun.collectedLoot.concat(item)
+          } : null,
+        }));
+
+        return true;
+      },
+
+      transferAllItemsToShip: (crewId: string) => {
+        const state = get();
+        const crew = state.crewRoster.find((c) => c.id === crewId);
+        if (!crew || crew.inventory.length === 0) return true; // Nothing to transfer
+
+        // Try to transfer each item
+        for (const item of crew.inventory) {
+          const success = get().transferItemToShip(crewId, item.id);
+          if (!success) {
+            return false; // Stop on first failure (cargo full)
+          }
+        }
+
+        return true;
       },
 
       startRun: (wreckId: string) => {
@@ -559,179 +704,9 @@ export const useGameStore = create<GameState & GameActions>()(
         return { success: true };
       },
 
-      salvageRoom: (roomId: string) => {
-        const run = get().currentRun;
-        if (!run) return { success: false, damage: 0 };
-        const wreck = get().availableWrecks.find((w) => w.id === run.wreckId)!;
-        const room = wreck.rooms.find((r) => r.id === roomId);
-        if (!room || room.looted || room.sealed) return { success: false, damage: 0 };
-
-        // Cargo capacity check (simple slot-based, 1 item = 1 slot)
-        const ship = get().playerShip;
-        const capacity = ship?.cargoCapacity ?? 10;
-        const currentLoaded = run.collectedLoot.length;
-        if (currentLoaded + room.loot.length > capacity) {
-          // Not enough space to salvage the whole room
-          return { success: false, damage: 0 };
-        }
-
-        // Deduct time
-        const newTime = run.timeRemaining - 2;
-
-        const getActiveCrew = () => {
-          const roster = get().crewRoster || [];
-          const selected = get().selectedCrewId;
-          return roster.find((c) => c.id === selected) ?? roster[0];
-        };
-
-        // Hazard check
-        const activeCrew = getActiveCrew();
-        const activeEffects = getActiveEffects(get().playerShip as any);
-        let successChance = calculateHazardSuccess(
-          activeCrew.skills,
-          room.hazardType as any,
-          room.hazardLevel,
-          wreck.tier,
-          activeEffects,
-        );
-
-        // Apply trait skill modifiers
-        const traitMods = calculateTraitEffects(activeCrew);
-        successChance += traitMods.skillMod;
-        successChance = Math.max(0, Math.min(100, successChance));
-
-        const roll = Math.random() * 100;
-        let damageTaken = 0;
-        let success = false;
-
-        // Determine which skill to award XP to based on hazard type
-        const matchingSkill = SKILL_HAZARD_MAP[
-          room.hazardType as any
-        ] as keyof typeof STARTING_SKILLS;
-
-        if (roll < Math.max(0, successChance)) {
-          // success
-          success = true;
-          const activeEffects = getActiveEffects(get().playerShip as any);
-          const traitMods = calculateTraitEffects(activeCrew);
-          const loot = room.loot.map((l) => ({
-            ...l,
-            value: Math.round(
-              calculateLootValue(
-                l.value,
-                activeCrew.skills.salvage,
-                activeEffects,
-              ) * (1 + traitMods.lootMod / 100)
-            ),
-          }));
-          set((state) => ({
-            currentRun: state.currentRun
-              ? {
-                  ...state.currentRun,
-                  timeRemaining: newTime,
-                  collectedLoot: state.currentRun.collectedLoot.concat(loot),
-                }
-              : null,
-          }));
-          // If room contains equipment, handle cargo capacity
-          if (room.equipment) {
-            const eq = room.equipment;
-            const run = get().currentRun;
-            const ship = get().playerShip;
-            const capacity = ship?.cargoCapacity ?? 10;
-            const currentLoaded =
-              (run?.collectedLoot?.length ?? 0) +
-              (run?.collectedEquipment?.length ?? 0);
-
-            if (currentLoaded >= capacity) {
-              // Cargo full - trigger swap modal
-              set({ cargoSwapPending: { newItem: eq, source: "salvage" } });
-            } else {
-              // Space available - add directly
-              room.equipment = null;
-              set((state) => ({
-                currentRun: state.currentRun
-                  ? {
-                      ...state.currentRun,
-                      collectedEquipment: (
-                        state.currentRun.collectedEquipment || []
-                      ).concat(eq),
-                    }
-                  : null,
-              }));
-            }
-          }
-          // Award XP to matching skill for active crew
-          get().gainSkillXp(matchingSkill, 10);
-        } else {
-          // fail
-          damageTaken = damageOnFail(room.hazardLevel);
-          const sanityLoss = SANITY_LOSS_BASE + room.hazardLevel;
-          set((state) => {
-            const updated = state.crewRoster.map((c) =>
-              c.id === activeCrew.id
-                ? {
-                    ...c,
-                    hp: Math.max(0, c.hp - damageTaken),
-                    sanity: Math.max(0, c.sanity - sanityLoss),
-                  }
-                : c,
-            );
-            return {
-              currentRun: state.currentRun
-                ? { ...state.currentRun, timeRemaining: newTime }
-                : null,
-              crewRoster: updated,
-              crew: updated.find((c) => c.id === activeCrew.id) ?? state.crew,
-            };
-          });
-          // Award smaller XP on failure
-          get().gainSkillXp(matchingSkill, 5);
-        }
-
-        // Mark room looted regardless of success to keep things moving
-        set((state) => ({
-          availableWrecks: state.availableWrecks.map((w) =>
-            w.id === wreck.id
-              ? {
-                  ...w,
-                  rooms: w.rooms.map((r) =>
-                    r.id === room.id ? { ...r, looted: true } : r,
-                  ),
-                }
-              : w,
-          ),
-        }));
-
-        // Deduct stamina from active crew
-        set((state) => {
-          const updated = state.crewRoster.map((c) =>
-            c.id === activeCrew.id
-              ? { ...c, stamina: Math.max(0, c.stamina - STAMINA_PER_SALVAGE) }
-              : c,
-          );
-          return {
-            crewRoster: updated,
-            crew: updated.find((c) => c.id === activeCrew.id) ?? state.crew,
-          };
-        });
-
-        // Chance to trigger salvage event
-        if (Math.random() < SALVAGE_EVENT_CHANCE) {
-          const ev = pickEventByTrigger("salvage", get() as any);
-          if (ev) set({ activeEvent: ev });
-        }
-
-        // Check for forced retreat if time exhausted
-        if (newTime <= 0) {
-          set((state) => ({
-            currentRun: state.currentRun
-              ? { ...state.currentRun, status: "returning", timeRemaining: 0 }
-              : null,
-          }));
-        }
-
-        return { success, damage: damageTaken };
+      salvageRoom: () => {
+        // Rooms with multiple items should use auto-salvage or per-item selection
+        return { success: false, damage: 0 };
       },
 
       salvageItem: (roomId: string, itemId: string) => {
@@ -745,13 +720,16 @@ export const useGameStore = create<GameState & GameActions>()(
         const item = room.loot.find((l) => l.id === itemId);
         if (!item) return { success: false, damage: 0, timeCost: 0 };
 
-        // Check cargo capacity (1 item = 1 slot)
-        const ship = get().playerShip;
-        const capacity = ship?.cargoCapacity ?? 10;
-        const currentLoaded = run.collectedLoot.length;
-        if (currentLoaded + 1 > capacity) {
-          // Trigger cargo swap modal
-          set({ cargoSwapPending: { newItem: item, source: "salvage" } });
+        const getActiveCrew = () => {
+          const roster = get().crewRoster || [];
+          const selected = get().selectedCrewId;
+          return roster.find((c) => c.id === selected) ?? roster[0];
+        };
+        const activeCrew = getActiveCrew();
+
+        // Check if crew is available for work
+        const availability = getCrewAvailability(activeCrew, get().settings);
+        if (!availability.available) {
           return { success: false, damage: 0, timeCost: 0 };
         }
 
@@ -772,12 +750,6 @@ export const useGameStore = create<GameState & GameActions>()(
         const timeCost = RARITY_TIME_COST[item.rarity];
         const newTime = run.timeRemaining - timeCost;
 
-        const getActiveCrew = () => {
-          const roster = get().crewRoster || [];
-          const selected = get().selectedCrewId;
-          return roster.find((c) => c.id === selected) ?? roster[0];
-        };
-        const activeCrew = getActiveCrew();
         // Hazard check for entering/working in room
         let successChance = calculateHazardSuccess(
           activeCrew.skills,
@@ -812,7 +784,7 @@ export const useGameStore = create<GameState & GameActions>()(
           );
 
         if (roll < Math.max(0, successChance)) {
-          // Success - take the item
+          // Success - add item to crew inventory
           success = true;
           const activeEffects = getActiveEffects(get().playerShip as any);
           const traitMods = calculateTraitEffects(activeCrew);
@@ -832,16 +804,20 @@ export const useGameStore = create<GameState & GameActions>()(
               ? {
                   ...state.currentRun,
                   timeRemaining: newTime,
-                  collectedLoot:
-                    state.currentRun.collectedLoot.concat(adjustedItem),
                   stats: {
                     ...state.currentRun.stats,
                     roomsSucceeded: state.currentRun.stats.roomsSucceeded + 1,
                   },
                 }
               : null,
-            // Also add to persistent inventory immediately
-            inventory: state.inventory.concat(adjustedItem),
+            // Add item to crew inventory instead of ship cargo
+            crewRoster: state.crewRoster.map((c) =>
+              c.id === activeCrew.id
+                ? { ...c, inventory: [adjustedItem] } // Max 1 item
+                : c
+            ),
+            // Update active crew reference
+            crew: state.crewRoster.find((c) => c.id === activeCrew.id) ?? state.crew,
             // Remove item from room
             availableWrecks: state.availableWrecks.map((w) =>
               w.id === wreck.id
@@ -865,35 +841,7 @@ export const useGameStore = create<GameState & GameActions>()(
             ),
           }));
 
-          // If room contains equipment, handle cargo capacity
-          if (room.equipment) {
-            const eq = room.equipment;
-            const run = get().currentRun;
-            const ship = get().playerShip;
-            const capacity = ship?.cargoCapacity ?? 10;
-            const currentLoaded =
-              (run?.collectedLoot?.length ?? 0) +
-              (run?.collectedEquipment?.length ?? 0);
-
-            if (currentLoaded >= capacity) {
-              // Cargo full - trigger swap modal
-              set({ cargoSwapPending: { newItem: eq, source: "salvage" } });
-            } else {
-              // Space available - add directly
-              room.equipment = null;
-              set((state) => ({
-                currentRun: state.currentRun
-                  ? {
-                      ...state.currentRun,
-                      collectedEquipment: (
-                        state.currentRun.collectedEquipment || []
-                      ).concat(eq),
-                    }
-                  : null,
-              }));
-            }
-          }
-
+          // Remove equipment handling - now unified with loot
           get().gainSkillXp(matchingSkill, xpSuccess);
         } else {
           // Fail - take damage, waste time
@@ -1087,12 +1035,56 @@ export const useGameStore = create<GameState & GameActions>()(
         }
 
         // Move collected equipment from run into equipmentInventory (not sold)
+        // Equipment is now unified with loot, identified by itemType field
         // Keep currentRun with status 'completed' so player can sell loot in HubScreen
+        const equipmentItems = run.collectedLoot.filter((item) => 'itemType' in item);
         set((state) => ({
-          equipmentInventory: (state.equipmentInventory || []).concat(
-            run.collectedEquipment || [],
-          ),
+          equipmentInventory: (state.equipmentInventory || []).concat(equipmentItems),
         }));
+      },
+
+      emergencyEvacuate: () => {
+        const run = get().currentRun;
+        if (!run) return;
+
+        // Calculate total value of items being abandoned
+        let abandonedValue = 0;
+        
+        // Add value from crew inventories
+        get().crewRoster.forEach((crew) => {
+          crew.inventory.forEach((item) => {
+            abandonedValue += item.value;
+          });
+        });
+        
+        // Add value from ship cargo
+        run.collectedLoot.forEach((item) => {
+          abandonedValue += item.value;
+        });
+
+        // Play warning sound
+        try {
+          const audio = new Audio("/assets/audio/SCI-FI_UI_SFX_PACK/Glitches/Glitch_19.wav");
+          audio.volume = 0.5;
+          audio.play().catch(() => {});
+        } catch {}
+
+        // Clear all inventories and cargo
+        set((state) => ({
+          crewRoster: state.crewRoster.map((c) => ({
+            ...c,
+            inventory: [],
+            position: { location: "station" },
+          })),
+          currentRun: null, // End run immediately
+        }));
+
+        // Call returnToStation to handle fuel, provisions, and day advancement
+        // This will set currentRun back, so we clear it again
+        get().returnToStation();
+        
+        // Clear the run that returnToStation creates
+        set({ currentRun: null });
       },
 
       sellAllLoot: () => {
@@ -1439,6 +1431,45 @@ export const useGameStore = create<GameState & GameActions>()(
         if (typeof state.cargoSwapPending === "undefined")
           updates.cargoSwapPending = null;
 
+        // Migrate crew to have inventory field (Phase 9+ feature)
+        if (state.crewRoster && state.crewRoster.length > 0) {
+          const needsInventory = state.crewRoster.some((c: any) => !c.inventory);
+          if (needsInventory) {
+            updates.crewRoster = state.crewRoster.map((c: any) => ({
+              ...c,
+              inventory: c.inventory || [],
+            }));
+            console.log("[Migration] Added inventory field to crew roster");
+          }
+        }
+
+        // Migrate currentRun to remove collectedEquipment (unified into collectedLoot)
+        if (state.currentRun && (state.currentRun as any).collectedEquipment) {
+          const run = state.currentRun;
+          updates.currentRun = {
+            ...run,
+            collectedLoot: [
+              ...run.collectedLoot,
+              ...((run as any).collectedEquipment || []),
+            ],
+          };
+          delete (updates.currentRun as any).collectedEquipment;
+          console.log("[Migration] Merged collectedEquipment into collectedLoot");
+        }
+
+        // Ensure settings have crew work thresholds (Phase 9+ feature)
+        if (state.settings) {
+          if (typeof state.settings.minCrewHpPercent === "undefined") {
+            updates.settings = {
+              ...state.settings,
+              minCrewHpPercent: 50,
+              minCrewStamina: 20,
+              minCrewSanity: 20,
+            };
+            console.log("[Migration] Added crew work threshold settings");
+          }
+        }
+
         // Ensure playerShip has reactor and powerCapacity
         if (
           state.playerShip &&
@@ -1508,21 +1539,17 @@ export const useGameStore = create<GameState & GameActions>()(
         const run = get().currentRun;
         if (!run) return;
 
-        // Remove the dropped item from cargo
-        const updatedLoot = run.collectedLoot.filter(
-          (item) => item.id !== dropItemId,
-        );
-        const updatedEquipment = (run.collectedEquipment || []).filter(
-          (item) => item.id !== dropItemId,
-        );
+        // Remove the dropped item from cargo and add new item
+        const updatedLoot = run.collectedLoot
+          .filter((item) => item.id !== dropItemId);
+        updatedLoot.push(pending.newItem as any);
 
-        // Add the new equipment
+        // Update run with new cargo
         set((state) => ({
           currentRun: state.currentRun
             ? {
                 ...state.currentRun,
                 collectedLoot: updatedLoot,
-                collectedEquipment: updatedEquipment.concat(pending.newItem),
               }
             : null,
           cargoSwapPending: null,
@@ -1601,6 +1628,7 @@ export const useGameStore = create<GameState & GameActions>()(
           currentJob: "idle",
           status: "active",
           position: { location: "station" },
+          inventory: [], // Empty inventory for new hires
         };
 
         set((s) => ({
@@ -1717,6 +1745,15 @@ export const useGameStore = create<GameState & GameActions>()(
         
         const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
         
+        // Helper to play audio
+        const playAudio = (filename: string) => {
+          try {
+            const audio = new Audio(`/assets/audio/SCI-FI_UI_SFX_PACK/${filename}`);
+            audio.volume = 0.3;
+            audio.play().catch(() => {}); // Ignore errors
+          } catch {}
+        };
+        
         while (autoSalvageRunning && !autoSalvageCancelled) {
           const state = get();
           const run = state.currentRun;
@@ -1736,41 +1773,35 @@ export const useGameStore = create<GameState & GameActions>()(
           // Check cargo capacity
           const ship = state.playerShip;
           const capacity = ship?.cargoCapacity ?? 10;
-          const currentLoaded = run.collectedLoot.length + (run.collectedEquipment?.length ?? 0);
+          const currentLoaded = run.collectedLoot.length;
           if (currentLoaded >= capacity) {
             result.stopReason = "cargo_full";
             break;
           }
           
-          // Check crew conditions based on rules
-          const activeCrew = state.crewRoster.find((c) => c.id === state.selectedCrewId) ?? state.crewRoster[0];
-          if (activeCrew) {
-            // Check injury
-            if (rules.stopOnInjury && activeCrew.hp < activeCrew.maxHp * 0.5) {
-              result.stopReason = "injury";
-              break;
-            }
-            
-            // Check stamina
-            if (activeCrew.stamina <= rules.stopOnLowStamina) {
-              result.stopReason = "crew_exhausted";
-              break;
-            }
-            
-            // Check sanity
-            if (activeCrew.sanity <= rules.stopOnLowSanity) {
-              result.stopReason = "crew_exhausted";
-              break;
-            }
-          }
-          
-          // Find next room to salvage based on rules
+          // Find next room to salvage
           const wreck = state.availableWrecks.find((w) => w.id === run.wreckId);
           if (!wreck) {
             result.stopReason = "complete";
             break;
           }
           
+          // Auto-cut sealed rooms if time permits
+          const sealedRooms = wreck.rooms.filter(
+            (r) => !r.looted && r.sealed && r.hazardLevel <= rules.maxHazardLevel
+          );
+          
+          if (sealedRooms.length > 0 && run.timeRemaining >= 1) {
+            const roomToCut = sealedRooms[0];
+            const cutResult = get().cutIntoRoom(roomToCut.id);
+            if (cutResult.success) {
+              playAudio("Impacts/Impact_2_Reso.wav");
+              await sleep(delay);
+              continue; // Loop back to salvage the now-unsealed room
+            }
+          }
+          
+          // Find available unsealed rooms
           const availableRooms = wreck.rooms.filter(
             (r) => !r.looted && !r.sealed && r.hazardLevel <= rules.maxHazardLevel
           );
@@ -1794,38 +1825,79 @@ export const useGameStore = create<GameState & GameActions>()(
             }
           }
           
-          // Salvage the room
-          const previousLootCount = run.collectedLoot.length;
+          // Select best crew for this room
+          const crewSelection = selectBestCrewForRoom(nextRoom, state.crewRoster, state.settings);
           
-          const salvageResult = get().salvageRoom(nextRoom.id);
-          
-          if (salvageResult.success) {
-            result.roomsSalvaged++;
-            
-            // Calculate loot gained
-            const newRun = get().currentRun;
-            if (newRun) {
-              const newLootCount = newRun.collectedLoot.length - previousLootCount;
-              result.lootCollected += newLootCount;
-              
-              // Estimate credits
-              for (let i = previousLootCount; i < newRun.collectedLoot.length; i++) {
-                result.creditsEarned += newRun.collectedLoot[i]?.value ?? 0;
-              }
-            }
+          if (!crewSelection.crew) {
+            // No crew available
+            result.stopReason = "crew_exhausted";
+            break;
           }
           
-          // Check for injuries
-          if (salvageResult.damage > 0) {
-            result.injuries++;
-            if (rules.stopOnInjury) {
-              result.stopReason = "injury";
+          // Set this crew as selected for salvage
+          set({ selectedCrewId: crewSelection.crew.id });
+          
+          // Salvage items from the room one by one
+          const roomItems = [...nextRoom.loot];
+          let roomSuccess = false;
+          
+          for (const item of roomItems) {
+            // Check if crew inventory is full
+            const currentCrew = get().crewRoster.find((c) => c.id === crewSelection.crew!.id);
+            if (!currentCrew) break;
+            
+            if (currentCrew.inventory.length >= 1) {
+              // Transfer items to ship
+              const transferSuccess = get().transferAllItemsToShip(currentCrew.id);
+              
+              if (transferSuccess) {
+                playAudio("Clicks/Click_Scoop_Up.wav");
+              } else {
+                // Cargo full
+                result.stopReason = "cargo_full";
+                autoSalvageRunning = false;
+                break;
+              }
+            }
+            
+            // Salvage the item
+            const salvageResult = get().salvageItem(nextRoom.id, item.id);
+            
+            if (salvageResult.success) {
+              roomSuccess = true;
+              result.lootCollected++;
+              result.creditsEarned += item.value;
+            }
+            
+            if (salvageResult.damage > 0) {
+              result.injuries++;
+              if (rules.stopOnInjury && currentCrew.hp < currentCrew.maxHp * 0.5) {
+                result.stopReason = "injury";
+                autoSalvageRunning = false;
+                break;
+              }
+            }
+            
+            await sleep(delay);
+          }
+          
+          if (!autoSalvageRunning) break;
+          
+          // After room is done, transfer any remaining items
+          const finalCrew = get().crewRoster.find((c) => c.id === crewSelection.crew!.id);
+          if (finalCrew && finalCrew.inventory.length > 0) {
+            const transferSuccess = get().transferAllItemsToShip(finalCrew.id);
+            if (transferSuccess) {
+              playAudio("Clicks/Click_Scoop_Up.wav");
+            } else {
+              result.stopReason = "cargo_full";
               break;
             }
           }
           
-          // Wait before next tick
-          await sleep(delay);
+          if (roomSuccess) {
+            result.roomsSalvaged++;
+          }
         }
         
         if (autoSalvageCancelled) {

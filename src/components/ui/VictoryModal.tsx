@@ -19,7 +19,7 @@ export default function VictoryModal({
         {/* Victory header */}
         <div className="text-center mb-6 border-b border-yellow-600/30 pb-4">
           <div className="text-yellow-500 font-bold text-3xl animate-pulse">
-            🎯 ESCAPED!
+            ESCAPED!
           </div>
           <div className="text-yellow-400 text-sm mt-2 font-mono">
             You've collected enough credits to escape Cinder Station
@@ -30,7 +30,7 @@ export default function VictoryModal({
         <div className="space-y-3 mb-6">
           <div className="bg-zinc-800 p-3 rounded border border-yellow-600/20">
             <div className="text-yellow-400 font-bold text-lg">
-              💰 {formatNumber(stats.totalCreditsEarned)} CR
+              {formatNumber(stats.totalCreditsEarned)} CR
             </div>
             <div className="text-zinc-400 text-xs">Total Credits Earned</div>
           </div>
@@ -72,7 +72,7 @@ export default function VictoryModal({
           {stats.longestWinStreak > 0 && (
             <div className="bg-emerald-900/30 p-2 rounded border border-emerald-600/20 text-xs">
               <div className="text-emerald-400 font-bold">
-                🔥 {stats.longestWinStreak}
+                {stats.longestWinStreak}
               </div>
               <div className="text-zinc-400">Longest Win Streak</div>
             </div>
@@ -81,7 +81,7 @@ export default function VictoryModal({
           {stats.deathsAvoided > 0 && (
             <div className="bg-cyan-900/30 p-2 rounded border border-cyan-600/20 text-xs">
               <div className="text-cyan-400 font-bold">
-                💪 {stats.deathsAvoided}
+                {stats.deathsAvoided}
               </div>
               <div className="text-zinc-400">Deaths Avoided</div>
             </div>

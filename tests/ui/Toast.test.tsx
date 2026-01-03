@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import Toasts from '../../src/components/ui/Toast';
 import { useUiStore } from '../../src/stores/uiStore';
-import { act } from 'react-dom/test-utils';
+import { act } from 'react';
 
 describe('Toasts UI', () => {
   it('renders added toasts and allows dismissal', () => {

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useGameStore } from "../../stores/gameStore";
 import type { AutoSalvageRules, AutoSalvageResult } from "../../stores/gameStore";
 import { FUEL_COST_PER_AU } from "../../game/constants";
@@ -11,6 +11,7 @@ import HazardTag from "../ui/HazardTag";
 import CargoSwapModal from "../ui/CargoSwapModal";
 import AutoSalvageMenu from "../game/AutoSalvageMenu";
 import { useAudio } from "../../hooks/useAudio";
+import Icon from "../ui/Icon";
 import type { ScreenProps, CrewMember } from "../../types";
 
 // Helper: Get crew availability status
@@ -40,6 +41,7 @@ export default function SalvageScreen({ onNavigate }: ScreenProps) {
     transferItemToShip,
     transferAllItemsToShip,
     settings,
+    autoAssignments,
   } = useGameStore((s) => ({
     currentRun: s.currentRun,
     availableWrecks: s.availableWrecks,
@@ -56,6 +58,7 @@ export default function SalvageScreen({ onNavigate }: ScreenProps) {
     transferItemToShip: s.transferItemToShip,
     transferAllItemsToShip: s.transferAllItemsToShip,
     settings: s.settings,
+    autoAssignments: (s as any).autoAssignments || {},
   }));
 
   const audio = useAudio();
@@ -64,6 +67,8 @@ export default function SalvageScreen({ onNavigate }: ScreenProps) {
   const [sealedUpdateCounter, setSealedUpdateCounter] = useState(0);
   const [showAutoSalvageMenu, setShowAutoSalvageMenu] = useState(false);
   const [isAutoSalvageRunning, setIsAutoSalvageRunning] = useState(false);
+  const [lootFlyKey, setLootFlyKey] = useState(0);
+  const prevLootCountRef = useRef<number>(currentRun?.collectedLoot.length ?? 0);
 
   // Play transition sound on mount
   useEffect(() => {
@@ -71,6 +76,24 @@ export default function SalvageScreen({ onNavigate }: ScreenProps) {
   }, []);
   const [autoSalvageResult, setAutoSalvageResult] = useState<AutoSalvageResult | null>(null);
   const [showEmergencyEvacModal, setShowEmergencyEvacModal] = useState(false);
+
+  // Highlight whichever room is actively being auto-salvaged
+  const activeRoomId = useMemo(() => {
+    if (!isAutoSalvageRunning) return undefined;
+    const firstAssignment = Object.values(autoAssignments || {})[0];
+    return typeof firstAssignment === "string" ? firstAssignment : undefined;
+  }, [autoAssignments, isAutoSalvageRunning]);
+
+  // Trigger loot fly animation when new loot is collected
+  useEffect(() => {
+    if (!currentRun) return;
+    const prev = prevLootCountRef.current;
+    const next = currentRun.collectedLoot.length;
+    if (next > prev) {
+      setLootFlyKey((k) => k + 1);
+    }
+    prevLootCountRef.current = next;
+  }, [currentRun?.collectedLoot.length]);
 
   if (!currentRun)
     return (
@@ -160,9 +183,10 @@ export default function SalvageScreen({ onNavigate }: ScreenProps) {
 
   const onReturn = () => {
     if (!canReturn) {
-      alert("⚠️ Not enough fuel to return!");
+      alert("Not enough fuel to return!");
       return;
     }
+    audio.playTransition();
     returnToStation();
     onNavigate("summary");
   };
@@ -175,7 +199,15 @@ export default function SalvageScreen({ onNavigate }: ScreenProps) {
   };
 
   return (
-    <div className="max-w-[1600px] mx-auto">
+    <div className="max-w-[1600px] mx-auto relative">
+      {lootFlyKey > 0 && (
+        <div
+          key={lootFlyKey}
+          className="pointer-events-none absolute right-6 -top-2 animate-[loot-fly_0.9s_ease-in-out_forwards]"
+        >
+          <Icon name="chest" size={36} tint="amber" />
+        </div>
+      )}
       {/* Header */}
       <IndustrialPanel
         title={`SALVAGE OPS // ${displayName.toUpperCase()}`}
@@ -197,28 +229,38 @@ export default function SalvageScreen({ onNavigate }: ScreenProps) {
       <IndustrialPanel title="OPERATIONS" showTape>
         <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
           <IndustrialButton
-            title="🤖 Auto-Salvage"
+            icon="gear"
+            title="Auto-Salvage"
             description="Run automated salvage"
             variant="info"
-            onClick={() => setShowAutoSalvageMenu(true)}
+            onClick={() => {
+              audio.playClick();
+              setShowAutoSalvageMenu(true);
+            }}
             disabled={isAutoSalvageRunning}
           />
           <IndustrialButton
-            title="✓ Return to Station"
+            icon="home"
+            title="Return to Station"
             description="Complete mission"
             variant="success"
             onClick={onReturn}
             disabled={!canReturn || isAutoSalvageRunning}
           />
           <IndustrialButton
-            title="🚨 Emergency Evac"
+            icon="warning"
+            title="Emergency Evac"
             description="Abandon mission"
             variant="danger"
-            onClick={() => setShowEmergencyEvacModal(true)}
+            onClick={() => {
+              audio.playError();
+              setShowEmergencyEvacModal(true);
+            }}
             disabled={isAutoSalvageRunning}
           />
           <IndustrialButton
-            title={`👥 Crew ${showCrewPanel ? '▼' : '▶'}`}
+            icon="crew"
+            title={`Crew ${showCrewPanel ? '▼' : '▶'}`}
             description="Toggle crew panel"
             variant="info"
             onClick={() => setShowCrewPanel(!showCrewPanel)}
@@ -247,6 +289,8 @@ export default function SalvageScreen({ onNavigate }: ScreenProps) {
                 ship={shipObj}
                 crewRoster={crewRoster}
                 locationFilter="wreck"
+                crewWorking={isAutoSalvageRunning}
+                activeRoomId={activeRoomId}
                 allowedRoomIds={allowedRoomIds}
                 onRoomClick={(room) => {
                   if (!allowedRoomIds.has(room.id) && room.sealed) {
@@ -471,11 +515,11 @@ export default function SalvageScreen({ onNavigate }: ScreenProps) {
                 This room is sealed. You must use a Cutting Laser to breach the door (costs 1 time unit).
               </div>
               {currentRun.timeRemaining < 1 && (
-                <HazardTag label="⚠️ NOT ENOUGH TIME" variant="danger" />
+                <HazardTag label="NOT ENOUGH TIME" variant="danger" />
               )}
               <div className="flex gap-2">
                 <IndustrialButton
-                  title="🔧 Cut Into Room"
+                  title="Cut Into Room"
                   description="Use cutting laser"
                   variant="primary"
                   fullWidth
@@ -523,7 +567,7 @@ export default function SalvageScreen({ onNavigate }: ScreenProps) {
       {autoSalvageResult && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
           <IndustrialPanel
-            title="📊 AUTO-SALVAGE COMPLETE"
+            title="AUTO-SALVAGE COMPLETE"
             variant="success"
             showTape
             className="max-w-md"
@@ -578,12 +622,12 @@ export default function SalvageScreen({ onNavigate }: ScreenProps) {
                     autoSalvageResult.stopReason === "cancelled" ? "text-[var(--muted)]" :
                     "text-[var(--bad)]"
                   }`}>
-                    {autoSalvageResult.stopReason === "complete" && "✓ All rooms cleared"}
-                    {autoSalvageResult.stopReason === "cargo_full" && "📦 Cargo full"}
-                    {autoSalvageResult.stopReason === "time_out" && "⏱ Time expired"}
-                    {autoSalvageResult.stopReason === "crew_exhausted" && "😓 Crew exhausted"}
-                    {autoSalvageResult.stopReason === "injury" && "🩹 Crew injured"}
-                    {autoSalvageResult.stopReason === "cancelled" && "⏹ Cancelled"}
+                    {autoSalvageResult.stopReason === "complete" && "All rooms cleared"}
+                    {autoSalvageResult.stopReason === "cargo_full" && "Cargo full"}
+                    {autoSalvageResult.stopReason === "time_out" && "Time expired"}
+                    {autoSalvageResult.stopReason === "crew_exhausted" && "Crew exhausted"}
+                    {autoSalvageResult.stopReason === "injury" && "Crew injured"}
+                    {autoSalvageResult.stopReason === "cancelled" && "Cancelled"}
                   </span>
                 </div>
               </div>
@@ -603,7 +647,7 @@ export default function SalvageScreen({ onNavigate }: ScreenProps) {
       {showEmergencyEvacModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
           <IndustrialPanel
-            title="🚨 EMERGENCY EVACUATION"
+            title="EMERGENCY EVACUATION"
             variant="danger"
             showTape
             className="max-w-md"
@@ -612,7 +656,7 @@ export default function SalvageScreen({ onNavigate }: ScreenProps) {
               <div className="text-[var(--muted)] text-sm">
                 <p className="mb-2">Are you sure you want to emergency evacuate?</p>
               </div>
-              <HazardTag label="⚠️ ALL CREW INVENTORY AND SHIP CARGO WILL BE ABANDONED!" variant="danger" />
+              <HazardTag label="ALL CREW INVENTORY AND SHIP CARGO WILL BE ABANDONED!" variant="danger" />
               <div className="bg-[rgba(255,75,75,0.1)] border border-[rgba(255,75,75,0.25)] rounded-lg p-3">
                 <div className="text-xs text-[var(--muted)] mb-1 uppercase tracking-wider">
                   Value at Risk:
@@ -626,7 +670,7 @@ export default function SalvageScreen({ onNavigate }: ScreenProps) {
               </div>
               <div className="flex gap-2">
                 <IndustrialButton
-                  title="🚨 EVACUATE NOW"
+                  title="EVACUATE NOW"
                   description="Abandon mission"
                   variant="danger"
                   fullWidth

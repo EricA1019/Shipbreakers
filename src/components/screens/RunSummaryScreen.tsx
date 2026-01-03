@@ -22,6 +22,7 @@ export default function RunSummaryScreen({ onNavigate }: ScreenProps) {
           <div className="mb-4">No run to summarize.</div>
           <IndustrialButton 
             onClick={() => onNavigate("hub")}
+            icon="home"
             title="Return to Hub"
           />
         </IndustrialPanel>
@@ -70,13 +71,13 @@ export default function RunSummaryScreen({ onNavigate }: ScreenProps) {
 
       <div className="relative z-10 w-full">
         <IndustrialPanel
-          title="✓ MISSION COMPLETE"
+          title="MISSION COMPLETE"
           subtitle="SALVAGE RUN SUMMARY · {currentRun.wreckData?.name?.toUpperCase() || 'UNKNOWN WRECK'}"
           className="border-2 border-cyan-500/30 shadow-[0_0_40px_rgba(56,224,199,0.15)]"
         >
           {/* Success Banner */}
           <div className="bg-green-500/8 border border-green-500/25 rounded-xl p-5 mb-6 text-center">
-            <div className="text-6xl mb-3">🎯</div>
+            <div className="text-6xl mb-3">◆</div>
             <div className="font-['Orbitron'] font-extrabold text-xl text-green-400 uppercase tracking-wide glow-ok mb-2">
               SUCCESSFUL OPERATION
             </div>
@@ -160,7 +161,7 @@ export default function RunSummaryScreen({ onNavigate }: ScreenProps) {
                 {notableLoot.map((item, i) => (
                   <div key={i} className="bg-black/30 border border-white/6 rounded-lg p-2.5 text-center">
                     <div className="text-2xl mb-1">
-                      📦
+                      ■
                     </div>
                     <div className="text-[10px] text-zinc-400 leading-tight">
                       {item.name.length > 12 ? item.name.substring(0, 10) + '...' : item.name}
@@ -177,6 +178,7 @@ export default function RunSummaryScreen({ onNavigate }: ScreenProps) {
           <IndustrialButton
             variant="primary"
             onClick={onReturn}
+            icon="home"
             title="→ Return to Station"
             description="Proceed to hub and manage loot"
           />

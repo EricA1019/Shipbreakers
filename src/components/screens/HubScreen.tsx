@@ -9,6 +9,7 @@ import HireCrewModal from "../ui/HireCrewModal";
 import CrewSelectionModal from "../ui/CrewSelectionModal";
 import StationBarPanel from "../ui/StationBarPanel";
 import ShoreLeavePanel from "../ui/ShoreLeavePanel";
+import ShipStatusPanel from "../game/ShipStatusPanel";
 import IndustrialPanel from "../ui/IndustrialPanel";
 import IndustrialButton from "../ui/IndustrialButton";
 import StatChip from "../ui/StatChip";
@@ -148,42 +149,58 @@ export default function HubScreen({ onNavigate }: ScreenProps) {
           >
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               <IndustrialButton
-                title="🗺️ Mission Select"
+                icon="map"
+                title="Mission Select"
                 description="Browse wrecks & plan runs"
                 variant="primary"
                 onClick={() => onNavigate("select")}
               />
               <IndustrialButton
-                title="⛽ Fuel Depot"
+                icon="fuel"
+                title="Fuel Depot"
                 description="Refuel ship (85 cr/unit)"
                 variant="info"
                 onClick={() => setShowFuelDepot(true)}
               />
               <IndustrialButton
-                title="🏥 Medical Bay"
+                icon="health"
+                title="Medical Bay"
                 description="Heal injured crew (200 cr)"
                 variant="success"
                 onClick={() => setShowMedicalBay(true)}
               />
               <IndustrialButton
-                title="🛠️ Ship Equipment"
+                icon="gear"
+                title="Ship Equipment"
                 description="Manage loadout & power"
                 variant="info"
                 onClick={() => onNavigate("shipyard")}
               />
               <IndustrialButton
-                title="🛒 Equipment Shop"
+                icon="wrench"
+                title="Equipment Shop"
                 description="Buy reactors, tools, systems"
                 variant="info"
                 onClick={() => onNavigate("shop")}
               />
               <IndustrialButton
-                title="👥 Crew Management"
+                icon="crew"
+                title="Crew Management"
                 description="Roster, skills, assignments"
                 variant="info"
                 onClick={() => onNavigate("crew")}
               />
             </div>
+          </IndustrialPanel>
+
+          {/* SS BREAKER STATUS */}
+          <IndustrialPanel
+            title="SS BREAKER // STATUS"
+            subtitle="PLAYER VESSEL DIAGNOSTICS"
+            showTape
+            headerRight={<StatusPill icon="dot" label="OPERATIONAL" />}
+          >
+            <ShipStatusPanel />
           </IndustrialPanel>
 
           {/* HAUL MANAGEMENT */}
@@ -218,7 +235,7 @@ export default function HubScreen({ onNavigate }: ScreenProps) {
                 ))}
               </div>
               <IndustrialButton
-                title="💰 Sell All Loot"
+                title="Sell All Loot"
                 description={`Cash out entire cargo hold (${lootValue} credits)`}
                 variant="success"
                 fullWidth
@@ -275,7 +292,7 @@ export default function HubScreen({ onNavigate }: ScreenProps) {
                     </span>
                   </div>
                   <IndustrialButton
-                    title="⬆️ Upgrade License Tier"
+                    title="Upgrade License Tier"
                     description="Access high-value zones & better stock"
                     variant="info"
                     fullWidth
@@ -399,25 +416,29 @@ export default function HubScreen({ onNavigate }: ScreenProps) {
           <IndustrialPanel title="SYSTEM" showTape>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <IndustrialButton
-                title="📊 Statistics"
+                icon="info"
+                title="Statistics"
                 description="View career stats"
                 variant="info"
                 onClick={() => setShowStats(true)}
               />
               <IndustrialButton
-                title="⚙️ Settings"
+                icon="gear"
+                title="Settings"
                 description="Audio, controls, gameplay"
                 variant="info"
                 onClick={() => setShowSettings(true)}
               />
               <IndustrialButton
-                title="📦 Sell Loot"
+                icon="chest"
+                title="Sell Loot"
                 description="Individual item sales"
                 variant="info"
                 onClick={() => onNavigate("sell")}
               />
               <IndustrialButton
-                title="🔄 Reset Game"
+                icon="warning"
+                title="Reset Game"
                 description="Start new career"
                 variant="danger"
                 onClick={handleReset}

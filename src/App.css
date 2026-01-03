@@ -40,3 +40,17 @@
 .read-the-docs {
   color: #888;
 }
+@keyframes loot-fly {
+  0% {
+    transform: translate(0, 0) scale(0.9);
+    opacity: 0.95;
+  }
+  70% {
+    transform: translate(-40px, -120px) scale(0.75);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(-120px, -220px) scale(0.6);
+    opacity: 0;
+  }
+}

@@ -72,7 +72,7 @@ export default function SellScreen({ onNavigate }: ScreenProps) {
                   onClick={() => sellItem(it.id, it.value)}
                   className="bg-amber-500/15 border border-amber-500 text-amber-400 px-3 py-1.5 text-xs uppercase tracking-wide rounded-md hover:bg-amber-500/25 transition font-['Orbitron'] font-bold"
                 >
-                  💰 Sell
+                  Sell
                 </button>
               </div>
             ))}
@@ -101,7 +101,8 @@ export default function SellScreen({ onNavigate }: ScreenProps) {
               }
             }}
             disabled={total === 0}
-            title="💰 Sell All"
+            icon="coin"
+            title="Sell All"
             description={`Process ${(total / 1000).toFixed(1)}K CR`}
           />
           <IndustrialButton
@@ -109,6 +110,7 @@ export default function SellScreen({ onNavigate }: ScreenProps) {
               audio.playTransition();
               onNavigate("hub");
             }}
+            icon="home"
             title="← Back to Station"
             description="Return to hub"
           />

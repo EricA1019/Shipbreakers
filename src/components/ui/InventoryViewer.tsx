@@ -52,7 +52,7 @@ export default function InventoryViewer({
       <div className="bg-zinc-900 border-2 border-amber-600/50 p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
         <div className="sticky top-0 bg-zinc-900 pb-4 mb-4 border-b border-amber-600/20">
           <div className="text-amber-500 text-xs font-semibold tracking-wider">
-            📦 INVENTORY VIEWER
+            INVENTORY VIEWER
           </div>
           <div className="mt-3 flex justify-between items-start">
             <div>

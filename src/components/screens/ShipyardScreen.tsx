@@ -180,7 +180,8 @@ export const ShipyardScreen: React.FC<ScreenProps> = ({ onNavigate }) => {
                       </div>
                       <IndustrialButton
                         onClick={() => openManage(selectedRoom.id, slot.id)}
-                        title="⚙️"
+                        icon="wrench"
+                        title="Manage"
                         description=""
                       />
                     </div>
@@ -208,7 +209,8 @@ export const ShipyardScreen: React.FC<ScreenProps> = ({ onNavigate }) => {
                   <IndustrialButton
                     variant="danger"
                     onClick={handleUninstall}
-                    title="🔧 Uninstall"
+                    icon="cross"
+                    title="Uninstall"
                     description="Remove from slot"
                   />
                 </div>
@@ -259,7 +261,7 @@ export const ShipyardScreen: React.FC<ScreenProps> = ({ onNavigate }) => {
                                   : "bg-amber-500/15 border border-amber-500 text-amber-400 hover:bg-amber-500/25"
                               }`}
                             >
-                              ⚙️
+                              Install
                             </button>
                           </div>
                         </div>
@@ -278,7 +280,7 @@ export const ShipyardScreen: React.FC<ScreenProps> = ({ onNavigate }) => {
         {isOver && (
           <div className="mt-3 p-2 bg-red-500/15 border border-red-500/30 rounded-md">
             <div className="text-[10px] text-red-400 uppercase tracking-wide">
-              ⚠️ POWER OVERLOAD - CRITICAL SYSTEMS AT RISK
+              POWER OVERLOAD - CRITICAL SYSTEMS AT RISK
             </div>
           </div>
         )}
@@ -291,6 +293,7 @@ export const ShipyardScreen: React.FC<ScreenProps> = ({ onNavigate }) => {
             audio.playTransition();
             onNavigate("hub");
           }}
+          icon="home"
           title="← Back to Station"
           description="Return to hub"
         />

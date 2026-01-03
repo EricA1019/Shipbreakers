@@ -47,7 +47,7 @@ export default function MedicalBayModal({
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-zinc-900 border-2 border-amber-600/50 p-6 max-w-md w-full mx-4">
         <div className="text-amber-500 text-xs font-semibold tracking-wider mb-4">
-          🏥 MEDICAL BAY
+          MEDICAL BAY
         </div>
 
         <div className="bg-zinc-800 border border-amber-600/20 p-4 mb-4 rounded">
@@ -78,7 +78,7 @@ export default function MedicalBayModal({
 
         {isHealthy ? (
           <div className="text-center text-green-400 font-bold mb-4">
-            ✓ Crew is in perfect health!
+            Crew is in perfect health!
           </div>
         ) : (
           <div className="bg-zinc-800 border border-amber-600/20 p-3 mb-4 rounded">

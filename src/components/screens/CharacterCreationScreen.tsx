@@ -2,6 +2,7 @@ import { useMemo, useState, useEffect } from "react";
 import { useGameStore } from "../../stores/gameStore";
 import IndustrialPanel from "../ui/IndustrialPanel";
 import IndustrialButton from "../ui/IndustrialButton";
+import { InlineIcon } from "../ui/Icon";
 import { useAudio } from "../../hooks/useAudio";
 import type { ScreenProps, TraitId } from "../../types";
 import { getCharacterCreationTraitOptions } from "../../game/systems/CrewGenerator";
@@ -50,7 +51,7 @@ export default function CharacterCreationScreen({ onNavigate }: ScreenProps) {
   const backgrounds = [
     { 
       id: "ex-military",
-      icon: "⚔️",
+      icon: "",
       name: "EX-MILITARY",
       desc: "Former combat veteran with tactical experience. Proficient in handling hazardous situations and salvaging military hardware.",
       traits: ["BRAVE", "TACTICAL"],
@@ -58,7 +59,7 @@ export default function CharacterCreationScreen({ onNavigate }: ScreenProps) {
     },
     { 
       id: "engineer",
-      icon: "🔧",
+      icon: "",
       name: "ENGINEER",
       desc: "Experienced with ship systems and technical salvage. Can identify valuable components and repair critical equipment.",
       traits: ["METHODICAL", "PRECISE"],
@@ -208,7 +209,7 @@ export default function CharacterCreationScreen({ onNavigate }: ScreenProps) {
           {chosenTrait && (
             <div className="p-4 bg-cyan-500/5 border border-cyan-500/15 rounded-xl">
               <div className="text-xs text-cyan-400 mb-1 font-semibold">
-                💡 SELECTED: {TRAITS[chosenTrait as TraitId]?.name?.toUpperCase()}
+                <InlineIcon name="info" className="mr-1" /> SELECTED: {TRAITS[chosenTrait as TraitId]?.name?.toUpperCase()}
               </div>
               <div className="text-xs text-zinc-400">
                 Your background provides permanent bonuses and affects starting equipment. Choose wisely - this decision is permanent.
@@ -223,7 +224,8 @@ export default function CharacterCreationScreen({ onNavigate }: ScreenProps) {
             variant="primary"
             onClick={begin}
             disabled={!canStart}
-            title="✓ Confirm & Begin"
+            icon="check"
+            title="Confirm & Begin"
             description="Start your salvage career"
           />
           <IndustrialButton
@@ -239,7 +241,8 @@ export default function CharacterCreationScreen({ onNavigate }: ScreenProps) {
                 setChosenTrait(options[Math.floor(Math.random() * options.length)]);
               }
             }}
-            title="🔄 Randomize"
+            icon="star"
+            title="Randomize"
             description="Generate random character"
           />
         </div>

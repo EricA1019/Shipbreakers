@@ -85,7 +85,7 @@ export default function DevTools() {
         {/* Header */}
         <div className="bg-zinc-950 p-3 border-b border-amber-600/30 flex justify-between items-center">
           <div className="font-mono font-bold text-amber-500 flex gap-4">
-            <span>🛠️ DEV TOOLS</span>
+            <span>DEV TOOLS</span>
             <div className="flex gap-2 text-xs">
               <button
                 className={`px-2 py-1 rounded ${activeTab === "logs" ? "bg-amber-600 text-zinc-900" : "bg-zinc-800 text-zinc-400"}`}

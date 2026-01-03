@@ -14,7 +14,7 @@ export default function StatsModal({ isOpen, onClose }: StatsModalProps) {
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-zinc-900 border-2 border-amber-600/50 p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
         <div className="text-amber-500 text-xs font-semibold tracking-wider mb-4">
-          📊 LIFETIME STATISTICS
+          LIFETIME STATISTICS
         </div>
 
         <div className="grid grid-cols-2 gap-4 mb-6">

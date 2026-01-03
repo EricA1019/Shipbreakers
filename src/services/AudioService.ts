@@ -89,9 +89,14 @@ class AudioService {
     // Clone to allow overlapping sounds
     const clone = audio.cloneNode() as HTMLAudioElement;
     clone.volume = soundVolume;
-    clone.play().catch(err => {
-      console.warn(`Failed to play sound: ${path}`, err);
-    });
+    const playResult = typeof clone.play === "function" ? clone.play() : null;
+
+    // In some environments (e.g., tests/jsdom) play() may be undefined or may not return a Promise
+    if (playResult && typeof (playResult as any).catch === "function") {
+      (playResult as Promise<void>).catch((err) => {
+        console.warn(`Failed to play sound: ${path}`, err);
+      });
+    }
   }
 
   /**

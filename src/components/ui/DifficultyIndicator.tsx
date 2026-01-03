@@ -27,28 +27,28 @@ export default function DifficultyIndicator({
     if (delta <= -2)
       return {
         label: "Too Easy",
-        icon: "😴",
+        icon: "−",
         color: "text-cyan-400",
         message: "Minimal challenge. Great for farming credits.",
       };
     if (delta <= -1)
       return {
         label: "Easy",
-        icon: "✓",
+        icon: "✔",
         color: "text-green-400",
         message: "Well-matched. Good income with low risk.",
       };
     if (delta <= 0.5)
       return {
         label: "Balanced",
-        icon: "⚖️",
+        icon: "=",
         color: "text-amber-400",
         message: "Good difficulty. Meaningful rewards and risk.",
       };
     if (delta <= 1.5)
       return {
         label: "Challenging",
-        icon: "⚡",
+        icon: "!!",
         color: "text-yellow-400",
         message: "Difficult but manageable. Higher rewards.",
       };

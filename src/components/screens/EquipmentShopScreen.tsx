@@ -82,10 +82,10 @@ export const EquipmentShopScreen: React.FC<ScreenProps> = ({ onNavigate }) => {
       <IndustrialPanel>
         <div className="flex gap-2 flex-wrap">
           {[
-            { key: "tools", label: "🔧 TOOLS" },
-            { key: "systems", label: "⚙️ SYSTEMS" },
-            { key: "reactors", label: "⚡ REACTORS" },
-            { key: "expansions", label: "📦 EXPANSIONS" },
+            { key: "tools", label: "Tools" },
+            { key: "systems", label: "Systems" },
+            { key: "reactors", label: "Reactors" },
+            { key: "expansions", label: "Expansions" },
           ].map(({ key, label }) => (
             <button
               key={key}
@@ -118,8 +118,8 @@ export const EquipmentShopScreen: React.FC<ScreenProps> = ({ onNavigate }) => {
                     {r.name}
                   </div>
                   <div className="text-[10px] text-zinc-400 uppercase tracking-wider space-y-1 mb-3">
-                    <div>⚡ POWER: <span className="text-cyan-400 font-bold">{r.powerOutput}</span></div>
-                    <div>📊 TIER: <span className="text-amber-400 font-bold">{r.tier}</span></div>
+                    <div>POWER: <span className="text-cyan-400 font-bold">{r.powerOutput}</span></div>
+                    <div>TIER: <span className="text-amber-400 font-bold">{r.tier}</span></div>
                   </div>
                   <div className="bg-black/40 border border-white/6 rounded-md p-2 mb-3 text-center">
                     <div className="text-[9px] text-zinc-400 uppercase tracking-wider mb-1">PRICE</div>
@@ -129,8 +129,9 @@ export const EquipmentShopScreen: React.FC<ScreenProps> = ({ onNavigate }) => {
                     variant={credits >= r.value ? "primary" : "default"}
                     onClick={() => buy(r)}
                     disabled={credits < r.value}
-                    title="Purchase"
-                    description=""
+                    icon="credits"
+                    title={`Buy ${r.value}CR`}
+                    description="Add to equipment inventory"
                   />
                 </div>
               ))
@@ -143,8 +144,8 @@ export const EquipmentShopScreen: React.FC<ScreenProps> = ({ onNavigate }) => {
                     {it.name}
                   </div>
                   <div className="text-[10px] text-zinc-400 uppercase tracking-wider space-y-1 mb-3">
-                    <div>📊 TIER: <span className="text-amber-400 font-bold">{it.tier}</span></div>
-                    <div>⚡ POWER: <span className="text-cyan-400 font-bold">{it.powerDraw}</span></div>
+                    <div>TIER: <span className="text-amber-400 font-bold">{it.tier}</span></div>
+                    <div>POWER: <span className="text-cyan-400 font-bold">{it.powerDraw}</span></div>
                   </div>
                   <div className="bg-black/40 border border-white/6 rounded-md p-2 mb-3 text-center">
                     <div className="text-[9px] text-zinc-400 uppercase tracking-wider mb-1">PRICE</div>
@@ -154,8 +155,9 @@ export const EquipmentShopScreen: React.FC<ScreenProps> = ({ onNavigate }) => {
                     variant={credits >= (it.value ?? 0) ? "primary" : "default"}
                     onClick={() => buy(it)}
                     disabled={credits < (it.value ?? 0)}
-                    title="Purchase"
-                    description=""
+                    icon="credits"
+                    title={`Buy ${it.value ?? 0}CR`}
+                    description="Add to equipment inventory"
                   />
                 </div>
               ))}
@@ -170,7 +172,8 @@ export const EquipmentShopScreen: React.FC<ScreenProps> = ({ onNavigate }) => {
               audio.playClick();
               refreshStock();
             }}
-            title="🔄 Refresh Stock"
+            icon="gear"
+            title="Refresh Stock"
             description="View different items"
           />
           <IndustrialButton
@@ -178,6 +181,7 @@ export const EquipmentShopScreen: React.FC<ScreenProps> = ({ onNavigate }) => {
               audio.playTransition();
               onNavigate("hub");
             }}
+            icon="home"
             title="← Back to Station"
             description="Return to hub"
           />

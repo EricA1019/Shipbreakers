@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useGameStore } from "../../stores/gameStore";
+import { useAudio } from "../../hooks/useAudio";
+import Icon from "../ui/Icon";
 
 import type { ScreenProps } from "../../types";
 
@@ -12,10 +14,12 @@ export default function TravelScreen({ onNavigate }: ScreenProps) {
       fuel: s.fuel,
     }),
   );
+  const audio = useAudio();
   const [progress, setProgress] = useState(0);
   const rafRef = useRef<number | null>(null);
 
   useEffect(() => {
+    audio.playTransition();
     if (!currentRun) return;
     const wreck = availableWrecks.find((w) => w.id === currentRun.wreckId);
     const duration = Math.min(8000, (wreck?.distance ?? 1) * 300);
@@ -27,6 +31,7 @@ export default function TravelScreen({ onNavigate }: ScreenProps) {
       setProgress(pct);
       if (pct >= 100) {
         if (rafRef.current) cancelAnimationFrame(rafRef.current);
+        audio.playSuccess();
         travelToWreck(currentRun.wreckId);
         onNavigate("salvage");
         return;
@@ -51,6 +56,7 @@ export default function TravelScreen({ onNavigate }: ScreenProps) {
   const wreck = availableWrecks.find((w) => w.id === currentRun.wreckId);
 
   const handleSkip = () => {
+    audio.playClick();
     setProgress(100);
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
     travelToWreck(currentRun.wreckId);
@@ -74,7 +80,7 @@ export default function TravelScreen({ onNavigate }: ScreenProps) {
               TRAVEL
             </div>
             <div className="text-amber-100 font-bold mb-2">
-              🚀 Approaching target — {wreck?.name ?? "Unknown Vessel"}
+              Approaching target — {wreck?.name ?? "Unknown Vessel"}
             </div>
             <div className="text-zinc-400 text-xs mb-2">
               Distance: {wreck?.distance ?? "?"} AU • Fuel: {fuel} CR
@@ -101,8 +107,8 @@ export default function TravelScreen({ onNavigate }: ScreenProps) {
             transition: "left 120ms linear",
           }}
         >
-          <div className="text-4xl animate-[engine-pulse_1.2s_ease-in-out_infinite]">
-            🚀
+          <div className="animate-[engine-pulse_1.2s_ease-in-out_infinite] drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]">
+            <Icon name="rocket" size={36} tint="amber" />
           </div>
         </div>
 
@@ -114,7 +120,9 @@ export default function TravelScreen({ onNavigate }: ScreenProps) {
             transition: "transform 120ms linear",
           }}
         >
-          <div className="text-3xl opacity-80">🛰️</div>
+          <div className="opacity-80 drop-shadow-[0_0_8px_rgba(59,130,246,0.45)]">
+            <Icon name="ship" size={38} tint="cyan" />
+          </div>
         </div>
 
         {/* Skip button */}

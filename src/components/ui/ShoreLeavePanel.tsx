@@ -2,6 +2,7 @@ import { useGameStore } from "../../stores/gameStore";
 import IndustrialPanel from "./IndustrialPanel";
 import IndustrialButton from "./IndustrialButton";
 import { SHORE_LEAVE_OPTIONS } from "../../game/constants";
+import { useAudio } from "../../hooks/useAudio";
 
 export default function ShoreLeavePanel() {
   const { credits, crewRoster, luxuryDrink, takeShoreLeave } = useGameStore((s) => ({
@@ -10,6 +11,8 @@ export default function ShoreLeavePanel() {
     luxuryDrink: (s as any).luxuryDrink ?? 0,
     takeShoreLeave: (s as any).takeShoreLeave as ((t: "rest" | "recreation" | "party") => void) | undefined,
   }));
+
+  const audio = useAudio();
 
   const crewCount = crewRoster.length;
   const rest = SHORE_LEAVE_OPTIONS.rest;
@@ -33,29 +36,41 @@ export default function ShoreLeavePanel() {
 
         <div className="space-y-2">
           <IndustrialButton
-            title="😴 Rest"
+            title="Rest"
             description={`Basic recovery · ${rest.cost} cr`}
             variant="info"
             fullWidth
-            onClick={() => takeShoreLeave?.("rest")}
+            icon="smile"
+            onClick={() => {
+              audio.playClick();
+              takeShoreLeave?.("rest");
+            }}
             disabled={!canRest}
           />
 
           <IndustrialButton
-            title="🎮 Recreation"
+            title="Recreation"
             description={`Better recovery · ${recreation.cost} cr`}
             variant="info"
             fullWidth
-            onClick={() => takeShoreLeave?.("recreation")}
+            icon="drink"
+            onClick={() => {
+              audio.playClick();
+              takeShoreLeave?.("recreation");
+            }}
             disabled={!canRecreation}
           />
 
           <IndustrialButton
-            title="🎉 Party"
+            title="Party"
             description={`Full recovery · ${party.cost} cr ${neededBeer ? `+ ${neededBeer} luxury` : ""}`}
             variant="info"
             fullWidth
-            onClick={() => takeShoreLeave?.("party")}
+            icon="star"
+            onClick={() => {
+              audio.playClick();
+              takeShoreLeave?.("party");
+            }}
             disabled={!canParty}
           />
         </div>

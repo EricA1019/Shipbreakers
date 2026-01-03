@@ -37,10 +37,13 @@
  */
 
 import { useAudio } from "../../hooks/useAudio";
+import { Icon, type IconName } from "./Icon";
 
 interface IndustrialButtonProps {
   /** Button title (displayed in Orbitron font) */
   title: string;
+  /** Optional icon displayed before the title */
+  icon?: IconName;
   /** Description text (displayed in smaller muted font) */
   description?: string;
   /** Visual variant */
@@ -57,6 +60,7 @@ interface IndustrialButtonProps {
 
 export default function IndustrialButton({
   title,
+  icon,
   description,
   variant = "default",
   disabled = false,
@@ -108,7 +112,10 @@ export default function IndustrialButton({
         <div
           className={`font-['Orbitron'] tracking-[0.12em] uppercase text-[13px] mb-1.5 font-extrabold ${titleColor}`}
         >
-          {title}
+          <span className="inline-flex items-center gap-2">
+            {icon && <Icon name={icon} size={16} className="shrink-0" />}
+            <span>{title}</span>
+          </span>
         </div>
         {description && (
           <div className="text-[var(--muted)] text-[11px] leading-[1.4]">

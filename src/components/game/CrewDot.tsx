@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import type { CrewMember } from "../../types";
 
 function dominantSkill(crew: CrewMember): keyof CrewMember["skills"] {
@@ -20,9 +21,11 @@ interface CrewDotProps {
   crew: CrewMember;
   onClick?: () => void;
   offsetIndex?: number;
+  /** Whether this crew is actively working */
+  isWorking?: boolean;
 }
 
-export default function CrewDot({ crew, onClick, offsetIndex = 0 }: CrewDotProps) {
+export default function CrewDot({ crew, onClick, offsetIndex = 0, isWorking = false }: CrewDotProps) {
   const skill = dominantSkill(crew);
   const initials = `${crew.firstName?.[0] ?? crew.name?.[0] ?? "?"}${crew.lastName?.[0] ?? ""}`.toUpperCase();
 
@@ -34,6 +37,11 @@ export default function CrewDot({ crew, onClick, offsetIndex = 0 }: CrewDotProps
   // Calculate offset for stacking multiple crew in same location
   const offsetX = (offsetIndex % 3) * 6;
   const offsetY = Math.floor(offsetIndex / 3) * 6;
+  
+  // Check if user prefers reduced motion
+  const prefersReducedMotion = useMemo(() => 
+    typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches,
+  []);
 
   // Status indicator ring
   const statusRing = 
@@ -41,6 +49,9 @@ export default function CrewDot({ crew, onClick, offsetIndex = 0 }: CrewDotProps
     crew.status === "resting" ? "ring-2 ring-blue-400" :
     crew.status === "breakdown" ? "ring-2 ring-purple-500 animate-pulse" :
     "";
+  
+  // Working animation
+  const workingClass = isWorking && !prefersReducedMotion ? "animate-bounce" : "";
 
   return (
     <div
@@ -49,9 +60,9 @@ export default function CrewDot({ crew, onClick, offsetIndex = 0 }: CrewDotProps
       style={{
         backgroundColor: dotColor,
         transform: `translate(${offsetX}px, ${offsetY}px)`,
-        transition: "transform 0.3s ease-out, background-color 0.2s",
+        transition: prefersReducedMotion ? "none" : "transform 0.4s ease-out, background-color 0.2s",
       }}
-      className={`w-5 h-5 rounded-full text-zinc-900 flex items-center justify-center text-[10px] font-black border border-zinc-900/50 cursor-pointer hover:scale-110 ${statusRing}`}
+      className={`w-5 h-5 rounded-full text-zinc-900 flex items-center justify-center text-[10px] font-black border border-zinc-900/50 cursor-pointer hover:scale-110 ${statusRing} ${workingClass}`}
     >
       {initials}
     </div>

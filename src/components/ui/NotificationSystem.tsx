@@ -53,8 +53,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   };
 
   const typeIcons = {
-    success: "✓",
-    warning: "⚠",
+    success: "✔",
+    warning: "!",
     error: "✗",
     info: "ℹ",
   };

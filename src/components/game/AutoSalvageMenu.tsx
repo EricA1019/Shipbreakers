@@ -276,10 +276,10 @@ export default function AutoSalvageMenu({
       <div className="bg-zinc-800 border border-zinc-700 rounded p-3 mb-4 text-xs">
         <div className="text-zinc-400 font-mono mb-2">CURRENT RULES</div>
         <div className="space-y-1 text-zinc-300">
-          <div>⚠️ Max hazard: Level {customRules.maxHazardLevel}</div>
+          <div>Max hazard: Level {customRules.maxHazardLevel}</div>
           <div>🛑 Stop on injury: {customRules.stopOnInjury ? "Yes" : "No"}</div>
-          <div>⚡ Stamina threshold: {customRules.stopOnLowStamina}%</div>
-          <div>🧠 Sanity threshold: {customRules.stopOnLowSanity}%</div>
+          <div>Stamina threshold: {customRules.stopOnLowStamina}%</div>
+          <div>Sanity threshold: {customRules.stopOnLowSanity}%</div>
         </div>
       </div>
 

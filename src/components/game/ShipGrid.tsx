@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import type { Ship as ShipType, GridRoom, CrewMember } from "../../types";
 import { hasShipLayout } from "../../types";
 import ScannerEffect from "../ui/ScannerEffect";
@@ -12,6 +12,10 @@ interface ShipGridProps {
   isScanning?: boolean;
   onRoomClick?: (room: GridRoom) => void;
   locationFilter?: "ship" | "wreck" | "station";
+  /** Room ID that is currently being worked on (shows pulse animation) */
+  activeRoomId?: string;
+  /** Whether crew are actively working (e.g., auto-salvage) */
+  crewWorking?: boolean;
 }
 
 export const ShipGrid: React.FC<ShipGridProps> = ({
@@ -22,8 +26,15 @@ export const ShipGrid: React.FC<ShipGridProps> = ({
   isScanning = false,
   onRoomClick,
   locationFilter = "ship",
+  activeRoomId,
+  crewWorking = false,
 }) => {
   const cols = ship.width;
+  
+  // Check if user prefers reduced motion
+  const prefersReducedMotion = useMemo(() => 
+    typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches,
+  []);
 
   // If a layout is provided (from rust shapes) render absolute positions
   if (hasShipLayout(ship)) {
@@ -101,6 +112,12 @@ export const ShipGrid: React.FC<ShipGridProps> = ({
               const sealedClass = gridRoom?.sealed
                 ? "animate-pulse border-red-600/60 shadow-[0_0_8px_rgba(220,38,38,0.3)]"
                 : "";
+              
+              // Highlight active room being worked on
+              const isActive = activeRoomId && gridRoom?.id === activeRoomId;
+              const activeClass = isActive && !prefersReducedMotion
+                ? "ring-2 ring-cyan-400 ring-opacity-75 shadow-[0_0_16px_rgba(56,224,199,0.4)]"
+                : "";
 
               return (
                 <div
@@ -109,7 +126,7 @@ export const ShipGrid: React.FC<ShipGridProps> = ({
                   onClick={() =>
                     gridRoom && onRoomClick && onRoomClick(gridRoom)
                   }
-                  className={`absolute rounded p-2 text-xs select-none transition-all ${kindClass.replace("border-amber-500/30", "").replace("border-amber-600/20", "")} ${sealedClass || borderClass} ${onRoomClick ? "cursor-pointer" : ""}`}
+                  className={`absolute rounded p-2 text-xs select-none transition-all duration-300 ${kindClass.replace("border-amber-500/30", "").replace("border-amber-600/20", "")} ${sealedClass || borderClass} ${activeClass} ${onRoomClick ? "cursor-pointer" : ""}`}
                   style={{
                     left: `${left}%`,
                     top: `${top}%`,
@@ -117,9 +134,13 @@ export const ShipGrid: React.FC<ShipGridProps> = ({
                     height: `${hPerc}%`,
                   }}
                 >
+                  {/* Active room working indicator */}
+                  {isActive && !prefersReducedMotion && (
+                    <div className="absolute inset-0 rounded bg-cyan-400/10 animate-pulse pointer-events-none" />
+                  )}
                   {gridRoom?.sealed && (
                     <div className="absolute -right-1 -top-1 bg-red-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow-lg z-10">
-                      🔒
+                      LOCKED
                     </div>
                   )}
                   <div className="font-mono font-semibold text-amber-50 text-[11px] truncate">
@@ -154,7 +175,7 @@ export const ShipGrid: React.FC<ShipGridProps> = ({
                     return crewInRoom.length > 0 && (
                       <div className="absolute right-2 bottom-2 flex flex-wrap gap-0.5 z-20">
                         {crewInRoom.map((c, idx) => (
-                          <CrewDot key={c.id} crew={c} offsetIndex={idx} />
+                          <CrewDot key={c.id} crew={c} offsetIndex={idx} isWorking={crewWorking} />
                         ))}
                       </div>
                     );
@@ -194,13 +215,17 @@ export const ShipGrid: React.FC<ShipGridProps> = ({
             const isAllowed = allowedRoomIds
               ? allowedRoomIds.has(room.id)
               : true;
+            const isActive = activeRoomId && room.id === activeRoomId;
+            const activeClass = isActive && !prefersReducedMotion
+              ? "ring-2 ring-cyan-400 ring-opacity-75 shadow-[0_0_16px_rgba(56,224,199,0.4)]"
+              : "";
 
             return (
               <div
                 key={room.id}
                 data-testid="room"
                 onClick={() => onRoomClick && onRoomClick(room)}
-                className={`relative bg-zinc-800 rounded p-2 text-xs select-none border transition-all ${
+                className={`relative bg-zinc-800 rounded p-2 text-xs select-none border transition-all duration-300 ${
                   room.sealed
                     ? "border-red-600/60 animate-pulse shadow-[0_0_8px_rgba(220,38,38,0.3)] cursor-pointer"
                     : !isAllowed
@@ -208,12 +233,16 @@ export const ShipGrid: React.FC<ShipGridProps> = ({
                       : room.looted
                         ? "border-zinc-700 opacity-50 cursor-not-allowed"
                         : "border-amber-600/30 hover:border-amber-500/50 hover:shadow-[0_0_8px_rgba(251,191,36,0.2)] cursor-pointer"
-                }`}
+                } ${activeClass}`}
                 style={{ minHeight: 64 }}
               >
+                {/* Active room working indicator */}
+                {isActive && !prefersReducedMotion && (
+                  <div className="absolute inset-0 rounded bg-cyan-400/10 animate-pulse pointer-events-none" />
+                )}
                 {room.sealed && (
                   <div className="absolute -right-1 -top-1 bg-red-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow-lg z-10">
-                    🔒
+                    LOCKED
                   </div>
                 )}
                 <div className="font-mono font-semibold text-amber-50 truncate">
@@ -239,7 +268,7 @@ export const ShipGrid: React.FC<ShipGridProps> = ({
                       : !isAllowed
                         ? "SEALED"
                         : room.looted
-                          ? "✓"
+                          ? "✔"
                           : `${room.loot.length}x`}
                   </div>
                 </div>
@@ -269,7 +298,7 @@ export const ShipGrid: React.FC<ShipGridProps> = ({
                     return crewInRoom.length > 0 && (
                       <div className="absolute right-2 bottom-2 flex flex-wrap gap-0.5 z-20">
                         {crewInRoom.map((c, idx) => (
-                          <CrewDot key={c.id} crew={c} offsetIndex={idx} />
+                          <CrewDot key={c.id} crew={c} offsetIndex={idx} isWorking={crewWorking} />
                         ))}
                       </div>
                     );

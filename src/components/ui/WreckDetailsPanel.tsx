@@ -216,7 +216,7 @@ export default function WreckDetailsPanel({ wreck }: WreckDetailsPanelProps) {
                     <div className="text-zinc-400">{roomsForSkill} rooms</div>
                     {isMismatch && (
                       <div className="text-red-400 text-[10px] font-bold">
-                        ⚠️ Penalty incoming
+                        Penalty incoming
                       </div>
                     )}
                   </div>
@@ -233,10 +233,10 @@ export default function WreckDetailsPanel({ wreck }: WreckDetailsPanelProps) {
       >
         <div className="font-bold mb-1">
           {wreck.tier <= 2
-            ? "✓ Low Risk"
+            ? "Low Risk"
             : wreck.tier === 3
-              ? "⚠️ Moderate Risk"
-              : "🔴 High Risk"}
+              ? "Moderate Risk"
+              : "High Risk"}
         </div>
         <div
           className={

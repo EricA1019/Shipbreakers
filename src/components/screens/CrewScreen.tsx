@@ -151,7 +151,7 @@ export default function CrewScreen({ onNavigate }: ScreenProps) {
                         label={crew.status.toUpperCase()}
                       />
                       {isSelected && !crew.isPlayer && (
-                        <StatusPill variant="default" label="ASSIGNED" icon="✓" />
+                        <StatusPill variant="default" label="ASSIGNED" />
                       )}
                     </div>
                   </div>
@@ -208,7 +208,7 @@ export default function CrewScreen({ onNavigate }: ScreenProps) {
                   {/* Health */}
                   <div>
                     <div className="flex justify-between items-center mb-1">
-                      <div className="text-[9px] text-zinc-400 uppercase tracking-wide">❤️ HEALTH</div>
+                      <div className="text-[9px] text-zinc-400 uppercase tracking-wide">HEALTH</div>
                       <div className={`text-xs font-['Orbitron'] font-bold ${
                         healthPercent >= 70 ? 'text-cyan-400' :
                         healthPercent >= 40 ? 'text-amber-400' : 'text-red-400'
@@ -227,7 +227,7 @@ export default function CrewScreen({ onNavigate }: ScreenProps) {
                   {/* Stamina */}
                   <div>
                     <div className="flex justify-between items-center mb-1">
-                      <div className="text-[9px] text-zinc-400 uppercase tracking-wide">⚡ STAMINA</div>
+                      <div className="text-[9px] text-zinc-400 uppercase tracking-wide">STAMINA</div>
                       <div className={`text-xs font-['Orbitron'] font-bold ${
                         staminaPercent >= 70 ? 'text-cyan-400' :
                         staminaPercent >= 40 ? 'text-amber-400' : 'text-red-400'
@@ -268,17 +268,17 @@ export default function CrewScreen({ onNavigate }: ScreenProps) {
                   <div className="mb-3 space-y-1">
                     {crew.hp < crew.maxHp && (
                       <div className="text-[10px] text-red-400 flex items-center gap-1">
-                        <span>⚠️</span> NEEDS MEDICAL ATTENTION
+                        NEEDS MEDICAL ATTENTION
                       </div>
                     )}
                     {staminaPercent < 30 && (
                       <div className="text-[10px] text-cyan-300 flex items-center gap-1">
-                        <span>⚠️</span> LOW STAMINA - NEEDS REST
+                        LOW STAMINA - NEEDS REST
                       </div>
                     )}
                     {sanityPercent < 40 && (
                       <div className="text-[10px] text-purple-300 flex items-center gap-1">
-                        <span>⚠️</span> LOW SANITY - BREAKDOWN RISK
+                        LOW SANITY - BREAKDOWN RISK
                       </div>
                     )}
                   </div>
@@ -288,10 +288,10 @@ export default function CrewScreen({ onNavigate }: ScreenProps) {
                 <div className="bg-black/40 border border-white/6 rounded-md p-2 space-y-1.5">
                   <div className="text-[9px] text-zinc-400 uppercase tracking-wider mb-1">SKILLS</div>
                   {[
-                    { key: 'technical', icon: '🔧', name: 'Technical' },
-                    { key: 'combat', icon: '⚔️', name: 'Combat' },
-                    { key: 'salvage', icon: '🔨', name: 'Salvage' },
-                    { key: 'piloting', icon: '🚀', name: 'Piloting' },
+                    { key: 'technical', icon: '', name: 'Technical' },
+                    { key: 'combat', icon: '', name: 'Combat' },
+                    { key: 'salvage', icon: '', name: 'Salvage' },
+                    { key: 'piloting', icon: '', name: 'Piloting' },
                   ].map(({ key, icon, name }) => {
                     const level = crew.skills[key as keyof typeof crew.skills];
                     const xp = crew.skillXp[key as keyof typeof crew.skillXp];
@@ -330,7 +330,7 @@ export default function CrewScreen({ onNavigate }: ScreenProps) {
 
                 {isSelected && !crew.isPlayer && (
                   <div className="mt-3 w-full bg-cyan-500/15 border border-cyan-500 text-cyan-400 py-2 text-xs uppercase tracking-wide rounded-md text-center font-['Orbitron'] font-bold">
-                    ✓ Currently Assigned
+                    Currently Assigned
                   </div>
                 )}
               </div>
@@ -361,6 +361,7 @@ export default function CrewScreen({ onNavigate }: ScreenProps) {
               audio.playTransition();
               onNavigate("hub");
             }}
+            icon="home"
             title="← Back to Station"
             description="Return to hub"
           />

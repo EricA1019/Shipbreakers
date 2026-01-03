@@ -2,6 +2,7 @@ import { useGameStore } from "../../stores/gameStore";
 import IndustrialPanel from "./IndustrialPanel";
 import IndustrialButton from "./IndustrialButton";
 import { PROVISION_PRICES } from "../../game/constants";
+import { useAudio } from "../../hooks/useAudio";
 
 type ProvisionKey = "food" | "water" | "beer" | "wine";
 
@@ -21,6 +22,8 @@ export default function StationBarPanel() {
     pantryCapacity: (s as any).pantryCapacity ?? { food: 0, drink: 0, luxury: 0 },
     buyProvision: (s as any).buyProvision as ((k: ProvisionKey) => void) | undefined,
   }));
+
+  const audio = useAudio();
 
   const canBuyFood = credits >= PROVISION_PRICES.food && food < pantryCapacity.food;
   const canBuyWater = credits >= PROVISION_PRICES.water && drink < pantryCapacity.drink;
@@ -53,31 +56,47 @@ export default function StationBarPanel() {
 
         <div className="grid grid-cols-2 gap-2">
           <IndustrialButton
-            title={`🍖 Buy Food (+1)`}
+            title="Buy Food (+1)"
             description={`${PROVISION_PRICES.food} cr`}
             variant="info"
-            onClick={() => buyProvision?.("food")}
+            icon="food"
+            onClick={() => {
+              audio.playClick();
+              buyProvision?.("food");
+            }}
             disabled={!buyProvision || !canBuyFood}
           />
           <IndustrialButton
-            title={`💧 Buy Water (+1)`}
+            title="Buy Water (+1)"
             description={`${PROVISION_PRICES.water} cr`}
             variant="info"
-            onClick={() => buyProvision?.("water")}
+            icon="drink"
+            onClick={() => {
+              audio.playClick();
+              buyProvision?.("water");
+            }}
             disabled={!buyProvision || !canBuyWater}
           />
           <IndustrialButton
-            title={`🍺 Buy Beer (+1)`}
+            title="Buy Beer (+1)"
             description={`${PROVISION_PRICES.beer} cr`}
             variant="info"
-            onClick={() => buyProvision?.("beer")}
+            icon="drink"
+            onClick={() => {
+              audio.playClick();
+              buyProvision?.("beer");
+            }}
             disabled={!buyProvision || !canBuyBeer}
           />
           <IndustrialButton
-            title={`🍷 Buy Wine (+1)`}
+            title="Buy Wine (+1)"
             description={`${PROVISION_PRICES.wine} cr`}
             variant="info"
-            onClick={() => buyProvision?.("wine")}
+            icon="potion"
+            onClick={() => {
+              audio.playClick();
+              buyProvision?.("wine");
+            }}
             disabled={!buyProvision || !canBuyWine}
           />
         </div>

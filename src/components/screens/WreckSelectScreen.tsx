@@ -274,7 +274,8 @@ export default function WreckSelectScreen({ onNavigate }: ScreenProps) {
                     onNavigate("travel");
                   }
                 }}
-                title="🚀 LAUNCH"
+                icon="rocket"
+                title="LAUNCH"
                 description="Begin salvage operation"
               />
             </IndustrialPanel>
@@ -378,7 +379,8 @@ export default function WreckSelectScreen({ onNavigate }: ScreenProps) {
                   }
                 }}
                 disabled={!selectedWreckId}
-                title="🚀 Begin Salvage"
+                icon="rocket"
+                title="Begin Salvage"
                 description="Launch to selected wreck"
               />
               <IndustrialButton
@@ -386,7 +388,8 @@ export default function WreckSelectScreen({ onNavigate }: ScreenProps) {
                   audio.playClick();
                   setShowMap(true);
                 }}
-                title="📊 Map View"
+                icon="map"
+                title="Map View"
                 description="View graveyard map"
               />
               <IndustrialButton
@@ -394,6 +397,7 @@ export default function WreckSelectScreen({ onNavigate }: ScreenProps) {
                   audio.playTransition();
                   onNavigate("hub");
                 }}
+                icon="home"
                 title="← Back to Station"
                 description="Return to hub"
               />

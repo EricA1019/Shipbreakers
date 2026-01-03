@@ -30,34 +30,34 @@ export default function DangerRatingComponent({
         label: "MINIMAL",
         color: "text-green-400",
         bgColor: "bg-green-900/20",
-        icon: "✓",
+        icon: "✔",
       };
     if (score <= 50)
       return {
         label: "LOW",
         color: "text-green-300",
         bgColor: "bg-green-900/20",
-        icon: "✓",
+        icon: "✔",
       };
     if (score <= 70)
       return {
         label: "MODERATE",
         color: "text-yellow-400",
         bgColor: "bg-yellow-900/20",
-        icon: "⚠",
+        icon: "!",
       };
     if (score <= 85)
       return {
         label: "HIGH",
         color: "text-orange-400",
         bgColor: "bg-orange-900/20",
-        icon: "⚡",
+        icon: "!!",
       };
     return {
       label: "CRITICAL",
       color: "text-red-500",
       bgColor: "bg-red-900/20",
-      icon: "🔴",
+      icon: "!!!",
     };
   };
 

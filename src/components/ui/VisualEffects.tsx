@@ -247,7 +247,7 @@ export function HazardWarning({
       className={`border-2 ${borderColor} ${bgColor} p-4 animate-pulse-border`}
     >
       <div className={`${textColor} text-sm font-mono text-center space-y-2`}>
-        <div className="text-xl">⚠ {title} ⚠</div>
+        <div className="text-xl">! {title} !</div>
         <div className="animate-pulse">{"█ ".repeat(10)}</div>
         <div>
           EXPOSURE LEVEL:{" "}

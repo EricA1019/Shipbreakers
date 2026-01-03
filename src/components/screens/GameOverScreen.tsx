@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useGameStore } from "../../stores/gameStore";
 import IndustrialPanel from "../ui/IndustrialPanel";
 import IndustrialButton from "../ui/IndustrialButton";
+import { Icon } from "../ui/Icon";
 import { useAudio } from "../../hooks/useAudio";
 
 import type { ScreenProps } from "../../types";
@@ -35,14 +36,16 @@ export default function GameOverScreen({ onNavigate }: ScreenProps) {
 
       <div className="relative z-10 w-full">
         <IndustrialPanel
-          title="⚠️ MISSION FAILURE"
+          title="MISSION FAILURE"
           subtitle="CAREER TERMINATED · SALVAGE LICENSE REVOKED"
           variant="danger"
           className="border-2 border-red-500/30 shadow-[0_0_40px_rgba(255,75,75,0.2)]"
         >
           {/* Reason Box */}
           <div className="bg-red-500/8 border border-red-500/25 rounded-xl p-5 mb-6 text-center">
-            <div className="text-5xl mb-3">☠️</div>
+            <div className="mb-3">
+              <Icon name="skull" size={48} tint="red" />
+            </div>
             <div className="font-['Orbitron'] font-bold text-lg text-red-400 uppercase tracking-wide mb-2">
               TOTAL PARTY WIPE
             </div>
@@ -134,7 +137,8 @@ export default function GameOverScreen({ onNavigate }: ScreenProps) {
                 resetGame();
                 onNavigate("hub");
               }}
-              title="🔄 New Career"
+              icon="rocket"
+              title="New Career"
               description="Start fresh with a new salvage license"
             />
           </div>

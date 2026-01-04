@@ -1,8 +1,47 @@
-import type { GameEvent, EventTrigger, EventChoice, GameState } from "../../types";
+import type { GameEvent, EventTrigger, EventChoice, GameState, EventFlags, TraitId } from "../../types";
 import { EVENTS } from "../data/events";
+
+/** Check if a flag is set in the game state */
+export function hasFlag(state: GameState, flag: string): boolean {
+  return state.eventFlags?.[flag] === true;
+}
+
+/** Set a flag in the game state (returns new eventFlags object) */
+export function setFlag(flags: EventFlags | undefined, flag: string): EventFlags {
+  return { ...(flags || {}), [flag]: true };
+}
+
+/** Clear a flag in the game state (returns new eventFlags object) */
+export function clearFlag(flags: EventFlags | undefined, flag: string): EventFlags {
+  const next = { ...(flags || {}) };
+  delete next[flag];
+  return next;
+}
+
+/** Check if any crew member has a specific trait */
+function crewHasTrait(state: GameState, traitId: TraitId): boolean {
+  return (state.crewRoster || []).some((c) => c.traits?.includes(traitId));
+}
+
+/** Check if any crew member has a specific background */
+function crewHasBackground(state: GameState, backgroundId: string): boolean {
+  return (state.crewRoster || []).some((c) => c.background === backgroundId);
+}
 
 function meetsRequirements(state: GameState, event: GameEvent): boolean {
   const req = event.requirements;
+  
+  // Check flag requirements
+  if (event.requiresFlag && !hasFlag(state, event.requiresFlag)) return false;
+  if (event.excludesFlag && hasFlag(state, event.excludesFlag)) return false;
+  
+  // Check trait requirements
+  if (event.requiresTrait && !crewHasTrait(state, event.requiresTrait)) return false;
+  
+  // Check background requirements
+  if (event.requiresBackground && !crewHasBackground(state, event.requiresBackground)) return false;
+  
+  // Check resource requirements
   if (!req) return true;
   if (typeof req.credits === "number" && state.credits < req.credits) return false;
   return true;
@@ -33,8 +72,19 @@ export function applyEventChoice(
   // Start from a shallow copy; replace arrays you mutate
   let next: any = { ...state };
   let crewRoster = [...(state.crewRoster || [])];
+  let eventFlags = { ...(state.eventFlags || {}) };
+
+  // Set flag from choice if specified
+  if (choice.setsFlag) {
+    eventFlags[choice.setsFlag] = true;
+  }
 
   for (const eff of choice.effects) {
+    // Set flag from effect if specified
+    if (eff.setsFlag) {
+      eventFlags[eff.setsFlag] = true;
+    }
+
     if (eff.type === "credits" && typeof eff.value === "number") {
       next.credits = Math.max(0, (next.credits ?? 0) + eff.value);
     }
@@ -74,6 +124,7 @@ export function applyEventChoice(
   }
 
   next.crewRoster = crewRoster;
+  next.eventFlags = eventFlags;
   next.crew = crewRoster.find((c: any) => c.id === next.selectedCrewId) ?? next.crew;
   return next as GameState;
 }

@@ -18,6 +18,14 @@ import { useUiStore } from "../stores/uiStore";
 
 type SoundCategory = "click" | "transition" | "notification" | "error" | "success";
 
+// Background music tracks
+const MUSIC_TRACKS = [
+  "/assets/music/Spacewave/FarBeyond.mp3",
+  "/assets/music/Spacewave/NoGravity.mp3",
+  "/assets/music/Spacewave/OutOfTheOrbit.mp3",
+  "/assets/music/Spacewave/Stars.mp3",
+];
+
 // Sound file mappings
 const SOUNDS: Record<SoundCategory, string[]> = {
   click: [
@@ -46,6 +54,9 @@ const SOUNDS: Record<SoundCategory, string[]> = {
 
 class AudioService {
   private audioCache: Map<string, HTMLAudioElement> = new Map();
+  private currentMusic: HTMLAudioElement | null = null;
+  private musicPlaylist: string[] = [];
+  private currentTrackIndex: number = 0;
 
   /**
    * Preload audio files into cache
@@ -132,6 +143,105 @@ class AudioService {
    */
   playSuccess() {
     this.play("success");
+  }
+
+  /**
+   * Start playing background music with shuffle and loop
+   */
+  startMusic() {
+    const { musicEnabled, musicVolume } = useUiStore.getState();
+    
+    if (!musicEnabled || musicVolume === 0) return;
+
+    // Create shuffled playlist if empty
+    if (this.musicPlaylist.length === 0) {
+      this.musicPlaylist = [...MUSIC_TRACKS].sort(() => Math.random() - 0.5);
+      this.currentTrackIndex = 0;
+    }
+
+    this.playCurrentTrack();
+  }
+
+  /**
+   * Play the current track in the playlist
+   */
+  private playCurrentTrack() {
+    const { musicEnabled, musicVolume } = useUiStore.getState();
+    
+    if (!musicEnabled || musicVolume === 0) {
+      this.stopMusic();
+      return;
+    }
+
+    const trackPath = this.musicPlaylist[this.currentTrackIndex];
+    
+    // Stop current music if playing
+    if (this.currentMusic) {
+      this.currentMusic.pause();
+      this.currentMusic.currentTime = 0;
+    }
+
+    // Create new audio element
+    this.currentMusic = new Audio(trackPath);
+    this.currentMusic.volume = musicVolume;
+    this.currentMusic.loop = false; // We'll handle looping manually to play next track
+
+    // Play next track when current one ends
+    this.currentMusic.addEventListener("ended", () => {
+      this.playNextTrack();
+    });
+
+    const playResult = this.currentMusic.play();
+    if (playResult && typeof playResult.catch === "function") {
+      playResult.catch((err) => {
+        console.warn("Failed to play music:", err);
+      });
+    }
+  }
+
+  /**
+   * Play the next track in the playlist
+   */
+  private playNextTrack() {
+    this.currentTrackIndex = (this.currentTrackIndex + 1) % this.musicPlaylist.length;
+    
+    // Reshuffle when we've played all tracks
+    if (this.currentTrackIndex === 0) {
+      this.musicPlaylist = [...MUSIC_TRACKS].sort(() => Math.random() - 0.5);
+    }
+    
+    this.playCurrentTrack();
+  }
+
+  /**
+   * Stop background music
+   */
+  stopMusic() {
+    if (this.currentMusic) {
+      this.currentMusic.pause();
+      this.currentMusic.currentTime = 0;
+      this.currentMusic = null;
+    }
+  }
+
+  /**
+   * Update music volume
+   */
+  setMusicVolume(volume: number) {
+    if (this.currentMusic) {
+      this.currentMusic.volume = Math.max(0, Math.min(1, volume));
+    }
+  }
+
+  /**
+   * Toggle music playback
+   */
+  toggleMusic(enabled: boolean) {
+    if (enabled) {
+      this.startMusic();
+    } else {
+      this.stopMusic();
+    }
   }
 }
 

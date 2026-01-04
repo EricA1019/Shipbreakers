@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useGameStore } from "../../stores/gameStore";
+import { useUiStore } from "../../stores/uiStore";
+import { useAudio } from "../../hooks/useAudio";
 import type { GameSettings } from "../../types";
 import SaveManagerModal from "./SaveManagerModal";
 
@@ -18,10 +20,22 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     },
     updateSettings: s.updateSettings,
   }));
+  const { musicEnabled, musicVolume, setMusicEnabled, setMusicVolume } = useUiStore();
+  const audio = useAudio();
   const [showSaveManager, setShowSaveManager] = useState(false);
 
   const handleToggle = (key: keyof GameSettings) => {
     updateSettings({ [key]: !settings[key] });
+  };
+
+  const handleMusicToggle = () => {
+    setMusicEnabled(!musicEnabled);
+    audio.toggleMusic();
+  };
+
+  const handleMusicVolumeChange = (value: number) => {
+    setMusicVolume(value);
+    audio.setMusicVolume(value);
   };
 
   if (!isOpen) return null;
@@ -118,6 +132,54 @@ export default function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             >
               {settings.showKeyboardHints ? "ON" : "OFF"}
             </button>
+          </div>
+
+          {/* Music Section */}
+          <div className="mt-4 pt-4 border-t border-amber-600/30">
+            <div className="text-amber-400 font-bold text-sm mb-3">
+              🎵 Music & Audio
+            </div>
+
+            {/* Music Toggle */}
+            <div className="flex justify-between items-center bg-zinc-800 border border-amber-600/20 p-3 rounded mb-2">
+              <div>
+                <div className="text-amber-100 font-bold text-sm">
+                  Background Music
+                </div>
+                <div className="text-zinc-400 text-xs mt-1">
+                  Play ambient soundtrack
+                </div>
+              </div>
+              <button
+                onClick={handleMusicToggle}
+                className={`px-3 py-1 rounded text-xs font-bold ${
+                  musicEnabled
+                    ? "bg-green-600 text-white"
+                    : "bg-zinc-700 text-zinc-400"
+                }`}
+              >
+                {musicEnabled ? "ON" : "OFF"}
+              </button>
+            </div>
+
+            {/* Music Volume */}
+            <div className="bg-zinc-800 border border-amber-600/20 p-3 rounded mb-2">
+              <div className="flex justify-between items-center mb-2">
+                <div className="text-amber-100 text-sm">Music Volume</div>
+                <div className="text-purple-400 font-mono text-sm font-bold">
+                  {Math.round(musicVolume * 100)}%
+                </div>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.05"
+                value={musicVolume}
+                onChange={(e) => handleMusicVolumeChange(parseFloat(e.target.value))}
+                className="w-full"
+              />
+            </div>
           </div>
 
           {/* Crew Work Thresholds Section */}

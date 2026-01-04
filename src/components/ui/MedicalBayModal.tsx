@@ -14,10 +14,12 @@ export default function MedicalBayModal({
   isOpen,
   onClose,
 }: MedicalBayModalProps) {
-  const { credits, crew, payForHealing } = useGameStore((s) => ({
+  const { credits, crew, crewRoster, payForHealing, healAllCrew } = useGameStore((s) => ({
     credits: s.credits,
     crew: s.crew,
+    crewRoster: s.crewRoster,
     payForHealing: s.payForHealing,
+    healAllCrew: s.healAllCrew,
   }));
 
   const isHealthy = crew.hp >= crew.maxHp;
@@ -25,6 +27,36 @@ export default function MedicalBayModal({
   const treatmentsNeeded = Math.ceil((crew.maxHp - crew.hp) / HEALING_AMOUNT);
   const totalCost = treatmentsNeeded * HEALING_COST;
   const hpPercentage = (crew.hp / crew.maxHp) * 100;
+
+  // Calculate total healing for all crew
+  let totalAllCrewHealing = 0;
+  let totalAllCrewCost = 0;
+  crewRoster.forEach((c) => {
+    const hpNeeded = c.maxHp - c.hp;
+    if (hpNeeded > 0) {
+      const treatments = Math.ceil(hpNeeded / HEALING_AMOUNT);
+      totalAllCrewCost += treatments * HEALING_COST;
+      totalAllCrewHealing += hpNeeded;
+    }
+  });
+  const canAffordAll = credits >= totalAllCrewCost;
+  const hasInjured = totalAllCrewHealing > 0;
+
+  const handleHealAll = () => {
+    const result = healAllCrew();
+    if (result.healed > 0) {
+      showSuccessNotification(
+        "All Crew Healed",
+        `+${result.healed} HP total for ${result.cost} CR`,
+      );
+      onClose();
+    } else {
+      showWarningNotification(
+        "Cannot Heal",
+        hasInjured ? "Insufficient credits" : "All crew are healthy",
+      );
+    }
+  };
 
   const handleHeal = () => {
     if (payForHealing()) {
@@ -89,6 +121,23 @@ export default function MedicalBayModal({
                 <span className="font-bold">{HEALING_COST} CR</span>
               </div>
               <div className="mb-2">
+        {hasInjured && crewRoster.length > 1 && (
+          <button
+            onClick={handleHealAll}
+            disabled={!canAffordAll}
+            className={`w-full mb-3 px-4 py-3 font-bold border-2 transition-all ${
+              canAffordAll
+                ? "bg-green-600 border-green-500 text-white hover:bg-green-500"
+                : "bg-zinc-700 border-zinc-600 text-zinc-500 cursor-not-allowed opacity-50"
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <span>⚕️ HEAL ALL CREW</span>
+              <span className="text-sm">+{totalAllCrewHealing} HP • {totalAllCrewCost} CR</span>
+            </div>
+          </button>
+        )}
+
                 Healing per treatment:{" "}
                 <span className="font-bold">+{HEALING_AMOUNT} HP</span>
               </div>

@@ -541,6 +541,8 @@ export interface EventEffect {
   type: EventEffectType;
   target?: string;
   value: number | string;
+  /** Flag to set when this effect is applied */
+  setsFlag?: string;
 }
 
 export interface EventChoice {
@@ -548,6 +550,8 @@ export interface EventChoice {
   text: string;
   requirements?: EventRequirement;
   effects: EventEffect[];
+  /** Flag to set when this choice is selected */
+  setsFlag?: string;
 }
 
 export interface GameEvent {
@@ -558,7 +562,18 @@ export interface GameEvent {
   choices: EventChoice[];
   requirements?: EventRequirement;
   weight: number;
+  /** Flag that must be set for this event to trigger */
+  requiresFlag?: string;
+  /** Flag that must NOT be set for this event to trigger */
+  excludesFlag?: string;
+  /** Required trait on any active crew for this event to trigger */
+  requiresTrait?: TraitId;
+  /** Required background on any active crew for this event to trigger */
+  requiresBackground?: string;
 }
+
+/** Persistent event flags that track world state across the game */
+export type EventFlags = Record<string, boolean>;
 
 export type ShoreLeaveType = "rest" | "recreation" | "party";
 
@@ -617,6 +632,9 @@ export interface GameState {
   crewEfficiencyPenalty: number;
   activeEvent?: GameEvent | null;
   isNewGame?: boolean;
+
+  // Phase 12: Event flags for persistent world state
+  eventFlags?: EventFlags;
 
   // Auto-salvage
   autoSalvageEnabled?: boolean;

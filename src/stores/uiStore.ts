@@ -9,6 +9,10 @@ interface UiState {
   soundVolume: number; // 0-1
   setSoundEnabled: (enabled: boolean) => void;
   setSoundVolume: (volume: number) => void;
+  musicEnabled: boolean;
+  musicVolume: number; // 0-1
+  setMusicEnabled: (enabled: boolean) => void;
+  setMusicVolume: (volume: number) => void;
 }
 
 export const useUiStore = create<UiState>((set) => ({
@@ -29,4 +33,8 @@ export const useUiStore = create<UiState>((set) => ({
   soundVolume: 0.7,
   setSoundEnabled: (enabled) => set({ soundEnabled: enabled }),
   setSoundVolume: (volume) => set({ soundVolume: Math.max(0, Math.min(1, volume)) }),
+  musicEnabled: true,
+  musicVolume: 0.5,
+  setMusicEnabled: (enabled) => set({ musicEnabled: enabled }),
+  setMusicVolume: (volume) => set({ musicVolume: Math.max(0, Math.min(1, volume)) }),
 }));

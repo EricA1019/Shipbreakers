@@ -445,6 +445,25 @@ export default function HubScreen({ onNavigate }: ScreenProps) {
               />
             </div>
           </IndustrialPanel>
+
+          {/* Keyboard shortcuts hint */}
+          <div className="bg-black/20 border border-white/5 rounded-lg p-3 mt-4">
+            <div className="text-[10px] text-zinc-500 uppercase tracking-wider mb-2">KEYBOARD SHORTCUTS</div>
+            <div className="flex flex-wrap gap-3 text-xs">
+              <div className="flex items-center gap-1.5">
+                <kbd className="px-1.5 py-0.5 bg-zinc-800 border border-white/10 rounded text-cyan-400 font-mono text-[10px]">F</kbd>
+                <span className="text-zinc-400">Fuel Depot</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <kbd className="px-1.5 py-0.5 bg-zinc-800 border border-white/10 rounded text-green-400 font-mono text-[10px]">M</kbd>
+                <span className="text-zinc-400">Medical Bay</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <kbd className="px-1.5 py-0.5 bg-zinc-800 border border-white/10 rounded text-amber-400 font-mono text-[10px]">S</kbd>
+                <span className="text-zinc-400">Stats</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

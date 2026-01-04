@@ -22,6 +22,7 @@ import {
 import { useGameStore } from "./stores/gameStore";
 import { wasmBridge } from "./game/wasm/WasmBridge";
 import EventModal from "./components/ui/EventModal";
+import { useAudio } from "./hooks/useAudio";
 // import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 // import { useGameNotifications } from './hooks/useGameNotifications';
 
@@ -31,6 +32,7 @@ function AppContent() {
   const [screen, setScreen] = useState<Screen>("hub");
   const isNewGame = useGameStore((s: any) => s.isNewGame ?? false);
   const { addNotification } = useNotifications();
+  const audio = useAudio();
 
   // Initialize WASM bridge early
   useEffect(() => {
@@ -41,6 +43,11 @@ function AppContent() {
   useEffect(() => {
     setGlobalNotificationHandler(addNotification);
   }, [addNotification]);
+
+  // Start music on app load
+  useEffect(() => {
+    audio.startMusic();
+  }, [audio]);
 
   return (
     <div className="min-h-screen bg-zinc-900 text-amber-50 font-mono p-4">

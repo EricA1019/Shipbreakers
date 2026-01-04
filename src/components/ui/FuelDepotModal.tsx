@@ -15,10 +15,11 @@ export default function FuelDepotModal({
   isOpen,
   onClose,
 }: FuelDepotModalProps) {
-  const { credits, fuel, buyFuel } = useGameStore((s) => ({
+  const { credits, fuel, buyFuel, refillFuel } = useGameStore((s) => ({
     credits: s.credits,
     fuel: s.fuel,
     buyFuel: s.buyFuel,
+    refillFuel: s.refillFuel,
   }));
 
   const [selectedAmount, setSelectedAmount] = useState(10);
@@ -33,6 +34,11 @@ export default function FuelDepotModal({
   const currentCost = selectedAmount * FUEL_PRICE;
   const canAfford = credits >= currentCost;
 
+  const maxFuel = 100;
+  const fuelNeeded = maxFuel - fuel;
+  const refillCost = fuelNeeded * FUEL_PRICE;
+  const canAffordRefill = credits >= refillCost;
+
   const handlePurchase = () => {
     if (buyFuel(selectedAmount)) {
       showSuccessNotification(
@@ -44,6 +50,22 @@ export default function FuelDepotModal({
       showWarningNotification(
         `Insufficient Credits`,
         `Need ${currentCost} CR, have ${credits} CR`,
+      );
+    }
+  };
+
+  const handleRefill = () => {
+    const result = refillFuel();
+    if (result.amount > 0) {
+      showSuccessNotification(
+        "Tank Filled",
+        `+${result.amount} fuel for ${result.cost} CR`,
+      );
+      onClose();
+    } else {
+      showWarningNotification(
+        "Cannot Fill",
+        fuel >= maxFuel ? "Tank is full" : "Insufficient credits",
       );
     }
   };
@@ -69,6 +91,23 @@ export default function FuelDepotModal({
         <div className="text-zinc-400 text-xs mb-3">
           Price: {FUEL_PRICE} CR per unit
         </div>
+
+        {fuelNeeded > 0 && (
+          <button
+            onClick={handleRefill}
+            disabled={!canAffordRefill}
+            className={`w-full mb-3 px-4 py-3 font-bold border-2 transition-all ${
+              canAffordRefill
+                ? "bg-cyan-600 border-cyan-500 text-white hover:bg-cyan-500"
+                : "bg-zinc-700 border-zinc-600 text-zinc-500 cursor-not-allowed opacity-50"
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <span>⚡ FILL TANK</span>
+              <span className="text-sm">+{fuelNeeded} fuel • {refillCost} CR</span>
+            </div>
+          </button>
+        )}
 
         <div className="space-y-2 mb-4">
           {fuelOptions.map((option) => (

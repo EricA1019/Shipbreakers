@@ -35,13 +35,15 @@ import {
   DAILY_FOOD_PER_CREW,
   DAILY_DRINK_PER_CREW,
   TRAVEL_EVENT_CHANCE,
-  // Keep commented out for potential future use
-  // SALVAGE_EVENT_CHANCE,
+  SALVAGE_EVENT_CHANCE,
   DAILY_EVENT_CHANCE,
-  // STAMINA_PER_SALVAGE,
-  // SANITY_LOSS_BASE,
+  STAMINA_PER_SALVAGE,
+  SANITY_LOSS_BASE,
   STAMINA_RECOVERY_STATION,
   SANITY_RECOVERY_STATION,
+  HEALING_COST,
+  HEALING_AMOUNT,
+  FUEL_PRICE,
 } from "../game/constants";
 import {
   calculateHazardSuccess,
@@ -59,7 +61,7 @@ import { EQUIPMENT } from "../game/data/equipment";
 import { REACTORS } from "../game/data/reactors";
 import { generateHireCandidates, generateCaptain } from "../game/systems/CrewGenerator";
 import { applyEventChoice, pickEventByTrigger } from "../game/systems/EventManager";
-import { calculateTraitEffects } from "../game/systems/TraitEffectResolver";
+import { calculateTraitEffects, getSpecialTraits } from "../game/systems/TraitEffectResolver";
 import {
   PANTRY_CAPACITY,
   STARTING_FOOD,
@@ -112,6 +114,10 @@ interface GameActions {
   clearLastUnlockedZone: () => void;
   buyFuel: (amount: number) => boolean;
   payForHealing: () => boolean;
+  // QOL: Bulk operations
+  healAllCrew: () => { healed: number; cost: number };
+  refillFuel: () => { amount: number; cost: number };
+  refillProvisions: () => { food: number; drink: number; cost: number };
   hireCrew: (candidate: HireCandidate) => boolean;
   selectCrew: (crewId: string) => void;
   dailyMarketRefresh: () => void;
@@ -733,6 +739,9 @@ export const useGameStore = create<GameState & GameActions>()(
           return { success: false, damage: 0, timeCost: 0 };
         }
 
+        // Calculate trait modifiers early - used for multiple calculations
+        const traitMods = calculateTraitEffects(activeCrew);
+
         // Increment rooms attempted at start
         set((state) => ({
           currentRun: state.currentRun
@@ -746,9 +755,26 @@ export const useGameStore = create<GameState & GameActions>()(
             : null,
         }));
 
-        // Calculate time cost based on rarity
-        const timeCost = RARITY_TIME_COST[item.rarity];
+        // Calculate time cost based on rarity, modified by work_speed traits
+        const baseTimeCost = RARITY_TIME_COST[item.rarity];
+        const timeCost = Math.max(1, Math.round(baseTimeCost * (1 + traitMods.workSpeedMod / 100)));
         const newTime = run.timeRemaining - timeCost;
+
+        // Check for special traits
+        const specialTraits = getSpecialTraits(activeCrew);
+
+        // Coward trait: 20% chance to flee from high-hazard rooms (unless also brave)
+        if (specialTraits.hasCoward && !specialTraits.hasBrave && room.hazardLevel >= 3) {
+          if (Math.random() < 0.2) {
+            // Coward fled - no damage, but time wasted
+            set((state) => ({
+              currentRun: state.currentRun
+                ? { ...state.currentRun, timeRemaining: newTime }
+                : null,
+            }));
+            return { success: false, damage: 0, timeCost, fled: true };
+          }
+        }
 
         // Hazard check for entering/working in room
         let successChance = calculateHazardSuccess(
@@ -758,8 +784,7 @@ export const useGameStore = create<GameState & GameActions>()(
           wreck.tier,
         );
 
-        // Apply trait skill modifiers
-        const traitMods = calculateTraitEffects(activeCrew);
+        // Apply trait skill modifiers (already calculated above)
         successChance += traitMods.skillMod;
         successChance = Math.max(0, Math.min(100, successChance));
         const roll = Math.random() * 100;
@@ -783,12 +808,19 @@ export const useGameStore = create<GameState & GameActions>()(
               2,
           );
 
+        // Calculate stamina drain with trait modifier
+        const baseStaminaDrain = STAMINA_PER_SALVAGE;
+        const staminaDrain = Math.max(1, Math.round(baseStaminaDrain * (1 + traitMods.staminaMod / 100)));
+
+        // Calculate sanity loss for hazardous work (higher hazard = more sanity loss)
+        const baseSanityLoss = room.hazardLevel >= 3 ? SANITY_LOSS_BASE : 0;
+        const sanityLoss = Math.max(0, Math.round(baseSanityLoss * (1 + traitMods.sanityMod / 100)));
+
         if (roll < Math.max(0, successChance)) {
           // Success - add item to crew inventory
           success = true;
           const activeEffects = getActiveEffects(get().playerShip as any);
-          const traitMods = calculateTraitEffects(activeCrew);
-          const adjustedItem = {
+          let adjustedItem = {
             ...item,
             value: Math.round(
               calculateLootValue(
@@ -798,6 +830,13 @@ export const useGameStore = create<GameState & GameActions>()(
               ) * (1 + traitMods.lootMod / 100)
             ),
           };
+
+          // Greedy trait: 5% chance to "lose" the item (stolen for personal gain)
+          let stolenByGreedy = false;
+          if (specialTraits.hasGreedy && Math.random() < 0.05) {
+            stolenByGreedy = true;
+            // Item still removed from room, but not added to inventory
+          }
 
           set((state) => ({
             currentRun: state.currentRun
@@ -810,10 +849,15 @@ export const useGameStore = create<GameState & GameActions>()(
                   },
                 }
               : null,
-            // Add item to crew inventory instead of ship cargo
+            // Add item to crew inventory (unless stolen by greedy trait)
             crewRoster: state.crewRoster.map((c) =>
               c.id === activeCrew.id
-                ? { ...c, inventory: [adjustedItem] } // Max 1 item
+                ? { 
+                    ...c, 
+                    inventory: stolenByGreedy ? c.inventory : [adjustedItem],
+                    stamina: Math.max(0, c.stamina - staminaDrain),
+                    sanity: Math.max(0, c.sanity - sanityLoss),
+                  }
                 : c
             ),
             // Update active crew reference
@@ -843,13 +887,24 @@ export const useGameStore = create<GameState & GameActions>()(
 
           // Remove equipment handling - now unified with loot
           get().gainSkillXp(matchingSkill, xpSuccess);
+
+          // Trigger salvage event chance
+          if (Math.random() < SALVAGE_EVENT_CHANCE && !get().activeEvent) {
+            const ev = pickEventByTrigger("salvage", get() as any);
+            if (ev) set({ activeEvent: ev });
+          }
         } else {
           // Fail - take damage, waste time
           damageTaken = damageOnFail(room.hazardLevel);
           set((state) => {
             const updated = state.crewRoster.map((c) =>
               c.id === activeCrew.id
-                ? { ...c, hp: Math.max(0, c.hp - damageTaken) }
+                ? { 
+                    ...c, 
+                    hp: Math.max(0, c.hp - damageTaken),
+                    stamina: Math.max(0, c.stamina - staminaDrain),
+                    sanity: Math.max(0, c.sanity - sanityLoss),
+                  }
                 : c,
             );
             return {
@@ -1562,6 +1617,79 @@ export const useGameStore = create<GameState & GameActions>()(
           fuel: state.fuel + amount,
         }));
         return true;
+      },
+
+      healAllCrew: () => {
+        const state = get();
+        const { crewRoster, credits } = state;
+        
+        let totalHealed = 0;
+        let totalCost = 0;
+        
+        // Calculate total healing needed and cost
+        crewRoster.forEach((c) => {
+          const hpNeeded = c.maxHp - c.hp;
+          if (hpNeeded > 0) {
+            const treatments = Math.ceil(hpNeeded / HEALING_AMOUNT);
+            totalCost += treatments * HEALING_COST;
+            totalHealed += Math.min(hpNeeded, treatments * HEALING_AMOUNT);
+          }
+        });
+        
+        if (totalCost === 0 || credits < totalCost) {
+          return { healed: 0, cost: 0 };
+        }
+        
+        set((state) => ({
+          credits: state.credits - totalCost,
+          crewRoster: state.crewRoster.map((c) => ({
+            ...c,
+            hp: c.maxHp,
+            status: c.hp < c.maxHp ? ("resting" as CrewStatus) : c.status,
+          })),
+        }));
+        
+        return { healed: totalHealed, cost: totalCost };
+      },
+
+      refillFuel: () => {
+        const state = get();
+        const maxFuel = 100;
+        const fuelNeeded = maxFuel - state.fuel;
+        const cost = fuelNeeded * FUEL_PRICE;
+        
+        if (fuelNeeded <= 0 || state.credits < cost) {
+          return { amount: 0, cost: 0 };
+        }
+        
+        set((state) => ({
+          credits: state.credits - cost,
+          fuel: maxFuel,
+        }));
+        
+        return { amount: fuelNeeded, cost };
+      },
+
+      refillProvisions: () => {
+        const state: any = get();
+        const pantry = state.pantryCapacity;
+        if (!pantry) return { food: 0, drink: 0, cost: 0 };
+        
+        const foodNeeded = Math.max(0, pantry.food - state.food);
+        const drinkNeeded = Math.max(0, pantry.drink - state.drink);
+        const cost = foodNeeded * PROVISION_PRICES.food + drinkNeeded * PROVISION_PRICES.water;
+        
+        if ((foodNeeded <= 0 && drinkNeeded <= 0) || state.credits < cost) {
+          return { food: 0, drink: 0, cost: 0 };
+        }
+        
+        set({
+          credits: state.credits - cost,
+          food: pantry.food,
+          drink: pantry.drink,
+        });
+        
+        return { food: foodNeeded, drink: drinkNeeded, cost };
       },
 
       buyProvision: (kind) => {

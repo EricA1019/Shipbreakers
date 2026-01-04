@@ -27,6 +27,35 @@ export const STARTER_SHIP_LAYOUT: ShipLayout = {
   ],
 };
 
+function getLayoutBounds(layout: ShipLayout): { width: number; height: number } {
+  const maxX = Math.max(...layout.rooms.map((r) => r.x + r.w));
+  const maxY = Math.max(...layout.rooms.map((r) => r.y + r.h));
+  return { width: maxX, height: maxY };
+}
+
+function layoutKindToRoomType(kind: string): PlayerRoomType {
+  switch (kind) {
+    case "bridge":
+      return "bridge";
+    case "engine":
+      return "engine";
+    case "medbay":
+      return "medbay";
+    case "cargo":
+      return "cargo";
+    case "workshop":
+      return "workshop";
+    case "armory":
+      return "armory";
+    case "lounge":
+      return "lounge";
+    case "quarters":
+      return "quarters";
+    default:
+      return "cargo";
+  }
+}
+
 /**
  * Creates empty slots for a given room type
  */
@@ -39,9 +68,10 @@ export function createSlotsForRoomType(roomType: PlayerRoomType): ItemSlot[] {
     workshop: ["engineering", "engineering"],
     armory: ["combat", "combat"],
     lounge: [], // crew morale room, no equipment slots
+    quarters: ["bridge"], // Using bridge slot as generic 'personal' slot
   };
 
-  const slotTypes = slotConfigs[roomType];
+  const slotTypes = slotConfigs[roomType] || [];
   return slotTypes.map((type, i) => ({
     id: `${roomType}-slot-${i}`,
     type,
@@ -50,101 +80,72 @@ export function createSlotsForRoomType(roomType: PlayerRoomType): ItemSlot[] {
 }
 
 /**
- * Assigns room types to grid positions based on ship size
- */
-function assignRoomType(
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-): PlayerRoomType {
-  // For small 2x2: [0,0]=bridge, [1,0]=engine, [0,1]=medbay, [1,1]=cargo
-  // For medium 3x2: add workshop
-  // For large 3x3: add armory, lounge
-  // For massive 4x3: full configuration
-
-  if (width === 2 && height === 2) {
-    if (x === 0 && y === 0) return "bridge";
-    if (x === 1 && y === 0) return "engine";
-    if (x === 0 && y === 1) return "medbay";
-    if (x === 1 && y === 1) return "cargo";
-  }
-
-  if (width === 3 && height === 2) {
-    if (x === 0 && y === 0) return "bridge";
-    if (x === 1 && y === 0) return "engine";
-    if (x === 2 && y === 0) return "workshop";
-    if (x === 0 && y === 1) return "medbay";
-    if (x === 1 && y === 1) return "cargo";
-    if (x === 2 && y === 1) return "armory";
-  }
-
-  if (width === 3 && height === 3) {
-    if (x === 0 && y === 0) return "bridge";
-    if (x === 1 && y === 0) return "engine";
-    if (x === 2 && y === 0) return "workshop";
-    if (x === 0 && y === 1) return "medbay";
-    if (x === 1 && y === 1) return "cargo";
-    if (x === 2 && y === 1) return "armory";
-    if (x === 0 && y === 2) return "bridge";
-    if (x === 1 && y === 2) return "lounge";
-    if (x === 2 && y === 2) return "engine";
-  }
-
-  if (width === 4 && height === 3) {
-    if (x === 0 && y === 0) return "bridge";
-    if (x === 1 && y === 0) return "engine";
-    if (x === 2 && y === 0) return "workshop";
-    if (x === 3 && y === 0) return "armory";
-    if (x === 0 && y === 1) return "medbay";
-    if (x === 1 && y === 1) return "cargo";
-    if (x === 2 && y === 1) return "cargo";
-    if (x === 3 && y === 1) return "armory";
-    if (x === 0 && y === 2) return "bridge";
-    if (x === 1 && y === 2) return "lounge";
-    if (x === 2 && y === 2) return "engine";
-    if (x === 3 && y === 2) return "workshop";
-  }
-
-  return "cargo"; // fallback
-}
-
-/**
  * Initializes the player ship with proper room types and equipment slots
  * Converts generic Ship into PlayerShip with functional slot system
  */
 export function initializePlayerShip(seed: string): PlayerShip {
-  const baseShip = Ship.fromMass(seed, "small", "SS BREAKER-01");
+  // The player ship uses an explicit footprint; ensure grid + rooms match the layout.
+  const { width, height } = getLayoutBounds(STARTER_SHIP_LAYOUT);
+  const baseShip = new Ship(seed, { width, height, name: "SS BREAKER-01" });
+  baseShip.entryPosition = { x: 0, y: 0 };
+  baseShip.layout = STARTER_SHIP_LAYOUT;
+  baseShip.regenerateDoorsForLayout(STARTER_SHIP_LAYOUT);
 
-  // Convert GridRoom[] to PlayerShipRoom[] with roomType and slots
+  const layoutCells = new Map<string, string>();
+  for (const r of STARTER_SHIP_LAYOUT.rooms) {
+    for (let dy = 0; dy < r.h; dy++) {
+      for (let dx = 0; dx < r.w; dx++) {
+        layoutCells.set(`${r.x + dx},${r.y + dy}`, r.kind);
+      }
+    }
+  }
+
   const playerGrid = baseShip.grid.map((row, y) =>
     row.map((room, x) => {
-      const roomType = assignRoomType(x, y, baseShip.width, baseShip.height);
+      const kind = layoutCells.get(`${x},${y}`);
+      if (!kind) return undefined as any;
+
+      const roomType = layoutKindToRoomType(kind);
       const slots = createSlotsForRoomType(roomType);
 
       return {
         ...room,
         roomType,
         slots,
+        damage: 0, // Phase 13: Initialize damage
       } as PlayerShipRoom;
     }),
-  );
+  ) as any;
 
-  // Flatten grid to rooms array for convenient access
-  const rooms = playerGrid.flat();
+  const rooms = (playerGrid as (PlayerShipRoom | undefined)[][])
+    .flat()
+    .filter(Boolean) as PlayerShipRoom[];
 
   const reactor = REACTORS["salvaged-reactor"];
+
+  // Phase 13: Derived stats
+  const cargoRooms = rooms.filter(r => r.roomType === 'cargo').length;
+  const cargoCapacity = 4 + (cargoRooms * 4);
+
+  // Track initial rooms as purchased
+  const purchasedRooms = rooms.map(r => ({
+    id: r.id,
+    roomType: r.roomType,
+    position: r.position
+  }));
 
   return {
     ...baseShip,
     grid: playerGrid as any,
     rooms,
     layout: STARTER_SHIP_LAYOUT,
-    cargoCapacity: 10,
+    cargoCapacity,
     cargoUsed: 0,
     hp: STARTING_HP,
     maxHp: STARTING_HP,
     reactor,
     powerCapacity: reactor.powerOutput,
+    purchasedRooms,
+    gridBounds: { width: baseShip.width, height: baseShip.height },
   } as any;
 }

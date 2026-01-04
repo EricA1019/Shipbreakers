@@ -146,6 +146,13 @@ export interface CrewMember {
   sanity: number;
   maxSanity: number;
   position?: CrewPosition;
+  /** Optional transient movement state (room-to-room traversal) */
+  movement?: {
+    path: string[];
+    stepIndex: number;
+    progress: number;
+    speedRoomsPerSecond: number;
+  };
   currentJob: CrewJob;
   status: CrewStatus;
   hiredDay?: number;
@@ -157,27 +164,31 @@ export interface CrewMember {
 // Backwards-compatible alias until rest of codebase migrates
 export type Crew = CrewMember;
 
-export interface Loot {
+export interface Item {
   id: string;
   name: string;
-  category: LootCategory;
+  category?: LootCategory; // Optional for pure equipment
   value: number;
   rarity: LootRarity;
   itemType: ItemType;
   manufacturer: string;
   description: string;
-  // Optional equipment fields - if present, item is installable on ship
+  
+  // Equipment fields (unified)
   slotType?: SlotType;
   tier?: 1 | 2 | 3 | 4 | 5;
-  powerDraw?: number;
+  powerDraw?: number; // 0 = passive, 1.. = active draw
   effects?: ItemEffect[];
   compatibleRoomTypes?: string[]; // Room types where this can be installed (undefined = sell-only)
 }
 
+// Alias for backward compatibility during refactor
+export type Loot = Item;
+
 /**
- * Type guard to check if a Loot item is equippable on the player ship
+ * Type guard to check if an Item is equippable on the player ship
  */
-export function isEquippable(item: Loot): boolean {
+export function isEquippable(item: Item): boolean {
   return item.slotType !== undefined && item.slotType !== null;
 }
 
@@ -217,7 +228,7 @@ export interface Ship {
   name: string; // Procedural name for wrecks; player-editable for PlayerShip
   width: number;
   height: number;
-  grid: GridRoom[][];
+  grid: (GridRoom | undefined)[][];
   entryPosition: GridPosition;
   layout?: ShipLayout;
 }
@@ -246,7 +257,11 @@ export type EffectType =
   | "fuel_efficiency"
   | "scan_range"
   | "heal_rate"
-  | "loot_bonus";
+  | "loot_bonus"
+  | "crew_capacity"
+  | "cargo_capacity"
+  | "stamina_recovery"
+  | "sanity_recovery";
 
 export interface ItemEffect {
   type: EffectType;
@@ -255,23 +270,12 @@ export interface ItemEffect {
   hazard?: HazardType; // required for 'hazard_resist'
 }
 
-export interface Item {
-  id: string;
-  name: string;
-  description: string;
-  slotType: SlotType;
-  tier: 1 | 2 | 3 | 4 | 5;
-  rarity: LootRarity;
-  powerDraw: number; // 0 = passive, 1.. = active draw
-  effects: ItemEffect[];
-  manufacturer?: string;
-  value: number;
-}
+// Old Item interface removed - unified with Item above
 
 export interface ItemSlot {
   id: string;
   type: SlotType;
-  installedItem: Loot | Item | null; // Accepts both Loot (equippable) and Item (legacy equipment)
+  installedItem: Item | null;
 }
 
 export type PlayerRoomType =
@@ -281,11 +285,13 @@ export type PlayerRoomType =
   | "cargo"
   | "workshop"
   | "armory"
-  | "lounge";
+  | "lounge"
+  | "quarters";
 
 export interface PlayerShipRoom extends GridRoom {
   roomType: PlayerRoomType;
   slots: ItemSlot[];
+  damage: number; // 0-100% damage
 }
 
 export interface ReactorModule {
@@ -306,11 +312,38 @@ export interface PlayerShip extends Ship {
 
   // Flattened rooms array for convenient access (derived from grid)
   rooms: PlayerShipRoom[];
+  
+  // Phase 13: Ship Expansion
+  purchasedRooms: {
+    id: string;
+    roomType: PlayerRoomType;
+    position: GridPosition;
+  }[];
+  gridBounds: { width: number; height: number }; // Current grid size (starts 2x2, max 8x8)
 
   // Phase 7 fields
   reactor?: ReactorModule; // installed reactor module
   powerCapacity?: number; // derived from reactor (power output)
   powerUsed?: number; // computed sum of installed items' powerDraw
+}
+
+// Phase 13: Ship Expansion Types
+export interface RoomPurchaseConfig {
+  roomType: PlayerRoomType;
+  baseCost: number;
+  slots: SlotType[];
+  description: string;
+  requiredLicense: LicenseTier;
+  crewBonus?: number;
+  cargoBonus?: number;
+}
+
+export interface ShipUpgrade {
+  id: string;
+  name: string;
+  cost: number;
+  description: string;
+  type: "room" | "hull" | "reactor";
 }
 
 export interface Wreck {
@@ -600,8 +633,8 @@ export interface GameState {
   hireCandidates: HireCandidate[];
   availableWrecks: Wreck[];
   currentRun: RunState | null;
-  inventory: Loot[];
-  equipmentInventory?: (Loot | Item)[];
+  inventory: Item[]; // Unified inventory for all items
+  // equipmentInventory removed - merged into inventory
   day: number;
   licenseDaysRemaining: number;
   // Will use LICENSE_TIERS for pricing; keep licenseFee for compatibility

@@ -171,18 +171,14 @@ export function generateWreck(seed?: string): Wreck {
   const types: WreckType[] = ["military", "science", "industrial", "civilian"];
   const type = pick(rnd, types);
 
-  const roomsCount = TIER_ROOM_BASE + tier;
-  const hazardFloor = Math.max(0, tier - 1);
-
-  // Track used room names to avoid duplicates
-  const usedNames = new Set<string>();
-  const rooms: Room[] = Array.from({ length: roomsCount }, () =>
-    generateRoom(rnd, type, hazardFloor, usedNames),
-  );
-
   const id = `wreck_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 
-  const estimatedMass = generateEstimatedMass(rnd, rooms);
+  // Estimated mass is intentionally approximate and based on tier-driven expected room count.
+  const estimatedRoomsCount = TIER_ROOM_BASE + tier;
+  const estimatedMass = generateEstimatedMass(
+    rnd,
+    Array.from({ length: estimatedRoomsCount }, () => ({}) as Room),
+  );
 
   // Generate procedural ship layout synchronously for immediate display
   // Randomly select a layout shape regardless of ship type
@@ -213,6 +209,16 @@ export function generateWreck(seed?: string): Wreck {
   
   // Regenerate doors to respect the layout shape instead of rectangular grid
   ship.regenerateDoorsForLayout(ship.layout);
+
+  // Generate rooms to match the physical layout footprint (1:1).
+  const roomsCount = ship.layout.rooms.length;
+  const hazardFloor = Math.max(0, tier - 1);
+
+  // Track used room names to avoid duplicates
+  const usedNames = new Set<string>();
+  const rooms: Room[] = Array.from({ length: roomsCount }, () =>
+    generateRoom(rnd, type, hazardFloor, usedNames),
+  );
 
   // map generated rooms into ship grid cells - now using layout positions
   for (const layoutRoom of ship.layout.rooms) {

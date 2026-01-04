@@ -6,7 +6,7 @@ export interface AutoAssignment {
 }
 
 export function getAssignableRooms(ship: Ship): GridRoom[] {
-  return ship.grid.flat().filter((r) => !r.sealed && !r.looted);
+  return ship.grid.flat().filter((r): r is GridRoom => !!r && !r.sealed && !r.looted);
 }
 
 export function validateAssignments(
@@ -14,7 +14,7 @@ export function validateAssignments(
   crewRoster: CrewMember[],
   assignments: AutoAssignment[],
 ): AutoAssignment[] {
-  const validRoomIds = new Set(ship.grid.flat().map((r) => r.id));
+  const validRoomIds = new Set(ship.grid.flat().filter((r): r is GridRoom => !!r).map((r) => r.id));
   const validCrewIds = new Set(crewRoster.map((c) => c.id));
   return assignments.filter((a) => validCrewIds.has(a.crewId) && validRoomIds.has(a.roomId));
 }

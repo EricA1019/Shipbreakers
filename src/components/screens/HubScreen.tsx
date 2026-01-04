@@ -15,6 +15,7 @@ import IndustrialButton from "../ui/IndustrialButton";
 import StatChip from "../ui/StatChip";
 import StatusPill from "../ui/StatusPill";
 import { useAudio } from "../../hooks/useAudio";
+import { calculateCrewCapacity } from "../../services/CrewService";
 import { LICENSE_TIERS } from "../../types";
 
 import type { ScreenProps } from "../../types";
@@ -40,6 +41,7 @@ export default function HubScreen({ onNavigate }: ScreenProps) {
     licenseTier,
     upgradeLicense,
     crewRoster,
+    playerShip,
   } = useGameStore((s) => ({
     credits: s.credits,
     fuel: s.fuel,
@@ -53,12 +55,15 @@ export default function HubScreen({ onNavigate }: ScreenProps) {
     licenseTier: s.licenseTier,
     upgradeLicense: s.upgradeLicense,
     crewRoster: s.crewRoster,
+    playerShip: s.playerShip,
   }));
 
   // Play transition sound on mount
   useEffect(() => {
     audio.playTransition();
   }, []);
+
+  const crewCapacity = calculateCrewCapacity(playerShip);
 
   // Determine next tier for upgrade
   const tierProgression: Array<typeof licenseTier> = [
@@ -310,7 +315,7 @@ export default function HubScreen({ onNavigate }: ScreenProps) {
           {/* CREW ROSTER */}
           <IndustrialPanel
             title="CREW ROSTER"
-            subtitle={`${crewRoster.length} / 4 MEMBERS`}
+            subtitle={`${crewRoster.length} / ${crewCapacity} MEMBERS`}
             showTape
             headerRight={<StatusPill icon="dot" label="LINK STABLE" />}
           >

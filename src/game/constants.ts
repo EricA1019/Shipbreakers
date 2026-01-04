@@ -198,3 +198,26 @@ export const PROVISION_PRICES = {
 export const STARTING_FOOD = 10;
 export const STARTING_DRINK = 10;
 export const STARTING_LUXURY_DRINK = 2;
+
+// Phase 13: Ship Expansion
+export const MAX_SHIP_GRID_SIZE = { width: 8, height: 8 };
+export const BASE_CREW_CAPACITY = 3;
+export const CREW_PER_QUARTERS = 1;
+export const BASE_CARGO_SLOTS = 4;
+export const CARGO_SLOTS_PER_CARGO_ROOM = 4;
+
+export const ROOM_SELL_MULTIPLIER = 0.5;
+export const DAMAGE_SELL_PENALTY = 1.0; // 100% penalty at 100% damage
+
+export const ROOM_BASE_COSTS: Record<string, number> = {
+  engine: 8000,
+  medbay: 6000,
+  quarters: 5000,
+  armory: 5000,
+  workshop: 4000,
+  cargo: 3000,
+  bridge: 10000,
+  lounge: 3000,
+};
+
+export const SHIP_EXPANSION_SCALING = 0.25; // +25% cost per existing room

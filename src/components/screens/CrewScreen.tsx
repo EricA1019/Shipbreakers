@@ -7,15 +7,17 @@ import IndustrialButton from "../ui/IndustrialButton";
 import StatChip from "../ui/StatChip";
 import StatusPill from "../ui/StatusPill";
 import { useAudio } from "../../hooks/useAudio";
+import { calculateCrewCapacity } from "../../services/CrewService";
 
 import type { ScreenProps } from "../../types";
 
 export default function CrewScreen({ onNavigate }: ScreenProps) {
-  const { crewRoster, selectedCrewId, selectCrew, day } = useGameStore((s) => ({
+  const { crewRoster, selectedCrewId, selectCrew, day, playerShip } = useGameStore((s) => ({
     crewRoster: s.crewRoster,
     selectedCrewId: s.selectedCrewId,
     selectCrew: s.selectCrew,
     day: s.day,
+    playerShip: s.playerShip,
   }));
 
   const [colorPickerOpen, setColorPickerOpen] = useState<string | null>(null);
@@ -24,6 +26,8 @@ export default function CrewScreen({ onNavigate }: ScreenProps) {
   useEffect(() => {
     audio.playTransition();
   }, []);
+
+  const crewCapacity = calculateCrewCapacity(playerShip);
 
   const DOT_COLORS = [
     "#ef4444", // red
@@ -88,7 +92,7 @@ export default function CrewScreen({ onNavigate }: ScreenProps) {
         subtitle="PERSONNEL MANAGEMENT · CINDER STATION"
       >
         <div className="flex items-center gap-2">
-          <StatChip label="ROSTER" value={`${crewRoster.length}/5`} variant="cyan" />
+          <StatChip label="ROSTER" value={`${crewRoster.length}/${crewCapacity}`} variant="cyan" />
           <StatChip label="DAY" value={day} variant="amber" />
         </div>
       </IndustrialPanel>

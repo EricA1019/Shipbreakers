@@ -8,11 +8,15 @@ import type {
   HireCandidate,
   CrewStatus,
   CrewJob,
+  PlayerRoomType,
+  GridPosition,
 } from "../types";
 import type { LicenseTier } from "../types";
 import { LICENSE_TIERS } from "../types";
 import { initializePlayerShip } from "../game/data/playerShip";
 import { generateWreck, generateAvailableWrecks } from "../game/wreckGenerator";
+import { ShipExpansionService } from "../services/ShipExpansionService";
+import { calculateCrewCapacity } from "../services/CrewService";
 import {
   STARTING_CREDITS,
   STARTING_FUEL,
@@ -62,6 +66,7 @@ import { REACTORS } from "../game/data/reactors";
 import { generateHireCandidates, generateCaptain } from "../game/systems/CrewGenerator";
 import { applyEventChoice, pickEventByTrigger } from "../game/systems/EventManager";
 import { calculateTraitEffects, getSpecialTraits } from "../game/systems/TraitEffectResolver";
+import { tickCrewMovementOnShip } from "../game/systems/CrewMovementSystem";
 import {
   PANTRY_CAPACITY,
   STARTING_FOOD,
@@ -133,6 +138,10 @@ interface GameActions {
   handleCargoSwap: (dropItemId: string) => void;
   cancelCargoSwap: () => void;
 
+  // Phase 13: Ship Expansion
+  purchaseRoom: (roomType: PlayerRoomType, position: GridPosition) => { success: boolean; reason?: string };
+  sellRoom: (roomId: string) => { success: boolean; reason?: string };
+
   // Phase 9: Character Creation + Events
   createCaptain: (args: { firstName: string; lastName: string; lockedTrait: any; chosenTrait: any; }) => void;
   debugSkipCharacterCreation: () => void;
@@ -152,6 +161,9 @@ interface GameActions {
   transferItemToShip: (crewId: string, itemId: string) => boolean;
   transferAllItemsToShip: (crewId: string) => boolean;
   emergencyEvacuate: () => void;
+
+  /** Advances crew movement simulation (used for UI feedback). */
+  tickCrewMovement: (dtMs: number) => void;
 }
 
 // Helper: Check if crew member is available for work based on stats and thresholds
@@ -342,8 +354,7 @@ export const useGameStore = create<GameState & GameActions>()(
         }
         return ship;
       })(),
-      equipmentInventory: [], // Starting equipment is now pre-installed
-
+      
       initializeGame: () => {
         set({
           credits: STARTING_CREDITS,
@@ -1089,13 +1100,8 @@ export const useGameStore = create<GameState & GameActions>()(
           if (ev) set({ activeEvent: ev });
         }
 
-        // Move collected equipment from run into equipmentInventory (not sold)
-        // Equipment is now unified with loot, identified by itemType field
-        // Keep currentRun with status 'completed' so player can sell loot in HubScreen
-        const equipmentItems = run.collectedLoot.filter((item) => 'itemType' in item);
-        set((state) => ({
-          equipmentInventory: (state.equipmentInventory || []).concat(equipmentItems),
-        }));
+        // Phase 13: Inventory Consolidation
+        // Items remain in currentRun.collectedLoot until processed by player (Sell/Keep)
       },
 
       emergencyEvacuate: () => {
@@ -1237,22 +1243,14 @@ export const useGameStore = create<GameState & GameActions>()(
         const ship = state.playerShip;
         if (!ship) return false;
 
-        const room = ship.grid.flat().find((r: any) => r.id === roomId) as any;
+        const room = ship.grid.flat().find((r: any) => r && r.id === roomId) as any;
         if (!room || !Array.isArray(room.slots)) return false;
         const slot = room.slots.find((s: any) => s.id === slotId);
         if (!slot) return false;
 
-        // Check both equipment inventory and regular inventory for equippable items
-        const equipmentInventory = state.equipmentInventory || [];
-        const lootInventory = state.inventory || [];
-
-        let item = equipmentInventory.find((i) => i.id === itemId);
-        let isFromEquipment = true;
-
-        if (!item) {
-          item = lootInventory.find((i) => i.id === itemId);
-          isFromEquipment = false;
-        }
+        // Phase 13: Unified inventory check
+        const inventory = state.inventory || [];
+        const item = inventory.find((i) => i.id === itemId);
 
         if (!item) return false;
 
@@ -1264,22 +1262,12 @@ export const useGameStore = create<GameState & GameActions>()(
 
         installItem(ship, slot, item);
 
-        // Remove from the correct inventory
-        if (isFromEquipment) {
-          set((s) => ({
-            equipmentInventory: (s.equipmentInventory || []).filter(
-              (e) => e.id !== itemId,
-            ),
-            credits: s.credits - fee,
-            playerShip: { ...ship },
-          }));
-        } else {
-          set((s) => ({
-            inventory: s.inventory.filter((i) => i.id !== itemId),
-            credits: s.credits - fee,
-            playerShip: { ...ship },
-          }));
-        }
+        // Remove from inventory
+        set((s) => ({
+          inventory: s.inventory.filter((i) => i.id !== itemId),
+          credits: s.credits - fee,
+          playerShip: { ...ship },
+        }));
 
         return true;
       },
@@ -1289,7 +1277,7 @@ export const useGameStore = create<GameState & GameActions>()(
         const ship = state.playerShip;
         if (!ship) return false;
 
-        const room = ship.grid.flat().find((r: any) => r.id === roomId) as any;
+        const room = ship.grid.flat().find((r: any) => r && r.id === roomId) as any;
         if (!room || !Array.isArray(room.slots)) return false;
         const slot = room.slots.find((s: any) => s.id === slotId);
         if (!slot || !slot.installedItem) return false;
@@ -1301,7 +1289,7 @@ export const useGameStore = create<GameState & GameActions>()(
         if (!removed) return false;
 
         set((s) => ({
-          equipmentInventory: (s.equipmentInventory || []).concat(removed),
+          inventory: (s.inventory || []).concat(removed),
           credits: s.credits - fee,
           playerShip: { ...ship },
         }));
@@ -1348,7 +1336,7 @@ export const useGameStore = create<GameState & GameActions>()(
           availableWrecks: generateAvailableWrecks(["near"]),
           currentRun: null,
           playerShip: initializePlayerShip("player-ship"),
-          equipmentInventory: [], // Starting equipment now pre-installed on ship
+          inventory: [], // Unified inventory
         });
 
         // Seed tutorial wreck
@@ -1480,9 +1468,52 @@ export const useGameStore = create<GameState & GameActions>()(
       migrateSave: async () => {
         const state = get();
         const updates: Partial<GameState> = {};
-        // Ensure equipment inventory exists
-        if (typeof state.equipmentInventory === "undefined")
-          updates.equipmentInventory = [];
+        
+        // Phase 13: Unified Inventory Migration
+        if ((state as any).equipmentInventory && (state as any).equipmentInventory.length > 0) {
+          updates.inventory = [
+            ...(state.inventory || []),
+            ...((state as any).equipmentInventory || [])
+          ];
+          // We can't delete properties from state easily with partial update, 
+          // but we can set it to undefined if the type allowed it. 
+          // Since we removed it from type, we just ignore it going forward.
+          (updates as any).equipmentInventory = undefined;
+        }
+
+        // Phase 13: Ship Expansion Migration
+        if (state.playerShip) {
+          const shipUpdates: any = {};
+          
+          // Initialize purchasedRooms if missing
+          if (!state.playerShip.purchasedRooms) {
+            shipUpdates.purchasedRooms = [];
+          }
+          
+          // Initialize gridBounds if missing
+          if (!state.playerShip.gridBounds) {
+            shipUpdates.gridBounds = { width: 2, height: 2 }; // Default start size
+          }
+
+          // Initialize room damage if missing
+          if (state.playerShip.rooms) {
+            const roomsUpdated = state.playerShip.rooms.map(r => {
+              if (typeof r.damage === 'undefined') {
+                return { ...r, damage: 0 };
+              }
+              return r;
+            });
+            // Only update if we actually changed something (simple check)
+            if (roomsUpdated.some((r, i) => r.damage !== state.playerShip!.rooms[i].damage)) {
+              shipUpdates.rooms = roomsUpdated;
+            }
+          }
+
+          if (Object.keys(shipUpdates).length > 0) {
+            updates.playerShip = { ...state.playerShip, ...shipUpdates };
+          }
+        }
+
         if (typeof state.cargoSwapPending === "undefined")
           updates.cargoSwapPending = null;
 
@@ -1608,6 +1639,60 @@ export const useGameStore = create<GameState & GameActions>()(
         set({ cargoSwapPending: null });
       },
 
+      purchaseRoom: (roomType: PlayerRoomType, position: GridPosition) => {
+        const state = get();
+        if (!state.playerShip) return { success: false, reason: "No ship" };
+
+        const check = ShipExpansionService.canPurchaseRoom(
+          state.playerShip,
+          roomType,
+          position,
+          state.credits,
+          state.licenseTier
+        );
+
+        if (!check.success) return { success: false, reason: check.reason };
+
+        const cost = ShipExpansionService.calculateRoomCost(state.playerShip, roomType);
+        const newShip = ShipExpansionService.purchaseRoom(state.playerShip, roomType, position);
+
+        // Recalculate derived stats
+        const cargoRooms = newShip.rooms.filter(r => r.roomType === 'cargo').length;
+        const cargoCapacity = 4 + (cargoRooms * 4); // Base 4 + 4 per room
+
+        set((s) => ({
+          credits: s.credits - cost,
+          playerShip: {
+            ...newShip,
+            cargoCapacity
+          }
+        }));
+
+        return { success: true };
+      },
+
+      sellRoom: (roomId: string) => {
+        const state = get();
+        if (!state.playerShip) return { success: false, reason: "No ship" };
+
+        const result = ShipExpansionService.sellRoom(state.playerShip, roomId);
+        if (!result.success || !result.ship) return { success: false, reason: result.reason };
+
+        // Recalculate derived stats
+        const cargoRooms = result.ship.rooms.filter(r => r.roomType === 'cargo').length;
+        const cargoCapacity = 4 + (cargoRooms * 4);
+
+        set((s) => ({
+          credits: s.credits + (result.credits || 0),
+          playerShip: {
+            ...result.ship!,
+            cargoCapacity
+          }
+        }));
+
+        return { success: true };
+      },
+
       buyFuel: (amount: number) => {
         const cost = amount * 10; // FUEL_PRICE imported from constants
         if (get().credits < cost) return false;
@@ -1721,7 +1806,9 @@ export const useGameStore = create<GameState & GameActions>()(
         const state = get();
         const cost = candidate.cost;
         if (state.credits < cost) return false;
-        if (state.crewRoster.length >= 5) return false; // roster full
+        
+        const capacity = calculateCrewCapacity(state.playerShip);
+        if (state.crewRoster.length >= capacity) return false; // roster full
 
         const newCrew: CrewMember = {
           id:
@@ -2078,6 +2165,61 @@ export const useGameStore = create<GameState & GameActions>()(
             ...settings,
           },
         }));
+      },
+
+      tickCrewMovement: (dtMs: number) => {
+        set((state) => {
+          if (!state.crewRoster || state.crewRoster.length === 0) return {};
+
+          const run = state.currentRun;
+          const activeWreck = run
+            ? state.availableWrecks.find((w) => w.id === run.wreckId)
+            : undefined;
+
+          const updatedRoster = state.crewRoster.map((crew) => {
+            if (!crew.position) return crew;
+
+            if (crew.position.location === "station") {
+              const ship = state.playerShip;
+              if (!ship) return crew.movement ? { ...crew, movement: undefined } : crew;
+
+              const moved = tickCrewMovementOnShip(
+                ship,
+                { ...crew, position: { ...crew.position, location: "ship" as const } },
+                dtMs,
+                { allowWander: true },
+              );
+              return {
+                ...moved,
+                position: moved.position
+                  ? { ...moved.position, location: "station" as const }
+                  : crew.position,
+              };
+            }
+
+            if (crew.position.location === "ship") {
+              const ship = state.playerShip;
+              if (!ship) return crew;
+              return tickCrewMovementOnShip(ship, crew, dtMs, { allowWander: true });
+            }
+
+            if (crew.position.location === "wreck") {
+              const ship = (activeWreck as any)?.ship;
+              if (!ship) return crew;
+              return tickCrewMovementOnShip(ship, crew, dtMs, { allowWander: true });
+            }
+
+            return crew;
+          });
+
+          const selectedId = state.selectedCrewId;
+          const selectedCrew = selectedId
+            ? updatedRoster.find((c) => c.id === selectedId)
+            : undefined;
+          const crew = selectedCrew ?? updatedRoster[0] ?? state.crew;
+
+          return { crewRoster: updatedRoster, crew };
+        });
       },
     }),
     {

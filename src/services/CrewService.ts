@@ -11,12 +11,27 @@ import type {
   SkillXp,
   CrewStatus,
   CrewJob,
+  PlayerShip,
 } from '../types';
-import { BASE_STAMINA, BASE_SANITY, SHORE_LEAVE_OPTIONS } from '../game/constants';
+import { BASE_STAMINA, BASE_SANITY, SHORE_LEAVE_OPTIONS, BASE_CREW_CAPACITY, CREW_PER_QUARTERS } from '../game/constants';
+import { getActiveEffects } from '../game/systems/slotManager';
 
-const MAX_CREW_ROSTER = 5;
 const HEALING_COST = 50;
 const HEALING_AMOUNT = 10;
+
+export function calculateCrewCapacity(ship?: PlayerShip): number {
+  if (!ship) return BASE_CREW_CAPACITY;
+  
+  const quarters = ship.rooms.filter(r => r.roomType === 'quarters').length;
+  const base = BASE_CREW_CAPACITY + (quarters * CREW_PER_QUARTERS);
+  
+  const effects = getActiveEffects(ship);
+  const bonus = effects
+    .filter(e => e.type === 'crew_capacity')
+    .reduce((sum, e) => sum + e.value, 0);
+    
+  return base + bonus;
+}
 
 /**
  * Result of a crew operation
@@ -39,7 +54,7 @@ function generateCrewId(): string {
  * Hire a new crew member from candidates
  */
 export function hireCrew(
-  state: Pick<GameState, 'credits' | 'crewRoster' | 'day'>,
+  state: Pick<GameState, 'credits' | 'crewRoster' | 'day' | 'playerShip'>,
   candidate: HireCandidate
 ): CrewResult {
   const cost = candidate.cost;
@@ -48,8 +63,9 @@ export function hireCrew(
     return { success: false, error: 'Insufficient credits' };
   }
 
-  if (state.crewRoster.length >= MAX_CREW_ROSTER) {
-    return { success: false, error: 'Crew roster full' };
+  const maxCrew = calculateCrewCapacity(state.playerShip);
+  if (state.crewRoster.length >= maxCrew) {
+    return { success: false, error: `Crew roster full (Max ${maxCrew})` };
   }
 
   const newCrew: CrewMember = {

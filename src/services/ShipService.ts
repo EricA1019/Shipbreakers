@@ -29,7 +29,7 @@ function findRoomAndSlot(
   roomId: string, 
   slotId: string
 ): { room: { slots: ItemSlot[] } | null; slot: ItemSlot | null } {
-  const room = ship.grid.flat().find((r) => r.id === roomId);
+  const room = ship.grid.flat().find((r) => r && r.id === roomId);
   if (!room || !Array.isArray((room as { slots?: ItemSlot[] }).slots)) {
     return { room: null, slot: null };
   }
@@ -42,7 +42,7 @@ function findRoomAndSlot(
  * Install an item on the player ship
  */
 export function installItemOnShip(
-  state: Pick<GameState, 'playerShip' | 'equipmentInventory' | 'inventory' | 'credits' | 'licenseTier'>,
+  state: Pick<GameState, 'playerShip' | 'inventory' | 'credits' | 'licenseTier'>,
   roomId: string,
   slotId: string,
   itemId: string
@@ -57,17 +57,9 @@ export function installItemOnShip(
     return { success: false, error: 'Room or slot not found' };
   }
 
-  // Check both equipment inventory and regular inventory for equippable items
-  const equipmentInventory = state.equipmentInventory || [];
-  const lootInventory = state.inventory || [];
-
-  let item: Loot | Item | undefined = equipmentInventory.find((i) => i.id === itemId);
-  let isFromEquipment = true;
-
-  if (!item) {
-    item = lootInventory.find((i) => i.id === itemId);
-    isFromEquipment = false;
-  }
+  // Find item in unified inventory
+  const inventory = state.inventory || [];
+  const item: Loot | Item | undefined = inventory.find((i) => i.id === itemId);
 
   if (!item) {
     return { success: false, error: 'Item not found in inventory' };
@@ -87,17 +79,12 @@ export function installItemOnShip(
   const updatedShip = { ...ship };
   installItem(updatedShip, slot, item);
 
-  // Build updates based on source inventory
+  // Remove item from unified inventory
   const updates: Partial<GameState> = {
     credits: state.credits - fee,
     playerShip: updatedShip,
+    inventory: inventory.filter((i) => i.id !== itemId),
   };
-
-  if (isFromEquipment) {
-    updates.equipmentInventory = equipmentInventory.filter((e) => e.id !== itemId);
-  } else {
-    updates.inventory = lootInventory.filter((i) => i.id !== itemId);
-  }
 
   return { success: true, updates };
 }
@@ -106,7 +93,7 @@ export function installItemOnShip(
  * Uninstall an item from the player ship
  */
 export function uninstallItemFromShip(
-  state: Pick<GameState, 'playerShip' | 'equipmentInventory' | 'credits' | 'licenseTier'>,
+  state: Pick<GameState, 'playerShip' | 'inventory' | 'credits' | 'licenseTier'>,
   roomId: string,
   slotId: string
 ): ShipResult {
@@ -136,7 +123,7 @@ export function uninstallItemFromShip(
   return {
     success: true,
     updates: {
-      equipmentInventory: [...(state.equipmentInventory || []), removed],
+      inventory: [...(state.inventory || []), removed],
       credits: state.credits - fee,
       playerShip: updatedShip,
     },

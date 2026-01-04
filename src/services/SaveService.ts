@@ -12,7 +12,6 @@ import { REACTORS } from '../game/data/reactors';
  */
 export function needsMigration(state: Partial<GameState>): boolean {
   // Check for various migration indicators
-  if (typeof state.equipmentInventory === 'undefined') return true;
   if (typeof state.cargoSwapPending === 'undefined') return true;
   
   // Check crew inventory migration
@@ -33,11 +32,6 @@ export function needsMigration(state: Partial<GameState>): boolean {
 export function applyBasicMigrations(state: GameState): Partial<GameState> {
   const updates: Partial<GameState> = {};
 
-  // Ensure equipment inventory exists
-  if (typeof state.equipmentInventory === 'undefined') {
-    updates.equipmentInventory = [];
-  }
-  
   if (typeof state.cargoSwapPending === 'undefined') {
     updates.cargoSwapPending = null;
   }

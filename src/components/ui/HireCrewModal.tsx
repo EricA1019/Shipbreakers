@@ -1,13 +1,19 @@
 import { useState } from "react";
 import { useGameStore } from "../../stores/gameStore";
+import { calculateCrewCapacity } from "../../services/CrewService";
 
 export default function HireCrewModal() {
   const [open, setOpen] = useState(false);
-  const { hireCandidates, hireCrew, credits } = useGameStore((s) => ({
+  const { hireCandidates, hireCrew, credits, crewRoster, playerShip } = useGameStore((s) => ({
     hireCandidates: s.hireCandidates,
     hireCrew: s.hireCrew,
     credits: s.credits,
+    crewRoster: s.crewRoster,
+    playerShip: s.playerShip,
   }));
+
+  const capacity = calculateCrewCapacity(playerShip);
+  const isFull = crewRoster.length >= capacity;
 
   return (
     <div>
@@ -28,6 +34,11 @@ export default function HireCrewModal() {
               <button className="text-amber-400" onClick={() => setOpen(false)}>
                 Close
               </button>
+            </div>
+            
+            <div className="mb-3 text-xs text-amber-400/80 flex justify-between">
+              <span>Capacity: {crewRoster.length} / {capacity}</span>
+              {isFull && <span className="text-red-400">ROSTER FULL</span>}
             </div>
 
             <div className="space-y-2">
@@ -54,13 +65,13 @@ export default function HireCrewModal() {
                     </div>
                     <button
                       className="mt-2 px-2 py-1 bg-amber-600 text-zinc-900 rounded disabled:opacity-50"
-                      disabled={credits < c.cost}
+                      disabled={credits < c.cost || isFull}
                       onClick={() => {
                         const ok = hireCrew(c);
                         if (ok) setOpen(false);
                       }}
                     >
-                      Hire
+                      {isFull ? "Full" : "Hire"}
                     </button>
                   </div>
                 </div>

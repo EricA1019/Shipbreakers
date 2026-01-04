@@ -108,7 +108,7 @@ class WasmBridge {
     while (chosen.length < SHOP_STOCK_SIZE) {
       const candidate = all[idx % all.length];
       // bias to license tier: prefer items with tier <= licenseTier+1
-      if (candidate.tier <= Math.max(1, licenseTier + 1))
+      if (candidate.tier && candidate.tier <= Math.max(1, licenseTier + 1))
         chosen.push(candidate);
       idx += 1 + ((daySeed + chosen.length) % 7);
       // safety

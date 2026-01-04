@@ -31,6 +31,7 @@ import type { Screen } from "./types";
 function AppContent() {
   const [screen, setScreen] = useState<Screen>("hub");
   const isNewGame = useGameStore((s: any) => s.isNewGame ?? false);
+  const tickCrewMovement = useGameStore((s: any) => s.tickCrewMovement);
   const { addNotification } = useNotifications();
   const audio = useAudio();
 
@@ -48,6 +49,22 @@ function AppContent() {
   useEffect(() => {
     audio.startMusic();
   }, [audio]);
+
+  // Global crew movement tick for visible feedback
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (typeof tickCrewMovement !== "function") return;
+
+    let last = performance.now();
+    const id = window.setInterval(() => {
+      const now = performance.now();
+      const dt = now - last;
+      last = now;
+      tickCrewMovement(dt);
+    }, 150);
+
+    return () => window.clearInterval(id);
+  }, [tickCrewMovement]);
 
   return (
     <div className="min-h-screen bg-zinc-900 text-amber-50 font-mono p-4">

@@ -26,7 +26,7 @@ export const EquipmentShopScreen: React.FC<ScreenProps> = ({ onNavigate }) => {
 
   const addToInventory = (item: Item | ReactorModule) => {
     useGameStore.setState((state) => ({
-      equipmentInventory: (state.equipmentInventory || []).concat(item as any),
+      inventory: (state.inventory || []).concat(item as any),
       credits: state.credits - (item.value ?? 0),
     }));
   };

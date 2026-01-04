@@ -53,7 +53,7 @@ export function isPlayerShipRoom(room: unknown): room is PlayerShipRoom {
 export function findRoomById(ship: PlayerShip, roomId: string): PlayerShipRoom | undefined {
   for (const row of ship.grid) {
     for (const room of row) {
-      if (room.id === roomId && isPlayerShipRoom(room)) {
+      if (room && room.id === roomId && isPlayerShipRoom(room)) {
         return room;
       }
     }

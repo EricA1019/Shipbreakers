@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
 import type { Ship as ShipType, GridRoom, CrewMember } from "../../types";
 import { hasShipLayout } from "../../types";
+import { getRoomById } from "../../game/shipTopology";
 import ScannerEffect from "../ui/ScannerEffect";
 import CrewDot from "./CrewDot";
 
@@ -16,6 +17,16 @@ interface ShipGridProps {
   activeRoomId?: string;
   /** Whether crew are actively working (e.g., auto-salvage) */
   crewWorking?: boolean;
+  /**
+   * Optional overlay rendered inside the ship visualization area.
+   * Useful for things like ship expansion placement highlights.
+   */
+  overlay?: React.ReactNode;
+  /**
+   * Optional override for layout-mode bounds (minX/minY/width/height).
+   * When omitted, bounds are computed from the layout rooms.
+   */
+  layoutBounds?: { minX: number; minY: number; width: number; height: number };
 }
 
 export const ShipGrid: React.FC<ShipGridProps> = ({
@@ -28,6 +39,8 @@ export const ShipGrid: React.FC<ShipGridProps> = ({
   locationFilter = "ship",
   activeRoomId,
   crewWorking = false,
+  overlay,
+  layoutBounds,
 }) => {
   const cols = ship.width;
   
@@ -36,15 +49,50 @@ export const ShipGrid: React.FC<ShipGridProps> = ({
     typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches,
   []);
 
+  const movingCrew = useMemo(() => {
+    if (!crewRoster || crewRoster.length === 0) return [] as CrewMember[];
+    return crewRoster.filter(
+      (c) =>
+        c.position?.location === locationFilter &&
+        !!c.movement &&
+        Array.isArray(c.movement.path) &&
+        c.movement.path.length >= 2,
+    );
+  }, [crewRoster, locationFilter]);
+
+  function getCrewInterpolatedPosition(c: CrewMember): { x: number; y: number } | null {
+    const movement = c.movement;
+    if (!movement || movement.path.length < 2) return null;
+    const fromRoomId = movement.path[movement.stepIndex];
+    const toRoomId = movement.path[movement.stepIndex + 1];
+    if (!fromRoomId || !toRoomId) return null;
+
+    const from = getRoomById(ship, fromRoomId) ?? ship.grid[ship.entryPosition.y]?.[ship.entryPosition.x];
+    const to = getRoomById(ship, toRoomId) ?? ship.grid[ship.entryPosition.y]?.[ship.entryPosition.x];
+    if (!from || !to) return null;
+
+    const t = Math.max(0, Math.min(1, movement.progress));
+    return {
+      x: from.position.x + (to.position.x - from.position.x) * t,
+      y: from.position.y + (to.position.y - from.position.y) * t,
+    };
+  }
+
   // If a layout is provided (from rust shapes) render absolute positions
   if (hasShipLayout(ship)) {
     const { rooms } = ship.layout;
-    const minX = Math.min(...rooms.map((r) => r.x));
-    const minY = Math.min(...rooms.map((r) => r.y));
-    const maxX = Math.max(...rooms.map((r) => r.x + r.w));
-    const maxY = Math.max(...rooms.map((r) => r.y + r.h));
-    const width = maxX - minX;
-    const height = maxY - minY;
+    const computed = (() => {
+      const minX = Math.min(...rooms.map((r) => r.x));
+      const minY = Math.min(...rooms.map((r) => r.y));
+      const maxX = Math.max(...rooms.map((r) => r.x + r.w));
+      const maxY = Math.max(...rooms.map((r) => r.y + r.h));
+      return { minX, minY, width: maxX - minX, height: maxY - minY };
+    })();
+
+    const minX = layoutBounds?.minX ?? computed.minX;
+    const minY = layoutBounds?.minY ?? computed.minY;
+    const width = layoutBounds?.width ?? computed.width;
+    const height = layoutBounds?.height ?? computed.height;
 
     // Map layout rooms to grid rooms by index (they correspond 1:1)
     const gridRooms = ship.grid.flat();
@@ -61,6 +109,34 @@ export const ShipGrid: React.FC<ShipGridProps> = ({
           style={{ paddingTop: `${(height / width) * 100}%` }}
         >
           <div className="absolute inset-0">
+            {/* Moving crew overlay */}
+            {movingCrew.length > 0 && (
+              <div className="absolute inset-0 pointer-events-none z-30">
+                {movingCrew.map((c, idx) => {
+                  const pos = getCrewInterpolatedPosition(c);
+                  if (!pos) return null;
+                  const leftPct = ((pos.x - minX + 0.5) / width) * 100;
+                  const topPct = ((pos.y - minY + 0.5) / height) * 100;
+                  return (
+                    <div
+                      key={`move-${c.id}`}
+                      className="absolute"
+                      style={{
+                        left: `${leftPct}%`,
+                        top: `${topPct}%`,
+                        transform: "translate(-50%, -50%)",
+                        transition: prefersReducedMotion
+                          ? "none"
+                          : "left 0.15s linear, top 0.15s linear",
+                      }}
+                    >
+                      <CrewDot crew={c} offsetIndex={idx} isWorking={crewWorking} />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
             {/* Ghost grid to communicate the footprint (empty cells) */}
             <div
               className="absolute inset-0 grid"
@@ -75,10 +151,16 @@ export const ShipGrid: React.FC<ShipGridProps> = ({
               ))}
             </div>
 
+            {overlay && (
+              <div className="absolute inset-0 z-20">
+                {overlay}
+              </div>
+            )}
+
             {rooms.map((r, idx) => {
               // Match layout room to grid room by coordinates (not index)
               const gridRoom = gridRooms.find(
-                (g) => g.position.x === r.x && g.position.y === r.y
+                (g) => g && g.position.x === r.x && g.position.y === r.y
               );
 
               const left = ((r.x - minX) / width) * 100;
@@ -155,6 +237,7 @@ export const ShipGrid: React.FC<ShipGridProps> = ({
                     const crewInRoom = crewRoster.filter(
                       (c) => {
                         if (c.position?.location !== locationFilter) return false;
+                        if (c.movement) return false;
                         
                         // If crew has specific room assignment, match it
                         if (c.position.roomId) {
@@ -206,9 +289,41 @@ export const ShipGrid: React.FC<ShipGridProps> = ({
         className="relative grid gap-2"
         style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
       >
+        {/* Moving crew overlay */}
+        {movingCrew.length > 0 && (
+          <div className="absolute inset-0 pointer-events-none z-30">
+            {movingCrew.map((c, idx) => {
+              const pos = getCrewInterpolatedPosition(c);
+              if (!pos) return null;
+              const leftPct = ((pos.x + 0.5) / ship.width) * 100;
+              const topPct = ((pos.y + 0.5) / ship.height) * 100;
+              return (
+                <div
+                  key={`move-${c.id}`}
+                  className="absolute"
+                  style={{
+                    left: `${leftPct}%`,
+                    top: `${topPct}%`,
+                    transform: "translate(-50%, -50%)",
+                    transition: prefersReducedMotion
+                      ? "none"
+                      : "left 0.15s linear, top 0.15s linear",
+                  }}
+                >
+                  <CrewDot crew={c} offsetIndex={idx} isWorking={crewWorking} />
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         {ship.grid
           .flatMap((row) => row)
-          .map((room) => {
+          .map((room, idx) => {
+            if (!room) {
+              return <div key={`empty-${idx}`} className="bg-zinc-900/50 rounded border border-zinc-800/50" style={{ minHeight: 64 }} />;
+            }
+
             const isEntry =
               room.position.x === ship.entryPosition.x &&
               room.position.y === ship.entryPosition.y;
@@ -278,6 +393,7 @@ export const ShipGrid: React.FC<ShipGridProps> = ({
                     const crewInRoom = crewRoster.filter(
                       (c) => {
                         if (c.position?.location !== locationFilter) return false;
+                        if (c.movement) return false;
                         
                         // If crew has specific room assignment, match it
                         if (c.position.roomId) {

@@ -95,8 +95,10 @@ export function tickCrewMovementOnShip(
     return { ...crew, position: { ...crew.position, roomId }, movement: undefined };
   }
 
-  // Only wander when idle (keeps “working” crew stable)
-  if (crew.currentJob !== "idle") {
+  // Only move when working. Treat being on-wreck as working even if job isn't flagged.
+  // This keeps station/ship crew stable while still allowing salvage-run movement.
+  const isWorking = crew.currentJob === "salvaging" || crew.position.location === "wreck";
+  if (!isWorking) {
     return { ...crew, position: { ...crew.position, roomId }, movement: undefined };
   }
 
@@ -110,11 +112,15 @@ export function tickCrewMovementOnShip(
     return { ...crew, position: { ...crew.position, roomId }, movement: undefined };
   }
 
+  const baseRoomsPerSecond = crew.stats?.movement?.baseRoomsPerSecond ?? 1.2;
+  const speedMultiplier = crew.stats?.movement?.multiplier ?? 1;
+  const speedRoomsPerSecond = Math.max(0.05, baseRoomsPerSecond * speedMultiplier);
+
   const newMovement: CrewMovement = {
     path,
     stepIndex: 0,
     progress: 0,
-    speedRoomsPerSecond: 1.2,
+    speedRoomsPerSecond,
   };
 
   return {

@@ -9,13 +9,13 @@ describe('Equipment Shop (UI)', () => {
     // Reset store to a known state
     useGameStore.setState({
       credits: 10000,
-      equipmentInventory: [],
+      inventory: [],
       day: 1,
       licenseTier: 'basic',
     });
   });
 
-  it('allows buying a reactor and deducts credits / adds to equipment inventory', async () => {
+  it('allows buying a reactor and deducts credits / adds to inventory', async () => {
     render(<EquipmentShopScreen onNavigate={() => {}} />);
 
     // Switch to Reactors tab
@@ -36,7 +36,7 @@ describe('Equipment Shop (UI)', () => {
 
     await waitFor(() => {
       const state = useGameStore.getState();
-      expect(state.equipmentInventory.find((it: any) => it.id === r.id)).toBeDefined();
+      expect(state.inventory.find((it: any) => it.id === r.id)).toBeDefined();
       expect(state.credits).toBe(beforeCredits - r.value);
     });
   });

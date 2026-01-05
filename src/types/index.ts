@@ -129,6 +129,17 @@ export interface SkillXp {
   piloting: number;
 }
 
+export interface CrewMovementStats {
+  /** Base speed in rooms/second. If omitted, systems use their defaults. */
+  baseRoomsPerSecond?: number;
+  /** Multiplier applied to base movement speed. Defaults to 1. */
+  multiplier?: number;
+}
+
+export interface CrewStats {
+  movement?: CrewMovementStats;
+}
+
 export interface CrewMember {
   id: string;
   firstName: string;
@@ -137,6 +148,8 @@ export interface CrewMember {
   isPlayer?: boolean;
   background: BackgroundId;
   traits: TraitId[];
+  /** Structured per-crew numeric modifiers for future balancing (e.g. trait-driven move speed). */
+  stats?: CrewStats;
   skills: Skills;
   skillXp: SkillXp;
   hp: number;
@@ -159,6 +172,9 @@ export interface CrewMember {
   hireCost?: number;
   customDotColor?: string;
   inventory: Loot[]; // Items currently held by this crew member (max 1)
+  // Phase 14: Injury system
+  injury?: Injury;
+  morale?: number; // 0-100, affected by relationships, events, deaths
 }
 
 // Backwards-compatible alias until rest of codebase migrates
@@ -546,7 +562,84 @@ export type EventTrigger =
   | "social"
   | "daily"
   | "starvation"
-  | "breakdown";
+  | "breakdown"
+  | "hub"
+  | "lounge"
+  | "medical"
+  | "dock";
+
+// ============================================
+// PHASE 14: Injury & Death System
+// ============================================
+
+export type InjuryType =
+  | "broken_arm"
+  | "broken_leg"
+  | "concussion"
+  | "radiation_sickness"
+  | "burns"
+  | "trauma"
+  | "internal_bleeding";
+
+export type InjurySeverity = "minor" | "major" | "critical";
+
+export interface Injury {
+  type: InjuryType;
+  severity: InjurySeverity;
+  daysRemaining: number;
+  daysSuffered: number; // Total days this injury lasts
+  effects: {
+    skillPenalty?: Partial<Skills>;
+    staminaModifier?: number; // Percentage reduction (e.g., -30 = 30% less max stamina)
+    workDisabled?: boolean; // Can't salvage at all
+  };
+}
+
+export interface InjuryConfig {
+  type: InjuryType;
+  name: string;
+  description: string;
+  severityDays: Record<InjurySeverity, number>;
+  effects: Record<InjurySeverity, Injury["effects"]>;
+}
+
+export interface DeadCrewMember {
+  id: string;
+  firstName: string;
+  lastName: string;
+  name: string;
+  background: BackgroundId;
+  traits: TraitId[];
+  diedOnDay: number;
+  causeOfDeath: string;
+  daysEmployed: number;
+}
+
+// ============================================
+// PHASE 14: Relationship System
+// ============================================
+
+export type RelationshipLevel =
+  | "hostile"    // 0-1
+  | "tense"      // 2-3
+  | "neutral"    // 4-5
+  | "friendly"   // 6-7
+  | "close"      // 8-9
+  | "intimate";  // 10
+
+export interface CrewRelationship {
+  crewId1: string; // Alphabetically first ID for consistent lookup
+  crewId2: string;
+  level: number; // 0-10 scale
+  history: string[]; // Recent events/reasons for relationship changes (max 5)
+}
+
+export interface RelationshipChange {
+  crewId1: string;
+  crewId2: string;
+  delta: number;
+  reason: string;
+}
 
 export interface EventRequirement {
   skill?: keyof Skills;
@@ -672,4 +765,15 @@ export interface GameState {
   // Auto-salvage
   autoSalvageEnabled?: boolean;
   autoAssignments?: Record<string, string> | null;
+
+  // Phase 14: Death & Relationships
+  deadCrew: DeadCrewMember[];
+  relationships: CrewRelationship[];
+  
+  // Event chain state
+  activeEventChain?: {
+    chainId: string;
+    step: number;
+    data?: Record<string, unknown>; // Chain-specific data (e.g., involved crew IDs)
+  } | null;
 }

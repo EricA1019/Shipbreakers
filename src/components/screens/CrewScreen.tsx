@@ -6,6 +6,9 @@ import IndustrialPanel from "../ui/IndustrialPanel";
 import IndustrialButton from "../ui/IndustrialButton";
 import StatChip from "../ui/StatChip";
 import StatusPill from "../ui/StatusPill";
+import InjuryStatusBadge from "../ui/InjuryStatusBadge";
+import MoraleBar from "../ui/MoraleBar";
+import RelationshipsPanel from "../ui/RelationshipsPanel";
 import { useAudio } from "../../hooks/useAudio";
 import { calculateCrewCapacity } from "../../services/CrewService";
 
@@ -19,6 +22,9 @@ export default function CrewScreen({ onNavigate }: ScreenProps) {
     day: s.day,
     playerShip: s.playerShip,
   }));
+
+  // Phase 14: Check if we have any relationships
+  const hasRelationships = useGameStore((s) => (s.relationships || []).length > 0);
 
   const [colorPickerOpen, setColorPickerOpen] = useState<string | null>(null);
   const audio = useAudio();
@@ -158,8 +164,21 @@ export default function CrewScreen({ onNavigate }: ScreenProps) {
                         <StatusPill variant="default" label="ASSIGNED" />
                       )}
                     </div>
+                    {/* Phase 14: Injury badge */}
+                    {crew.injury && (
+                      <div className="mt-2">
+                        <InjuryStatusBadge injury={crew.injury} />
+                      </div>
+                    )}
                   </div>
                 </div>
+
+                {/* Phase 14: Morale bar */}
+                {crew.morale !== undefined && (
+                  <div className="mb-3">
+                    <MoraleBar morale={crew.morale} />
+                  </div>
+                )}
 
                 {/* Color picker */}
                 {colorPickerOpen === crew.id && (
@@ -356,6 +375,11 @@ export default function CrewScreen({ onNavigate }: ScreenProps) {
           ))}
         </div>
       </IndustrialPanel>
+
+      {/* Phase 14: Crew Relationships */}
+      {hasRelationships && (
+        <RelationshipsPanel />
+      )}
 
       {/* Actions */}
       <IndustrialPanel>

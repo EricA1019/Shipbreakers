@@ -54,6 +54,9 @@
 <pre id="output">Ready to clear save data...\n\nThis will:\n- Remove all Ship Breakers localStorage\n- Remove auto-salvage presets\n- Clear IndexedDB databases\n- Redirect to fresh game</pre>
 
 <script>
+// Must match src/services/SaveService.ts (STORE_STORAGE_KEY)
+const STORE_STORAGE_KEY = 'ship-breakers-store-v1';
+
 // Check if we're on the correct origin
 window.addEventListener('load', () => {
   const origin = window.location.origin;
@@ -89,7 +92,7 @@ async function clearSave() {
     const keys = Object.keys(localStorage);
     let clearedCount = 0;
     keys.forEach(key => {
-      if (key.includes('ship-breakers') || key.includes('autoSalvage_')) {
+      if (key === STORE_STORAGE_KEY || key.includes('autoSalvage_')) {
         localStorage.removeItem(key);
         output.textContent += '✓ Removed: ' + key + '\n';
         clearedCount++;

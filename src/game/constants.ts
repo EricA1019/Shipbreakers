@@ -221,3 +221,75 @@ export const ROOM_BASE_COSTS: Record<string, number> = {
 };
 
 export const SHIP_EXPANSION_SCALING = 0.25; // +25% cost per existing room
+
+// ============================================
+// PHASE 14: Death, Injury & Relationship Constants
+// ============================================
+
+// Death & Injury System
+export const DEATH_CHANCE_ON_ZERO_HP = 0.30; // 30% chance of death when HP hits 0
+export const CRITICAL_INJURY_CHANCE = 0.50; // 50% of survivors get critical injury
+export const MAJOR_INJURY_CHANCE = 0.70; // 70% of non-critical get major (rest = minor)
+
+export const INJURY_RECOVERY_DAYS = {
+  minor: 3,
+  major: 7,
+  critical: 14,
+} as const;
+
+// Morale impacts from death
+export const MORALE_LOSS_ON_DEATH = 25; // All crew lose this morale on any death
+export const MORALE_LOSS_CLOSE_FRIEND = 15; // Additional loss if relationship >= 8
+export const MORALE_RECOVERY_PER_DAY = 5; // Natural morale recovery at station
+
+// Starting morale for new crew
+export const BASE_MORALE = 75;
+export const MIN_MORALE = 0;
+export const MAX_MORALE = 100;
+
+// Morale thresholds
+export const MORALE_LOW_THRESHOLD = 30; // Below this: work efficiency penalty
+export const MORALE_HIGH_THRESHOLD = 80; // Above this: work efficiency bonus
+export const MORALE_WORK_PENALTY = 0.20; // -20% work speed when low morale
+export const MORALE_WORK_BONUS = 0.10; // +10% work speed when high morale
+
+// Relationship System (0-10 scale)
+export const RELATIONSHIP_LEVELS = {
+  hostile: [0, 1],
+  tense: [2, 3],
+  neutral: [4, 5],
+  friendly: [6, 7],
+  close: [8, 9],
+  intimate: [10, 10],
+} as const;
+
+// Relationship change rates
+export const RELATIONSHIP_CHANGE = {
+  work_together: 0.3, // Per successful salvage together
+  defend_crew: 2.0, // Defending another in event
+  conflict: -2.0, // Argument/fight
+  share_meal: 0.5, // Shore leave together
+  save_life: 3.0, // Save from death
+  betrayal: -5.0, // Major betrayal event
+  gift: 1.0, // Give item/help
+  small_positive: 0.5, // Minor positive interaction
+  small_negative: -0.5, // Minor negative interaction
+} as const;
+
+// Starting relationship for new crew pairs
+export const STARTING_RELATIONSHIP = 5; // Neutral
+
+// Relationship-based morale modifiers (applied daily)
+export const RELATIONSHIP_MORALE_BONUS = {
+  intimate: 5, // +5 morale per intimate relationship
+  close: 2, // +2 morale per close relationship
+  friendly: 1, // +1 morale per friendly relationship
+  hostile: -3, // -3 morale per hostile relationship
+  tense: -1, // -1 morale per tense relationship
+} as const;
+
+// Hub/Lounge Event Chances
+export const HUB_EVENT_CHANCE = 0.15; // 15% chance when at hub
+export const LOUNGE_EVENT_CHANCE = 0.25; // 25% chance when in lounge
+export const MEDICAL_EVENT_CHANCE = 0.10; // 10% chance when healing
+export const DOCK_EVENT_CHANCE = 0.10; // 10% chance at dock

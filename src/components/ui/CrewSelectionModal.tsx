@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useGameStore } from "../../stores/gameStore";
+import IndustrialButton from "./IndustrialButton";
 
 export default function CrewSelectionModal() {
   const [open, setOpen] = useState(false);
@@ -11,12 +12,13 @@ export default function CrewSelectionModal() {
 
   return (
     <div>
-      <button
-        className="px-3 py-1 bg-amber-600 text-zinc-900 rounded font-semibold"
+      <IndustrialButton
+        title="Select Crew"
+        description="Assign who leads the run"
+        variant="info"
+        fullWidth
         onClick={() => setOpen(true)}
-      >
-        Select Crew
-      </button>
+      />
 
       {open && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/50">

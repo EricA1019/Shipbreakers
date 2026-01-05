@@ -72,7 +72,7 @@ describe('CrewService', () => {
       const result = hireCrew(state, candidate);
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('Crew roster full');
+      expect(result.error).toMatch(/^Crew roster full/);
     });
   });
 

@@ -408,4 +408,380 @@ export const EVENTS: GameEvent[] = [
       { id: "face", text: "Meet them head-on.", effects: [], setsFlag: "corp_dealt_with" },
     ],
   },
+
+  // ============================================
+  // HUB EVENTS - Triggered while at station (Phase 14)
+  // ============================================
+  {
+    id: "hub-station-gossip",
+    trigger: "hub",
+    title: "Station Gossip",
+    description: "Dock workers are chattering about a big score in the Deep Zone.",
+    weight: 8,
+    choices: [
+      { id: "listen", text: "Listen carefully.", effects: [], setsFlag: "heard_deep_zone_rumor" },
+      { id: "ignore", text: "Mind your own business.", effects: [] },
+    ],
+  },
+  {
+    id: "hub-maintenance-crew",
+    trigger: "hub",
+    title: "Maintenance Crew",
+    description: "A station tech offers to check your ship's systems - for a price.",
+    weight: 7,
+    choices: [
+      { id: "accept", text: "Pay for the inspection.", effects: [{ type: "credits", value: -75 }] },
+      { id: "decline", text: "Your ship's fine.", effects: [] },
+    ],
+  },
+  {
+    id: "hub-market-deal",
+    trigger: "hub",
+    title: "Market Special",
+    description: "A vendor's clearing out surplus rations at a steep discount.",
+    weight: 6,
+    choices: [
+      { id: "buy-food", text: "Stock up on food.", effects: [{ type: "credits", value: -50 }, { type: "food", value: 5 }] },
+      { id: "buy-drink", text: "Get drinks instead.", effects: [{ type: "credits", value: -50 }, { type: "drink", value: 5 }] },
+      { id: "pass", text: "Pass on the deal.", effects: [] },
+    ],
+  },
+  {
+    id: "hub-stranger-approach",
+    trigger: "hub",
+    title: "Stranger's Approach",
+    description: "A weathered salvager sidles up to you. They've got a proposition.",
+    weight: 5,
+    choices: [
+      { id: "listen", text: "Hear them out.", effects: [{ type: "credits", value: 100 }], setsFlag: "took_stranger_job" },
+      { id: "refuse", text: "Not interested.", effects: [] },
+    ],
+  },
+  {
+    id: "hub-security-patrol",
+    trigger: "hub",
+    title: "Security Patrol",
+    description: "Station security is doing random checks. They're heading your way.",
+    weight: 4,
+    choices: [
+      { id: "comply", text: "Cooperate fully.", effects: [] },
+      { id: "bribe", text: "Slip them a bribe.", effects: [{ type: "credits", value: -50 }] },
+      { id: "avoid", text: "Duck into a side corridor.", effects: [] },
+    ],
+  },
+
+  // ============================================
+  // LOUNGE EVENTS - Crew quarters/break room (Phase 14)
+  // ============================================
+  {
+    id: "lounge-card-game",
+    trigger: "lounge",
+    title: "Card Game",
+    description: "Some of your crew are playing cards in the lounge. Stakes are getting high.",
+    weight: 8,
+    choices: [
+      { id: "join", text: "Join the game.", effects: [{ type: "credits", value: -20 }] },
+      { id: "watch", text: "Watch and kibitz.", effects: [] },
+      { id: "break-up", text: "Break it up before someone loses their shirt.", effects: [] },
+    ],
+  },
+  {
+    id: "lounge-shared-meal",
+    trigger: "lounge",
+    title: "Shared Meal",
+    description: "Someone's cooking something that actually smells good for once.",
+    weight: 7,
+    choices: [
+      { id: "join", text: "Sit down and eat together.", effects: [{ type: "food", value: -1 }, { type: "sanity", value: 5 }] },
+      { id: "skip", text: "You've got things to do.", effects: [] },
+    ],
+  },
+  {
+    id: "lounge-argument",
+    trigger: "lounge",
+    title: "Heated Argument",
+    description: "Two crew members are in each other's faces. It's about to get ugly.",
+    weight: 6,
+    choices: [
+      { id: "intervene", text: "Step between them.", effects: [] },
+      { id: "let-fight", text: "Let them sort it out.", effects: [] },
+      { id: "pick-side", text: "Back one of them up.", effects: [] },
+    ],
+  },
+  {
+    id: "lounge-quiet-drink",
+    trigger: "lounge",
+    title: "Quiet Drink",
+    description: "The lounge is peaceful. Someone's cracked open the good stuff.",
+    weight: 7,
+    choices: [
+      { id: "join", text: "Have a drink.", effects: [{ type: "drink", value: -1 }, { type: "sanity", value: 10 }] },
+      { id: "abstain", text: "Not tonight.", effects: [] },
+    ],
+  },
+  {
+    id: "lounge-movie-night",
+    trigger: "lounge",
+    title: "Movie Night",
+    description: "Someone's rigged the projector. Old Earth cinema flickers on the wall.",
+    weight: 5,
+    choices: [
+      { id: "watch", text: "Watch the movie.", effects: [{ type: "stamina", value: 10 }, { type: "sanity", value: 5 }] },
+      { id: "skip", text: "You've seen it before.", effects: [] },
+    ],
+  },
+  {
+    id: "lounge-confession",
+    trigger: "lounge",
+    title: "Late Night Talk",
+    description: "A crew member can't sleep. They want to talk about something personal.",
+    weight: 4,
+    choices: [
+      { id: "listen", text: "Listen to them.", effects: [{ type: "sanity", value: -5 }], setsFlag: "heard_confession" },
+      { id: "redirect", text: "Change the subject.", effects: [] },
+    ],
+  },
+
+  // ============================================
+  // ROMANCE CHAIN EVENTS (3 steps) - Phase 14
+  // ============================================
+  {
+    id: "chain-romance-1",
+    trigger: "lounge",
+    title: "Catching Eyes",
+    description: "You notice two crew members stealing glances at each other across the room.",
+    weight: 4,
+    excludesFlag: "romance_started",
+    choices: [
+      { id: "encourage", text: "Encourage the connection.", effects: [], setsFlag: "romance_started" },
+      { id: "ignore", text: "Stay out of it.", effects: [] },
+      { id: "discourage", text: "Remind them about fraternization.", effects: [], setsFlag: "romance_discouraged" },
+    ],
+  },
+  {
+    id: "chain-romance-2",
+    trigger: "lounge",
+    title: "First Date",
+    description: "The two crew members ask for permission to take shore leave together.",
+    weight: 6,
+    requiresFlag: "romance_started",
+    excludesFlag: "romance_date_done",
+    choices: [
+      { id: "approve", text: "Grant them the time.", effects: [{ type: "credits", value: -50 }], setsFlag: "romance_date_done" },
+      { id: "deny", text: "Deny the request.", effects: [], setsFlag: "romance_denied" },
+    ],
+  },
+  {
+    id: "chain-romance-3",
+    trigger: "lounge",
+    title: "Making It Official",
+    description: "Your two crew members want to make their relationship known to the crew.",
+    weight: 8,
+    requiresFlag: "romance_date_done",
+    excludesFlag: "romance_complete",
+    choices: [
+      { id: "celebrate", text: "Throw a small party.", effects: [{ type: "credits", value: -100 }, { type: "drink", value: -2 }], setsFlag: "romance_complete" },
+      { id: "acknowledge", text: "Simple acknowledgment.", effects: [], setsFlag: "romance_complete" },
+    ],
+  },
+
+  // ============================================
+  // RIVALRY CHAIN EVENTS (3 steps) - Phase 14
+  // ============================================
+  {
+    id: "chain-rivalry-1",
+    trigger: "lounge",
+    title: "Cold Shoulder",
+    description: "Two crew members refuse to sit near each other. The tension is palpable.",
+    weight: 5,
+    excludesFlag: "rivalry_started",
+    choices: [
+      { id: "investigate", text: "Ask what happened.", effects: [], setsFlag: "rivalry_started" },
+      { id: "ignore", text: "Let them work it out.", effects: [], setsFlag: "rivalry_started" },
+    ],
+  },
+  {
+    id: "chain-rivalry-2",
+    trigger: "lounge",
+    title: "Words Exchanged",
+    description: "The simmering conflict boils over. Accusations fly across the room.",
+    weight: 6,
+    requiresFlag: "rivalry_started",
+    excludesFlag: "rivalry_confronted",
+    choices: [
+      { id: "mediate", text: "Try to mediate.", effects: [], setsFlag: "rivalry_confronted" },
+      { id: "separate", text: "Separate them by force.", effects: [], setsFlag: "rivalry_confronted" },
+      { id: "let-escalate", text: "Let them hash it out.", effects: [], setsFlag: "rivalry_violent" },
+    ],
+  },
+  {
+    id: "chain-rivalry-3a",
+    trigger: "lounge",
+    title: "Reconciliation",
+    description: "After cooling off, the two crew members are ready to talk.",
+    weight: 7,
+    requiresFlag: "rivalry_confronted",
+    excludesFlag: "rivalry_resolved",
+    choices: [
+      { id: "facilitate", text: "Help them reconcile.", effects: [{ type: "sanity", value: 10 }], setsFlag: "rivalry_resolved" },
+      { id: "mandate", text: "Order them to be professional.", effects: [], setsFlag: "rivalry_resolved" },
+    ],
+  },
+  {
+    id: "chain-rivalry-3b",
+    trigger: "lounge",
+    title: "The Showdown",
+    description: "Fists fly. The rivalry has turned violent.",
+    weight: 8,
+    requiresFlag: "rivalry_violent",
+    excludesFlag: "rivalry_resolved",
+    choices: [
+      { id: "break-up", text: "Break up the fight.", effects: [{ type: "hp", value: -10 }], setsFlag: "rivalry_resolved" },
+      { id: "let-finish", text: "Let them settle it.", effects: [], setsFlag: "rivalry_resolved" },
+      { id: "fire-one", text: "Fire the instigator.", effects: [{ type: "credits", value: 200 }], setsFlag: "rivalry_resolved" },
+    ],
+  },
+
+  // ============================================
+  // STATION INTRIGUE CHAIN (3 steps) - Phase 14
+  // ============================================
+  {
+    id: "chain-intrigue-1",
+    trigger: "hub",
+    title: "Overheard",
+    description: "In a crowded corridor, you overhear something about a 'special shipment'.",
+    weight: 4,
+    excludesFlag: "intrigue_started",
+    choices: [
+      { id: "follow", text: "Try to hear more.", effects: [], setsFlag: "intrigue_started" },
+      { id: "ignore", text: "Not your business.", effects: [] },
+    ],
+  },
+  {
+    id: "chain-intrigue-2",
+    trigger: "hub",
+    title: "Investigation",
+    description: "You've found evidence of smuggling through the station. This could be valuable.",
+    weight: 6,
+    requiresFlag: "intrigue_started",
+    excludesFlag: "intrigue_decided",
+    choices: [
+      { id: "report", text: "Report to station security.", effects: [{ type: "credits", value: 150 }], setsFlag: "intrigue_reported" },
+      { id: "blackmail", text: "Approach the smugglers.", effects: [], setsFlag: "intrigue_blackmail" },
+      { id: "join", text: "Offer to help them.", effects: [], setsFlag: "intrigue_joined" },
+    ],
+  },
+  {
+    id: "chain-intrigue-3a",
+    trigger: "hub",
+    title: "Informant's Reward",
+    description: "Station security is grateful. They've got a reward and a favor to offer.",
+    weight: 7,
+    requiresFlag: "intrigue_reported",
+    excludesFlag: "intrigue_complete",
+    choices: [
+      { id: "cash", text: "Take the cash.", effects: [{ type: "credits", value: 200 }], setsFlag: "intrigue_complete" },
+      { id: "favor", text: "Ask for a license extension.", effects: [], setsFlag: "intrigue_complete" },
+    ],
+  },
+  {
+    id: "chain-intrigue-3b",
+    trigger: "hub",
+    title: "Dangerous Game",
+    description: "The smugglers don't take kindly to threats. They've got a counter-offer.",
+    weight: 7,
+    requiresFlag: "intrigue_blackmail",
+    excludesFlag: "intrigue_complete",
+    choices: [
+      { id: "accept", text: "Take their money.", effects: [{ type: "credits", value: 400 }], setsFlag: "intrigue_complete" },
+      { id: "double", text: "Demand more.", effects: [{ type: "credits", value: 600 }], setsFlag: "intrigue_complete" },
+      { id: "back-off", text: "Walk away.", effects: [], setsFlag: "intrigue_complete" },
+    ],
+  },
+  {
+    id: "chain-intrigue-3c",
+    trigger: "hub",
+    title: "In Deep",
+    description: "The smugglers need you for a run. It's lucrative but risky.",
+    weight: 7,
+    requiresFlag: "intrigue_joined",
+    excludesFlag: "intrigue_complete",
+    choices: [
+      { id: "commit", text: "You're in.", effects: [{ type: "credits", value: 500 }, { type: "fuel", value: -10 }], setsFlag: "intrigue_complete" },
+      { id: "bail", text: "Too hot. Bail out.", effects: [{ type: "credits", value: -100 }], setsFlag: "intrigue_complete" },
+    ],
+  },
+
+  // ============================================
+  // MEDICAL EVENTS - Triggered when healing (Phase 14)
+  // ============================================
+  {
+    id: "medical-complication",
+    trigger: "medical",
+    title: "Complications",
+    description: "The treatment isn't going as planned. The doc looks worried.",
+    weight: 5,
+    choices: [
+      { id: "push", text: "Push through anyway.", effects: [{ type: "hp", value: -5 }] },
+      { id: "wait", text: "Take it slower.", effects: [{ type: "credits", value: -50 }] },
+    ],
+  },
+  {
+    id: "medical-discovery",
+    trigger: "medical",
+    title: "Hidden Strength",
+    description: "The doc's impressed. Your crew member's recovering faster than expected.",
+    weight: 6,
+    choices: [
+      { id: "good-news", text: "Take the good news.", effects: [{ type: "hp", value: 10 }] },
+    ],
+  },
+  {
+    id: "medical-shortage",
+    trigger: "medical",
+    title: "Supply Shortage",
+    description: "The medbay's running low. Treatment will cost extra.",
+    weight: 4,
+    choices: [
+      { id: "pay", text: "Pay the premium.", effects: [{ type: "credits", value: -75 }] },
+      { id: "wait", text: "Wait for supplies.", effects: [] },
+    ],
+  },
+
+  // ============================================
+  // DOCK EVENTS - Triggered at the dock (Phase 14)
+  // ============================================
+  {
+    id: "dock-fuel-deal",
+    trigger: "dock",
+    title: "Fuel Deal",
+    description: "A fuel hauler's got excess they need to offload. Good price.",
+    weight: 6,
+    choices: [
+      { id: "buy", text: "Fill up.", effects: [{ type: "credits", value: -100 }, { type: "fuel", value: 15 }] },
+      { id: "pass", text: "You're good.", effects: [] },
+    ],
+  },
+  {
+    id: "dock-inspection",
+    trigger: "dock",
+    title: "Port Inspection",
+    description: "Dock officials want to inspect your cargo hold.",
+    weight: 4,
+    choices: [
+      { id: "allow", text: "Let them look.", effects: [] },
+      { id: "bribe", text: "Grease some palms.", effects: [{ type: "credits", value: -30 }] },
+    ],
+  },
+  {
+    id: "dock-mechanic",
+    trigger: "dock",
+    title: "Wandering Mechanic",
+    description: "An independent mechanic offers a quick hull patch.",
+    weight: 5,
+    choices: [
+      { id: "hire", text: "Hire them.", effects: [{ type: "credits", value: -100 }] },
+      { id: "decline", text: "No thanks.", effects: [] },
+    ],
+  },
 ];

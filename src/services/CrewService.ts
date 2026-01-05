@@ -12,8 +12,10 @@ import type {
   CrewStatus,
   CrewJob,
   PlayerShip,
+  HazardType,
 } from '../types';
 import { BASE_STAMINA, BASE_SANITY, SHORE_LEAVE_OPTIONS, BASE_CREW_CAPACITY, CREW_PER_QUARTERS } from '../game/constants';
+import { SKILL_HAZARD_MAP } from '../game/constants';
 import { getActiveEffects } from '../game/systems/slotManager';
 
 const HEALING_COST = 50;
@@ -76,6 +78,7 @@ export function hireCrew(
     isPlayer: false,
     background: 'station_rat',
     traits: [],
+    stats: { movement: { multiplier: 1 } },
     skills: candidate.skills,
     skillXp: { technical: 0, combat: 0, salvage: 0, piloting: 0 } as SkillXp,
     hp: 100,
@@ -262,4 +265,69 @@ export function canCrewWork(
     crew.stamina >= settings.minCrewStamina &&
     crew.sanity >= settings.minCrewSanity
   );
+}
+
+export function getCrewAvailability(
+  crew: CrewMember,
+  settings: GameState['settings'],
+): { available: boolean; reason?: string } {
+  if (crew.inventory && crew.inventory.length >= 1) {
+    return { available: false, reason: `Carrying item (${crew.inventory[0].name})` };
+  }
+
+  if (crew.hp < (crew.maxHp * settings.minCrewHpPercent) / 100) {
+    const hpPercent = Math.floor((crew.hp / crew.maxHp) * 100);
+    return { available: false, reason: `HP too low (${hpPercent}%)` };
+  }
+
+  if (crew.stamina < settings.minCrewStamina) {
+    return { available: false, reason: `Stamina depleted (${crew.stamina}/${crew.maxStamina})` };
+  }
+
+  if (crew.sanity < settings.minCrewSanity) {
+    return { available: false, reason: `Sanity critical (${crew.sanity}/${crew.maxSanity})` };
+  }
+
+  return { available: true };
+}
+
+export function selectBestCrewForRoom(
+  room: { hazardType: HazardType },
+  crewRoster: CrewMember[],
+  settings: GameState['settings'],
+): { crew: CrewMember | null; unavailableReasons: string[] } {
+  const unavailableReasons: string[] = [];
+  const availableCrew: Array<{ crew: CrewMember; score: number }> = [];
+
+  for (const crew of crewRoster) {
+    const availability = getCrewAvailability(crew, settings);
+    if (!availability.available) {
+      unavailableReasons.push(`${crew.name}: ${availability.reason}`);
+      continue;
+    }
+
+    const matchingSkill = SKILL_HAZARD_MAP[room.hazardType] as keyof CrewMember['skills'];
+    let score = crew.skills[matchingSkill] || 0;
+
+    score += crew.skills.salvage * 0.5;
+    score += (crew.hp / crew.maxHp) * 2;
+    score += (crew.stamina / crew.maxStamina) * 1;
+    score += (crew.sanity / crew.maxSanity) * 1;
+
+    availableCrew.push({ crew, score });
+  }
+
+  if (availableCrew.length === 0) {
+    return { crew: null, unavailableReasons };
+  }
+
+  availableCrew.sort((a, b) => b.score - a.score);
+  return { crew: availableCrew[0].crew, unavailableReasons: [] };
+}
+
+export function determineCrewStatus(crew: CrewMember): CrewStatus {
+  if (crew.hp < 20) return 'injured';
+  if (crew.sanity === 0) return 'breakdown';
+  if (crew.currentJob === 'resting') return 'resting';
+  return 'active';
 }

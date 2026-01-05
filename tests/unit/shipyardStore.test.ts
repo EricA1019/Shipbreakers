@@ -11,7 +11,7 @@ describe('Shipyard store actions', () => {
     useGameStore.setState({
       playerShip: initializePlayerShip('shipyard-test'),
       credits: 10000,
-      equipmentInventory: [],
+      inventory: [],
     });
   });
 
@@ -35,7 +35,7 @@ describe('Shipyard store actions', () => {
       value: 100,
     });
 
-    useGameStore.setState({ equipmentInventory: [item], credits: 10000 });
+    useGameStore.setState({ inventory: [item], credits: 10000 });
     const beforeCredits = useGameStore.getState().credits;
 
     const roomId = engineRoom.id;
@@ -49,7 +49,7 @@ describe('Shipyard store actions', () => {
     const updatedRoom = s2.playerShip!.grid.flat().find((r) => 'id' in r && r.id === roomId) as PlayerShipRoom;
     const updatedSlot = updatedRoom.slots.find((s) => s.id === slotId);
     expect(updatedSlot?.installedItem).not.toBeNull();
-    expect(s2.equipmentInventory.find((it) => it.id === item.id)).toBeUndefined();
+    expect(s2.inventory.find((it) => it.id === item.id)).toBeUndefined();
 
     const fee = getShipyardFee(s2.licenseTier, 'install');
     expect(s2.credits).toBe(beforeCredits - fee);
@@ -77,14 +77,14 @@ describe('Shipyard store actions', () => {
 
     // Directly install
     slot.installedItem = item;
-    useGameStore.setState({ playerShip: ship, credits: 10000, equipmentInventory: [] });
+    useGameStore.setState({ playerShip: ship, credits: 10000, inventory: [] });
 
     const beforeCredits = useGameStore.getState().credits;
     const ok = useGameStore.getState().uninstallItemFromShip(engineRoom.id, slot.id);
     expect(ok).toBe(true);
 
     const s2 = useGameStore.getState();
-    expect(s2.equipmentInventory.find((it) => it.id === item.id)).toBeDefined();
+    expect(s2.inventory.find((it) => it.id === item.id)).toBeDefined();
     const fee = getShipyardFee(s2.licenseTier, 'uninstall');
     expect(s2.credits).toBe(beforeCredits - fee);
   });

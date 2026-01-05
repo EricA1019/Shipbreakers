@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, type PersistStorage, type StorageValue } from "zustand/middleware";
 import type {
   GameState,
   Loot,
@@ -16,7 +16,22 @@ import { LICENSE_TIERS } from "../types";
 import { initializePlayerShip } from "../game/data/playerShip";
 import { generateWreck, generateAvailableWrecks } from "../game/wreckGenerator";
 import { ShipExpansionService } from "../services/ShipExpansionService";
-import { calculateCrewCapacity } from "../services/CrewService";
+import {
+  calculateCrewCapacity,
+  determineCrewStatus,
+  getCrewAvailability,
+  selectBestCrewForRoom,
+} from "../services/CrewService";
+import {
+  handleCrewDown,
+  processInjuryRecovery,
+  updateCrewMorale,
+} from "../services/injuryService";
+import {
+  initializeRelationships,
+  processWorkTogether,
+  calculateRelationshipMorale,
+} from "../services/relationshipService";
 import {
   STARTING_CREDITS,
   STARTING_FUEL,
@@ -41,6 +56,10 @@ import {
   TRAVEL_EVENT_CHANCE,
   SALVAGE_EVENT_CHANCE,
   DAILY_EVENT_CHANCE,
+  HUB_EVENT_CHANCE,
+  LOUNGE_EVENT_CHANCE,
+  MEDICAL_EVENT_CHANCE,
+  MORALE_RECOVERY_PER_DAY,
   STAMINA_PER_SALVAGE,
   SANITY_LOSS_BASE,
   STAMINA_RECOVERY_STATION,
@@ -62,11 +81,11 @@ import {
   getActiveEffects,
 } from "../game/systems/slotManager";
 import { EQUIPMENT } from "../game/data/equipment";
-import { REACTORS } from "../game/data/reactors";
 import { generateHireCandidates, generateCaptain } from "../game/systems/CrewGenerator";
 import { applyEventChoice, pickEventByTrigger } from "../game/systems/EventManager";
 import { calculateTraitEffects, getSpecialTraits } from "../game/systems/TraitEffectResolver";
 import { tickCrewMovementOnShip } from "../game/systems/CrewMovementSystem";
+import { SAVE_SCHEMA_VERSION, STORE_STORAGE_KEY, migrateGameState } from "../services/SaveService";
 import {
   PANTRY_CAPACITY,
   STARTING_FOOD,
@@ -134,7 +153,6 @@ interface GameActions {
     itemId: string,
   ) => boolean;
   uninstallItemFromShip: (roomId: string, slotId: string) => boolean;
-  migrateSave: () => void;
   handleCargoSwap: (dropItemId: string) => void;
   cancelCargoSwap: () => void;
 
@@ -164,81 +182,6 @@ interface GameActions {
 
   /** Advances crew movement simulation (used for UI feedback). */
   tickCrewMovement: (dtMs: number) => void;
-}
-
-// Helper: Check if crew member is available for work based on stats and thresholds
-function getCrewAvailability(
-  crew: CrewMember,
-  settings: GameState["settings"]
-): { available: boolean; reason?: string } {
-  // Check if inventory is full
-  if (crew.inventory && crew.inventory.length >= 1) {
-    return { available: false, reason: `Carrying item (${crew.inventory[0].name})` };
-  }
-  // Check HP threshold
-  if (crew.hp < (crew.maxHp * settings.minCrewHpPercent) / 100) {
-    const hpPercent = Math.floor((crew.hp / crew.maxHp) * 100);
-    return { available: false, reason: `HP too low (${hpPercent}%)` };
-  }
-  // Check stamina threshold
-  if (crew.stamina < settings.minCrewStamina) {
-    return { available: false, reason: `Stamina depleted (${crew.stamina}/${crew.maxStamina})` };
-  }
-  // Check sanity threshold
-  if (crew.sanity < settings.minCrewSanity) {
-    return { available: false, reason: `Sanity critical (${crew.sanity}/${crew.maxSanity})` };
-  }
-  // Crew is available
-  return { available: true };
-}
-
-// Helper: Select best crew member for a room based on skills, health, and availability
-function selectBestCrewForRoom(
-  room: any,
-  crewRoster: CrewMember[],
-  settings: GameState["settings"]
-): { crew: CrewMember | null; unavailableReasons: string[] } {
-  const unavailableReasons: string[] = [];
-  const availableCrew: Array<{ crew: CrewMember; score: number }> = [];
-
-  for (const crew of crewRoster) {
-    const availability = getCrewAvailability(crew, settings);
-    
-    if (!availability.available) {
-      unavailableReasons.push(`${crew.name}: ${availability.reason}`);
-      continue;
-    }
-
-    // Calculate score based on relevant skill for this room's hazard
-    const matchingSkill = SKILL_HAZARD_MAP[room.hazardType as any] as keyof typeof STARTING_SKILLS;
-    let score = crew.skills[matchingSkill] || 0;
-
-    // Bonus for salvage skill (always useful)
-    score += crew.skills.salvage * 0.5;
-
-    // Bonus for higher HP, stamina, and sanity (prefer healthier crew)
-    score += (crew.hp / crew.maxHp) * 2;
-    score += (crew.stamina / crew.maxStamina) * 1;
-    score += (crew.sanity / crew.maxSanity) * 1;
-
-    availableCrew.push({ crew, score });
-  }
-
-  if (availableCrew.length === 0) {
-    return { crew: null, unavailableReasons };
-  }
-
-  // Sort by score descending and return best crew
-  availableCrew.sort((a, b) => b.score - a.score);
-  return { crew: availableCrew[0].crew, unavailableReasons: [] };
-}
-
-// Helper: Determine crew status based on stats (priority: mortality > needs > tasks)
-function determineCrewStatus(crew: CrewMember): CrewStatus {
-  if (crew.hp < 20) return "injured";
-  if (crew.sanity === 0) return "breakdown";
-  if (crew.currentJob === "resting") return "resting";
-  return "active";
 }
 
 export const useGameStore = create<GameState & GameActions>()(
@@ -324,6 +267,11 @@ export const useGameStore = create<GameState & GameActions>()(
       // Auto-salvage
       autoSalvageEnabled: false,
       autoAssignments: {},
+
+      // Phase 14: Death & Relationships
+      deadCrew: [],
+      relationships: [],
+      activeEventChain: null,
 
       // Phase 9: Provisions
       food: STARTING_FOOD,
@@ -438,6 +386,11 @@ export const useGameStore = create<GameState & GameActions>()(
           // Reset to new game state - show character creation
           isNewGame: true,
           lastUnlockedZone: null,
+
+          // Phase 14: Reset death & relationships
+          deadCrew: [],
+          relationships: [],
+          activeEventChain: null,
 
           playerShip: (() => {
             const ship = initializePlayerShip("player-ship");
@@ -907,17 +860,64 @@ export const useGameStore = create<GameState & GameActions>()(
         } else {
           // Fail - take damage, waste time
           damageTaken = damageOnFail(room.hazardLevel);
+          
+          const newHp = Math.max(0, activeCrew.hp - damageTaken);
+          const crewWentDown = newHp === 0 && activeCrew.hp > 0;
+          
           set((state) => {
-            const updated = state.crewRoster.map((c) =>
+            let updated = state.crewRoster.map((c) =>
               c.id === activeCrew.id
                 ? { 
                     ...c, 
-                    hp: Math.max(0, c.hp - damageTaken),
+                    hp: newHp,
                     stamina: Math.max(0, c.stamina - staminaDrain),
                     sanity: Math.max(0, c.sanity - sanityLoss),
                   }
                 : c,
             );
+            
+            let deadCrew = state.deadCrew || [];
+            let relationships = state.relationships || [];
+            
+            // Handle crew going down (HP = 0)
+            if (crewWentDown) {
+              const otherCrewIds = state.crewRoster
+                .filter((c) => c.id !== activeCrew.id)
+                .map((c) => c.id);
+              
+              const result = handleCrewDown(
+                activeCrew,
+                `Salvage accident in ${room.name || 'unknown room'}`,
+                state.day,
+                relationships,
+                otherCrewIds
+              );
+              
+              if (result.outcome === "death") {
+                // Remove dead crew from roster
+                updated = updated.filter((c) => c.id !== activeCrew.id);
+                if (result.deadCrewRecord) {
+                  deadCrew = [...deadCrew, result.deadCrewRecord];
+                }
+              } else if (result.injury) {
+                // Apply injury to crew
+                updated = updated.map((c) =>
+                  c.id === activeCrew.id
+                    ? { ...c, injury: result.injury, status: 'injured' as CrewStatus, hp: 1 }
+                    : c
+                );
+              }
+              
+              // Apply morale impacts to other crew
+              for (const impact of result.moraleImpacts) {
+                updated = updated.map((c) =>
+                  c.id === impact.crewId
+                    ? updateCrewMorale(c, impact.amount, impact.reason)
+                    : c
+                );
+              }
+            }
+            
             return {
               currentRun: state.currentRun
                 ? {
@@ -932,7 +932,9 @@ export const useGameStore = create<GameState & GameActions>()(
                   }
                 : null,
               crewRoster: updated,
-              crew: updated.find((c) => c.id === activeCrew.id) ?? state.crew,
+              crew: updated.find((c) => c.id === activeCrew.id) ?? updated[0] ?? state.crew,
+              deadCrew,
+              relationships,
             };
           });
 
@@ -1083,9 +1085,42 @@ export const useGameStore = create<GameState & GameActions>()(
         });
 
         set({ crewRoster: updatedRoster });
+        
+        // Phase 14: Process injury recovery for each day spent
+        for (let d = 0; d < daysSpent; d++) {
+          const { updatedRoster: healedRoster, recoveredCrew } = processInjuryRecovery(get().crewRoster);
+          if (recoveredCrew.length > 0) {
+            console.log(`Crew recovered from injuries: ${recoveredCrew.join(', ')}`);
+          }
+          set({ crewRoster: healedRoster });
+        }
+        
+        // Phase 14: Process relationship bonding from working together
+        const crewWhoWorked = get().crewRoster.filter((c) => 
+          c.status === 'active' && !c.injury
+        ).map((c) => c.id);
+        
+        if (crewWhoWorked.length >= 2) {
+          const updatedRelationships = processWorkTogether(
+            get().relationships || [],
+            crewWhoWorked
+          );
+          set({ relationships: updatedRelationships });
+        }
+        
+        // Phase 14: Apply morale recovery and relationship bonuses at station
+        const currentRoster = get().crewRoster;
+        const relationships = get().relationships || [];
+        const moraleUpdatedRoster = currentRoster.map((c) => {
+          const relationshipBonus = calculateRelationshipMorale(relationships, c.id);
+          const baseMorale = c.morale ?? 75;
+          const newMorale = Math.min(100, Math.max(0, baseMorale + MORALE_RECOVERY_PER_DAY + relationshipBonus));
+          return { ...c, morale: newMorale };
+        });
+        set({ crewRoster: moraleUpdatedRoster });
 
         // Check for breakdown events (sanity === 0)
-        const breakdownCrew = updatedRoster.find((c) => c.status === "breakdown");
+        const breakdownCrew = get().crewRoster.find((c) => c.status === "breakdown");
         if (breakdownCrew && !get().activeEvent) {
           const breakdownEvent = pickEventByTrigger("daily", get() as any);
           if (breakdownEvent) set({ activeEvent: breakdownEvent });
@@ -1097,6 +1132,12 @@ export const useGameStore = create<GameState & GameActions>()(
         // Chance to trigger a daily event on return
         if (Math.random() < DAILY_EVENT_CHANCE) {
           const ev = pickEventByTrigger("daily", get() as any);
+          if (ev) set({ activeEvent: ev });
+        }
+        
+        // Phase 14: Chance for hub event when returning to station
+        if (!get().activeEvent && Math.random() < HUB_EVENT_CHANCE) {
+          const ev = pickEventByTrigger("hub", get() as any);
           if (ev) set({ activeEvent: ev });
         }
 
@@ -1206,6 +1247,12 @@ export const useGameStore = create<GameState & GameActions>()(
             crew: updated.find((c) => c.id === selected) ?? state.crew,
           };
         });
+        
+        // Phase 14: Chance for medical event when healing
+        if (!get().activeEvent && Math.random() < MEDICAL_EVENT_CHANCE) {
+          const ev = pickEventByTrigger("medical", get() as any);
+          if (ev) set({ activeEvent: ev });
+        }
       },
 
       scanForWrecks: () => {
@@ -1465,151 +1512,6 @@ export const useGameStore = create<GameState & GameActions>()(
         set({ lastUnlockedZone: null });
       },
 
-      migrateSave: async () => {
-        const state = get();
-        const updates: Partial<GameState> = {};
-        
-        // Phase 13: Unified Inventory Migration
-        if ((state as any).equipmentInventory && (state as any).equipmentInventory.length > 0) {
-          updates.inventory = [
-            ...(state.inventory || []),
-            ...((state as any).equipmentInventory || [])
-          ];
-          // We can't delete properties from state easily with partial update, 
-          // but we can set it to undefined if the type allowed it. 
-          // Since we removed it from type, we just ignore it going forward.
-          (updates as any).equipmentInventory = undefined;
-        }
-
-        // Phase 13: Ship Expansion Migration
-        if (state.playerShip) {
-          const shipUpdates: any = {};
-          
-          // Initialize purchasedRooms if missing
-          if (!state.playerShip.purchasedRooms) {
-            shipUpdates.purchasedRooms = [];
-          }
-          
-          // Initialize gridBounds if missing
-          if (!state.playerShip.gridBounds) {
-            shipUpdates.gridBounds = { width: 2, height: 2 }; // Default start size
-          }
-
-          // Initialize room damage if missing
-          if (state.playerShip.rooms) {
-            const roomsUpdated = state.playerShip.rooms.map(r => {
-              if (typeof r.damage === 'undefined') {
-                return { ...r, damage: 0 };
-              }
-              return r;
-            });
-            // Only update if we actually changed something (simple check)
-            if (roomsUpdated.some((r, i) => r.damage !== state.playerShip!.rooms[i].damage)) {
-              shipUpdates.rooms = roomsUpdated;
-            }
-          }
-
-          if (Object.keys(shipUpdates).length > 0) {
-            updates.playerShip = { ...state.playerShip, ...shipUpdates };
-          }
-        }
-
-        if (typeof state.cargoSwapPending === "undefined")
-          updates.cargoSwapPending = null;
-
-        // Migrate crew to have inventory field (Phase 9+ feature)
-        if (state.crewRoster && state.crewRoster.length > 0) {
-          const needsInventory = state.crewRoster.some((c: any) => !c.inventory);
-          if (needsInventory) {
-            updates.crewRoster = state.crewRoster.map((c: any) => ({
-              ...c,
-              inventory: c.inventory || [],
-            }));
-          }
-        }
-
-        // Migrate currentRun to remove collectedEquipment (unified into collectedLoot)
-        if (state.currentRun && (state.currentRun as any).collectedEquipment) {
-          const run = state.currentRun;
-          updates.currentRun = {
-            ...run,
-            collectedLoot: [
-              ...run.collectedLoot,
-              ...((run as any).collectedEquipment || []),
-            ],
-          };
-          delete (updates.currentRun as any).collectedEquipment;
-        }
-
-        // Ensure settings have crew work thresholds (Phase 9+ feature)
-        if (state.settings) {
-          if (typeof state.settings.minCrewHpPercent === "undefined") {
-            updates.settings = {
-              ...state.settings,
-              minCrewHpPercent: 50,
-              minCrewStamina: 20,
-              minCrewSanity: 20,
-            };
-          }
-        }
-
-        // Ensure playerShip has reactor and powerCapacity
-        if (
-          state.playerShip &&
-          (!state.playerShip.reactor || !state.playerShip.powerCapacity)
-        ) {
-          const reactor = REACTORS["salvaged-reactor"];
-          updates.playerShip = {
-            ...state.playerShip,
-            reactor,
-            powerCapacity: reactor.powerOutput,
-          } as any;
-        }
-
-        // Migrate wrecks to have ship layouts (Phase 8+ feature)
-        const wasmBridge = (await import("../game/wasm/WasmBridge")).default;
-        const { Ship } = await import("../game/ship");
-        const { SeededRandom } = await import("../game/random");
-        let wrecksMigrated = false;
-        const migratedWrecks = state.availableWrecks.map((wreck) => {
-          const ship = (wreck as any).ship;
-          if (ship && !ship.layout) {
-            wrecksMigrated = true;
-            const layoutTemplate =
-              wreck.type === "military"
-                ? "L-military"
-                : wreck.type === "science"
-                  ? "Cross-science"
-                  : wreck.type === "industrial"
-                    ? "U-industrial"
-                    : wreck.type === "luxury"
-                      ? "H-luxury"
-                      : "T-freighter";
-            ship.layout = wasmBridge.generateShipLayoutSync(
-              wreck.id,
-              layoutTemplate,
-            );
-          }
-          // Ensure ships with layouts have door connections that match the layout.
-          // Older saves may have rectangular-grid connections that are incompatible with the layout.
-          if (ship && ship.layout && ship.grid) {
-            wrecksMigrated = true;
-            const tempShip = Object.assign(Object.create(Ship.prototype), ship);
-            tempShip.rng = new SeededRandom(wreck.id);
-            tempShip.regenerateDoorsForLayout(ship.layout);
-            ship.grid = tempShip.grid;
-            ship.entryPosition = tempShip.entryPosition;
-          }
-          return wreck;
-        });
-
-        if (wrecksMigrated) {
-          updates.availableWrecks = migratedWrecks;
-        }
-
-        if (Object.keys(updates).length > 0) set((s) => ({ ...s, ...updates }));
-      },
-
       handleCargoSwap: (dropItemId: string) => {
         const pending = get().cargoSwapPending;
         if (!pending) return;
@@ -1822,6 +1724,7 @@ export const useGameStore = create<GameState & GameActions>()(
           isPlayer: false,
           background: "station_rat",
           traits: [],
+          stats: { movement: { multiplier: 1 } },
           skills: candidate.skills,
           skillXp: { technical: 0, combat: 0, salvage: 0, piloting: 0 },
           hp: 100,
@@ -1836,12 +1739,22 @@ export const useGameStore = create<GameState & GameActions>()(
           status: "active",
           position: { location: "station" },
           inventory: [], // Empty inventory for new hires
+          morale: 75, // Phase 14: Starting morale
         };
+        
+        // Phase 14: Initialize relationships with existing crew
+        const existingCrewIds = state.crewRoster.map((c) => c.id);
+        const updatedRelationships = initializeRelationships(
+          state.relationships || [],
+          newCrew.id,
+          existingCrewIds
+        );
 
         set((s) => ({
           credits: s.credits - cost,
           crewRoster: s.crewRoster.concat(newCrew),
           crew: s.crew,
+          relationships: updatedRelationships,
         }));
 
         return true;
@@ -1893,6 +1806,18 @@ export const useGameStore = create<GameState & GameActions>()(
         if (Math.random() < opt.eventChance) {
           const ev = pickEventByTrigger("social", get() as any);
           if (ev) set({ activeEvent: ev });
+        }
+        
+        // Phase 14: Chance for lounge event during shore leave
+        if (!get().activeEvent && Math.random() < LOUNGE_EVENT_CHANCE) {
+          const ev = pickEventByTrigger("lounge", get() as any);
+          if (ev) set({ activeEvent: ev });
+        }
+        
+        // Phase 14: Process injury recovery during shore leave
+        for (let d = 0; d < opt.duration; d++) {
+          const { updatedRoster: healedRoster } = processInjuryRecovery(get().crewRoster);
+          set({ crewRoster: healedRoster });
         }
       },
 
@@ -2223,7 +2148,63 @@ export const useGameStore = create<GameState & GameActions>()(
       },
     }),
     {
-      name: "ship-breakers-store-v1",
+      name: STORE_STORAGE_KEY,
+      version: SAVE_SCHEMA_VERSION,
+      storage: {
+        getItem: (name) => {
+          const raw = localStorage.getItem(name);
+          if (!raw) return null;
+          try {
+            const parsed = JSON.parse(raw) as StorageValue<unknown> | null;
+            if (!parsed || typeof parsed !== 'object' || !('state' in parsed)) {
+              localStorage.removeItem(name);
+              return null;
+            }
+            const version = typeof (parsed as any).version === 'number' ? (parsed as any).version : 0;
+            if (version > SAVE_SCHEMA_VERSION) {
+              localStorage.removeItem(name);
+              return null;
+            }
+            return parsed as any;
+          } catch {
+            localStorage.removeItem(name);
+            return null;
+          }
+        },
+        setItem: (name, value) => {
+          localStorage.setItem(name, JSON.stringify(value));
+        },
+        removeItem: (name) => {
+          localStorage.removeItem(name);
+        },
+      } satisfies PersistStorage<any>,
+      partialize: (state) => {
+        const persisted: Record<string, unknown> = {};
+        for (const [key, value] of Object.entries(state)) {
+          if (typeof value !== 'function') {
+            persisted[key] = value;
+          }
+        }
+        return persisted as any;
+      },
+      migrate: async (persistedState, version) => {
+        try {
+          const migrated = await migrateGameState(persistedState as any, version);
+          const hasCrew = Array.isArray((migrated as any)?.crewRoster) && (migrated as any).crewRoster.length > 0;
+          const hasCredits = typeof (migrated as any)?.credits === 'number';
+          const hasFuel = typeof (migrated as any)?.fuel === 'number';
+
+          if (!hasCrew || !hasCredits || !hasFuel) {
+            localStorage.removeItem(STORE_STORAGE_KEY);
+            return {} as any;
+          }
+
+          return migrated as any;
+        } catch {
+          localStorage.removeItem(STORE_STORAGE_KEY);
+          return {} as any;
+        }
+      },
     },
   ),
 );
@@ -2231,12 +2212,3 @@ export const useGameStore = create<GameState & GameActions>()(
 // For debugging
 // @ts-ignore
 window.gameStore = useGameStore;
-
-// Run migration on startup to handle older saves
-setTimeout(() => {
-  try {
-    useGameStore.getState().migrateSave?.();
-  } catch (e) {
-    console.warn("Migration failed:", e);
-  }
-}, 50);

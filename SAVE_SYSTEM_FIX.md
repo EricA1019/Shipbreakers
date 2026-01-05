@@ -34,7 +34,7 @@
 
 | Key | Purpose | Cleared By |
 |-----|---------|------------|
-| `ship-breakers-store-v1` | Main game state (Zustand persist) | clear_save.html, New Game |
+| `ship-breakers-store-v1` | Main game state (Zustand persist). Centralized as `STORE_STORAGE_KEY` in `src/services/SaveService.ts` | clear_save.html, New Game |
 | `autoSalvage_<type>_tier<n>` | Auto-salvage presets per wreck type/tier | clear_save.html |
 | `autoSalvage_customPresets` | User-saved custom auto-salvage presets | clear_save.html |
 
@@ -43,20 +43,20 @@
 ### Core Storage
 - [src/stores/gameStore.ts](src/stores/gameStore.ts)
   - Added `clearLastUnlockedZone()` action
-  - Uses `"ship-breakers-store-v1"` key (via persist middleware)
+  - Uses `STORE_STORAGE_KEY` (from `src/services/SaveService.ts`) via persist middleware
 
 ### Save Management
 - [src/utils/saveManager.ts](src/utils/saveManager.ts)
-  - `exportSave()`: Now uses correct `"ship-breakers-store-v1"` key
-  - `importSave()`: Now uses correct `"ship-breakers-store-v1"` key
+  - `exportSave()`: Exports raw `GameState` JSON (recommended)
+  - `importSave()`: Imports raw `GameState` JSON and legacy persisted-wrapper saves
 
 ### UI Components
 - [src/components/screens/WreckSelectScreen.tsx](src/components/screens/WreckSelectScreen.tsx)
   - Calls `clearLastUnlockedZone()` when zone modal closes
-  - New Game now removes correct `"ship-breakers-store-v1"` key
+  - New Game now removes `STORE_STORAGE_KEY`
 
 - [src/components/screens/HubScreen.tsx](src/components/screens/HubScreen.tsx)
-  - New Game now removes correct `"ship-breakers-store-v1"` key
+  - New Game now removes `STORE_STORAGE_KEY`
 
 ### Clear Save Utility
 - [clear_save.html](clear_save.html)
@@ -103,7 +103,7 @@
 The store uses Zustand's `persist` middleware which:
 - Automatically saves state to localStorage on every change
 - Loads state from localStorage on app start
-- Uses key: `"ship-breakers-store-v1"` (specified in store definition)
+- Uses key: `STORE_STORAGE_KEY` (centralized in `src/services/SaveService.ts`)
 - Stores the entire GameState object
 
 ### Auto-Salvage Presets

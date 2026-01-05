@@ -11,6 +11,7 @@ import HazardTag from "../ui/HazardTag";
 import { ScanningProgress } from "../ui/VisualEffects";
 import { getWreckPreview } from "../../game/wreckGenerator";
 import { useAudio } from "../../hooks/useAudio";
+import { STORE_STORAGE_KEY } from "../../services/SaveService";
 
 import type { ScreenProps } from "../../types";
 
@@ -153,7 +154,7 @@ export default function WreckSelectScreen({ onNavigate }: ScreenProps) {
         <VictoryModal
           stats={stats}
           onNewGame={() => {
-            localStorage.removeItem("ship-breakers-store-v1");
+            localStorage.removeItem(STORE_STORAGE_KEY);
             initializeGame();
             window.location.reload();
           }}

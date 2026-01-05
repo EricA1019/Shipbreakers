@@ -29,3 +29,9 @@ export type { SalvageResult } from './SalvageService';
 
 // Save/load operations
 export * from './SaveService';
+
+// Phase 14: Relationship system
+export * from './relationshipService';
+
+// Phase 14: Injury system
+export * from './injuryService';

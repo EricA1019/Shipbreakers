@@ -110,6 +110,7 @@ export function generateCrewMember(
     isPlayer: overrides?.isPlayer || false,
     background,
     traits,
+    stats: overrides?.stats || { movement: { multiplier: 1 } },
     skills: overrides?.skills || skills,
     skillXp: { technical: 0, combat: 0, salvage: 0, piloting: 0 },
     hp: 100,

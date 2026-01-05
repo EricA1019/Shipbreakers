@@ -14,8 +14,10 @@ import IndustrialPanel from "../ui/IndustrialPanel";
 import IndustrialButton from "../ui/IndustrialButton";
 import StatChip from "../ui/StatChip";
 import StatusPill from "../ui/StatusPill";
+import DeadCrewMemorial from "../ui/DeadCrewMemorial";
 import { useAudio } from "../../hooks/useAudio";
 import { calculateCrewCapacity } from "../../services/CrewService";
+import { STORE_STORAGE_KEY } from "../../services/SaveService";
 import { LICENSE_TIERS } from "../../types";
 
 import type { ScreenProps } from "../../types";
@@ -42,6 +44,7 @@ export default function HubScreen({ onNavigate }: ScreenProps) {
     upgradeLicense,
     crewRoster,
     playerShip,
+    deadCrew,
   } = useGameStore((s) => ({
     credits: s.credits,
     fuel: s.fuel,
@@ -56,6 +59,7 @@ export default function HubScreen({ onNavigate }: ScreenProps) {
     upgradeLicense: s.upgradeLicense,
     crewRoster: s.crewRoster,
     playerShip: s.playerShip,
+    deadCrew: s.deadCrew || [],
   }));
 
   // Play transition sound on mount
@@ -95,7 +99,7 @@ export default function HubScreen({ onNavigate }: ScreenProps) {
   };
 
   const confirmReset = () => {
-    localStorage.removeItem("ship-breakers-store-v1");
+    localStorage.removeItem(STORE_STORAGE_KEY);
     initializeGame();
     window.location.reload();
   };
@@ -407,7 +411,7 @@ export default function HubScreen({ onNavigate }: ScreenProps) {
                 );
               })}
             </div>
-            <div className="flex gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <HireCrewModal />
               <CrewSelectionModal />
             </div>
@@ -469,6 +473,13 @@ export default function HubScreen({ onNavigate }: ScreenProps) {
               </div>
             </div>
           </div>
+
+          {/* Phase 14: Memorial for fallen crew */}
+          {deadCrew.length > 0 && (
+            <div className="mt-4">
+              <DeadCrewMemorial />
+            </div>
+          )}
         </div>
       </div>
 

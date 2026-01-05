@@ -428,6 +428,7 @@ export interface Toast {
 export type Screen =
   | "hub"
   | "crew"
+  | "hire"
   | "salvage"
   | "travel"
   | "wreck-select"
@@ -450,6 +451,8 @@ export interface HireCandidate {
   name: string;
   skills: Skills;
   cost: number;
+  background?: BackgroundId;
+  traits?: TraitId[];
 }
 
 export interface WreckPreview {

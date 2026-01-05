@@ -10,6 +10,7 @@ import RunSummaryScreen from "./components/screens/RunSummaryScreen";
 import SellScreen from "./components/screens/SellScreen";
 import GameOverScreen from "./components/screens/GameOverScreen";
 import CrewScreen from "./components/screens/CrewScreen";
+import CrewHiringScreen from "./components/screens/CrewHiringScreen";
 import ShipyardScreen from "./components/screens/ShipyardScreen";
 import EquipmentShopScreen from "./components/screens/EquipmentShopScreen";
 import DevTools from "./components/debug/DevTools";
@@ -77,6 +78,7 @@ function AppContent() {
       {!isNewGame && screen === "sell" && <SellScreen onNavigate={(s) => setScreen(s)} />}
       {!isNewGame && screen === "gameover" && <GameOverScreen onNavigate={(s) => setScreen(s)} />}
       {!isNewGame && screen === "crew" && <CrewScreen onNavigate={(s) => setScreen(s)} />}
+      {!isNewGame && screen === "hire" && <CrewHiringScreen onNavigate={(s) => setScreen(s)} />}
       {!isNewGame && screen === "shipyard" && <ShipyardScreen onNavigate={(s) => setScreen(s)} />}
       {!isNewGame && screen === "shop" && <EquipmentShopScreen onNavigate={(s) => setScreen(s)} /> }
     </div>

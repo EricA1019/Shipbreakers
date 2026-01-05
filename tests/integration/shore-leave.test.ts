@@ -50,7 +50,8 @@ describe("Shore Leave Events", () => {
       });
 
       useGameStore.getState().takeShoreLeave("rest");
-      if (useGameStore.getState().activeEvent) eventCount++;
+      const ev: any = useGameStore.getState().activeEvent;
+      if (ev?.trigger === "social") eventCount++;
     }
 
     const observedRate = eventCount / trials;
@@ -74,7 +75,8 @@ describe("Shore Leave Events", () => {
       });
 
       useGameStore.getState().takeShoreLeave("recreation");
-      if (useGameStore.getState().activeEvent) eventCount++;
+      const ev: any = useGameStore.getState().activeEvent;
+      if (ev?.trigger === "social") eventCount++;
     }
 
     const observedRate = eventCount / trials;
@@ -98,7 +100,8 @@ describe("Shore Leave Events", () => {
       });
 
       useGameStore.getState().takeShoreLeave("party");
-      if (useGameStore.getState().activeEvent) eventCount++;
+      const ev: any = useGameStore.getState().activeEvent;
+      if (ev?.trigger === "social") eventCount++;
     }
 
     const observedRate = eventCount / trials;

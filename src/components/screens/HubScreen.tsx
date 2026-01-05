@@ -5,7 +5,6 @@ import MedicalBayModal from "../ui/MedicalBayModal";
 import StatsModal from "../ui/StatsModal";
 import SettingsModal from "../ui/SettingsModal";
 import ConfirmationModal from "../ui/ConfirmationModal";
-import HireCrewModal from "../ui/HireCrewModal";
 import CrewSelectionModal from "../ui/CrewSelectionModal";
 import StationBarPanel from "../ui/StationBarPanel";
 import ShoreLeavePanel from "../ui/ShoreLeavePanel";
@@ -412,7 +411,13 @@ export default function HubScreen({ onNavigate }: ScreenProps) {
               })}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <HireCrewModal />
+              <IndustrialButton
+                title="Hire Crew"
+                description="Review candidates · traits · contracts"
+                variant="primary"
+                fullWidth
+                onClick={() => onNavigate("hire")}
+              />
               <CrewSelectionModal />
             </div>
           </IndustrialPanel>

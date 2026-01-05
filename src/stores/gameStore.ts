@@ -22,6 +22,7 @@ import {
   getCrewAvailability,
   selectBestCrewForRoom,
 } from "../services/CrewService";
+import { BACKGROUNDS } from "../game/data/backgrounds";
 import {
   handleCrewDown,
   processInjuryRecovery,
@@ -1712,6 +1713,13 @@ export const useGameStore = create<GameState & GameActions>()(
         const capacity = calculateCrewCapacity(state.playerShip);
         if (state.crewRoster.length >= capacity) return false; // roster full
 
+        const background = candidate.background ?? "station_rat";
+        const bg = BACKGROUNDS[background];
+        const staminaMod = bg?.statModifiers?.stamina || 0;
+        const sanityMod = bg?.statModifiers?.sanity || 0;
+        const maxStamina = BASE_STAMINA + staminaMod;
+        const maxSanity = BASE_SANITY + sanityMod;
+
         const newCrew: CrewMember = {
           id:
             "crew-" +
@@ -1722,17 +1730,17 @@ export const useGameStore = create<GameState & GameActions>()(
           lastName: "",
           name: candidate.name,
           isPlayer: false,
-          background: "station_rat",
-          traits: [],
+          background,
+          traits: candidate.traits ?? [],
           stats: { movement: { multiplier: 1 } },
           skills: candidate.skills,
           skillXp: { technical: 0, combat: 0, salvage: 0, piloting: 0 },
           hp: 100,
           maxHp: 100,
-          stamina: BASE_STAMINA,
-          maxStamina: BASE_STAMINA,
-          sanity: BASE_SANITY,
-          maxSanity: BASE_SANITY,
+          stamina: maxStamina,
+          maxStamina,
+          sanity: maxSanity,
+          maxSanity,
           hiredDay: state.day,
           hireCost: cost,
           currentJob: "idle",

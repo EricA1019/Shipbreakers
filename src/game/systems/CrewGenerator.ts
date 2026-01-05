@@ -166,6 +166,8 @@ export function generateHireCandidates(
       id,
       name: crew.name,
       skills: crew.skills,
+      background: crew.background,
+      traits: crew.traits,
       cost,
     });
   }

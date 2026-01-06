@@ -115,8 +115,13 @@ export const useGameStore = create<CombinedStoreType>()(
         },
       } satisfies PersistStorage<any>,
       partialize: (state) => {
+        const omitKeys = new Set<string>([
+          'pendingEventSummary',
+          'activeEvent',
+        ]);
         const persisted: Record<string, unknown> = {};
         for (const [key, value] of Object.entries(state)) {
+          if (omitKeys.has(key)) continue;
           if (typeof value !== 'function') {
             persisted[key] = value;
           }

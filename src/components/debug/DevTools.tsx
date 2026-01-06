@@ -184,6 +184,16 @@ export default function DevTools() {
                 >
                   Skip Character Creation
                 </button>
+                <button
+                  className="bg-zinc-800 text-amber-400 border border-amber-600/30 px-3 py-1 rounded hover:bg-zinc-700"
+                  onClick={() =>
+                    useGameStore.setState((s: any) => ({
+                      credits: (s.credits ?? 0) + 500_000,
+                    }))
+                  }
+                >
+                  +500K Credits
+                </button>
               </div>
               <pre className="text-green-400/80 whitespace-pre-wrap">
                 {JSON.stringify(

@@ -734,6 +734,45 @@ export interface EventChoice {
   setsFlag?: string;
 }
 
+export interface EventImplicationRow {
+  label: string;
+  amountText: string;
+  direction: 'gain' | 'loss';
+  targetText?: string;
+}
+
+export interface EventChoiceImplications {
+  gains: EventImplicationRow[];
+  losses: EventImplicationRow[];
+}
+
+export interface EventResolutionCrewDelta {
+  crewId: string;
+  name: string;
+  hpDelta?: number;
+  staminaDelta?: number;
+  sanityDelta?: number;
+  statusBefore?: CrewStatus;
+  statusAfter?: CrewStatus;
+}
+
+export interface EventResolutionSummary {
+  eventId: string;
+  eventTitle: string;
+  choiceId: string;
+  choiceText: string;
+  day?: number;
+  deltas: {
+    credits?: number;
+    fuel?: number;
+    food?: number;
+    drink?: number;
+    luxuryDrink?: number;
+  };
+  crew: EventResolutionCrewDelta[];
+  flagsSet: string[];
+}
+
 export interface GameEvent {
   id: string;
   trigger: EventTrigger;
@@ -811,6 +850,7 @@ export interface GameState {
   beerRationDays: number;
   crewEfficiencyPenalty: number;
   activeEvent?: GameEvent | null;
+  pendingEventSummary?: EventResolutionSummary | null;
   isNewGame?: boolean;
 
   // Phase 12: Event flags for persistent world state

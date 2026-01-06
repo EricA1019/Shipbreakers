@@ -1,4 +1,14 @@
-import type { GameEvent, EventTrigger, EventChoice, GameState, EventFlags, TraitId } from "../../types";
+import type {
+  GameEvent,
+  EventTrigger,
+  EventChoice,
+  GameState,
+  EventFlags,
+  TraitId,
+  EventRequirement,
+  EventChoiceImplications,
+  EventImplicationRow,
+} from "../../types";
 import { EVENTS } from "../data/events";
 
 /** Check if a flag is set in the game state */
@@ -45,6 +55,113 @@ function meetsRequirements(state: GameState, event: GameEvent): boolean {
   if (!req) return true;
   if (typeof req.credits === "number" && state.credits < req.credits) return false;
   return true;
+}
+
+function getSelectedCrew(state: GameState) {
+  if (state.selectedCrewId) {
+    const selected = (state.crewRoster || []).find((c) => c.id === state.selectedCrewId);
+    if (selected) return selected;
+  }
+  return (state.crewRoster || [])[0] ?? state.crew;
+}
+
+export function evaluateChoiceRequirements(
+  state: GameState,
+  requirements?: EventRequirement,
+): { allowed: boolean; reasons: string[] } {
+  if (!requirements) return { allowed: true, reasons: [] };
+
+  const reasons: string[] = [];
+
+  if (typeof requirements.credits === "number" && (state.credits ?? 0) < requirements.credits) {
+    reasons.push(`Requires ${requirements.credits} CR`);
+  }
+
+  if (requirements.trait) {
+    const crew = getSelectedCrew(state);
+    if (!crew?.traits?.includes(requirements.trait)) {
+      reasons.push(`Requires trait: ${requirements.trait}`);
+    }
+  }
+
+  if (requirements.skill && typeof requirements.minLevel === "number") {
+    const crew = getSelectedCrew(state);
+    const current = (crew?.skills as any)?.[requirements.skill] ?? 0;
+    if (current < requirements.minLevel) {
+      reasons.push(`Requires ${requirements.skill} ${requirements.minLevel}+`);
+    }
+  }
+
+  if (requirements.item) {
+    const hasItem = (state.inventory || []).some((i: any) => i?.id === requirements.item);
+    if (!hasItem) {
+      reasons.push(`Requires item: ${requirements.item}`);
+    }
+  }
+
+  return { allowed: reasons.length === 0, reasons };
+}
+
+function formatSignedAmount(value: number): string {
+  const sign = value >= 0 ? "+" : "−";
+  return `${sign}${Math.abs(value)}`;
+}
+
+function implicationRow(
+  direction: EventImplicationRow["direction"],
+  label: string,
+  amountText: string,
+  targetText?: string,
+): EventImplicationRow {
+  return { direction, label, amountText, targetText };
+}
+
+export function buildChoiceImplications(
+  state: GameState,
+  choice: EventChoice,
+): EventChoiceImplications {
+  const gains: EventImplicationRow[] = [];
+  const losses: EventImplicationRow[] = [];
+
+  for (const eff of choice.effects) {
+    if (typeof eff.value !== "number") continue;
+
+    const direction: EventImplicationRow["direction"] = eff.value >= 0 ? "gain" : "loss";
+    const label =
+      eff.type === "credits"
+        ? "Credits"
+        : eff.type === "fuel"
+          ? "Fuel"
+          : eff.type === "food"
+            ? "Food"
+            : eff.type === "drink"
+              ? "Drink"
+              : eff.type === "hp"
+                ? "HP"
+                : eff.type === "stamina"
+                  ? "Stamina"
+                  : eff.type === "sanity"
+                    ? "Sanity"
+                    : null;
+
+    if (!label) continue;
+
+    let targetText: string | undefined;
+    if (eff.type === "hp" || eff.type === "stamina" || eff.type === "sanity") {
+      if (typeof eff.target === "string") {
+        const crew = (state.crewRoster || []).find((c) => c.id === eff.target);
+        targetText = crew?.name ? `(${crew.name})` : "(Selected crew)";
+      } else {
+        targetText = "(Selected crew)";
+      }
+    }
+
+    const row = implicationRow(direction, label, formatSignedAmount(eff.value), targetText);
+    if (direction === "gain") gains.push(row);
+    else losses.push(row);
+  }
+
+  return { gains, losses };
 }
 
 export function pickEventByTrigger(
@@ -98,7 +215,10 @@ export function applyEventChoice(
       next.drink = Math.max(0, (next.drink ?? 0) + eff.value);
     }
     if (eff.type === "stamina" && typeof eff.value === "number") {
-      const targetId = String(eff.target ?? "");
+      const targetId =
+        typeof eff.target === "string" && eff.target
+          ? eff.target
+          : (state.selectedCrewId ?? crewRoster[0]?.id ?? "");
       crewRoster = crewRoster.map((c: any) =>
         c.id === targetId
           ? { ...c, stamina: Math.max(0, Math.min(c.maxStamina, (c.stamina ?? 0) + eff.value)) }
@@ -106,7 +226,10 @@ export function applyEventChoice(
       );
     }
     if (eff.type === "sanity" && typeof eff.value === "number") {
-      const targetId = String(eff.target ?? "");
+      const targetId =
+        typeof eff.target === "string" && eff.target
+          ? eff.target
+          : (state.selectedCrewId ?? crewRoster[0]?.id ?? "");
       crewRoster = crewRoster.map((c: any) =>
         c.id === targetId
           ? { ...c, sanity: Math.max(0, Math.min(c.maxSanity, (c.sanity ?? 0) + eff.value)) }
@@ -114,7 +237,10 @@ export function applyEventChoice(
       );
     }
     if (eff.type === "hp" && typeof eff.value === "number") {
-      const targetId = String(eff.target ?? "");
+      const targetId =
+        typeof eff.target === "string" && eff.target
+          ? eff.target
+          : (state.selectedCrewId ?? crewRoster[0]?.id ?? "");
       crewRoster = crewRoster.map((c: any) =>
         c.id === targetId
           ? { ...c, hp: Math.max(0, Math.min(c.maxHp, (c.hp ?? 0) + eff.value)) }

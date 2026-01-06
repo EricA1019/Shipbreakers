@@ -23,6 +23,7 @@ import {
 import { useGameStore } from "./stores/gameStore";
 import { wasmBridge } from "./game/wasm/WasmBridge";
 import EventModal from "./components/ui/EventModal";
+import EventSummaryModal from "./components/ui/EventSummaryModal";
 import { useAudio } from "./hooks/useAudio";
 // import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 // import { useGameNotifications } from './hooks/useGameNotifications';
@@ -91,6 +92,7 @@ function App() {
       <AppContent />
       <Toasts />
       <EventModal />
+      <EventSummaryModal />
       {/* Toggle with the backtick (`) key */}
       <DevTools />
     </NotificationProvider>

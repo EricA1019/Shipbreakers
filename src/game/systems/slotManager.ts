@@ -7,6 +7,7 @@ import type {
   Loot,
 } from "../../types";
 import { isEquippable } from "../../types";
+import { getEquipmentData } from "../../types/utils";
 import {
   STARTING_POWER_CAPACITY,
   SHIPYARD_BASE_FEE,
@@ -29,7 +30,10 @@ export function calculatePowerUsed(ship: PlayerShip): number {
   ship.grid.flat().forEach((room) => {
     if (isPlayerShipRoom(room)) {
       room.slots.forEach((slot) => {
-        if (slot.installedItem) used += slot.installedItem.powerDraw || 0;
+        if (slot.installedItem) {
+          const equipData = getEquipmentData(slot.installedItem);
+          used += equipData?.powerDraw || 0;
+        }
       });
     }
   });
@@ -46,8 +50,11 @@ export function getActiveEffects(ship: PlayerShip): ItemEffect[] {
   ship.grid.flat().forEach((room) => {
     if (isPlayerShipRoom(room)) {
       room.slots.forEach((slot) => {
-        if (slot.installedItem && Array.isArray(slot.installedItem.effects)) {
-          effects.push(...slot.installedItem.effects);
+        if (slot.installedItem) {
+          const equipData = getEquipmentData(slot.installedItem);
+          if (equipData && Array.isArray(equipData.effects)) {
+            effects.push(...equipData.effects);
+          }
         }
       });
     }
@@ -96,18 +103,25 @@ export function canInstall(
   // Cargo slot accepts any item (but does not "install" in the same way)
   if (slot.type === "cargo") return { success: true };
 
-  const itemSlotType = (item as any).slotType;
-  if (slot.type !== itemSlotType) {
+  const equipData = getEquipmentData(item);
+  if (!equipData) {
     return {
       success: false,
-      message: `Slot type mismatch: slot=${slot.type} item=${itemSlotType}`,
+      message: "Item is not equippable",
+    };
+  }
+
+  if (slot.type !== equipData.slotType) {
+    return {
+      success: false,
+      message: `Slot type mismatch: slot=${slot.type} item=${equipData.slotType}`,
     };
   }
 
   // Check power budget
   const capacity = getShipPowerCapacity(ship);
   const currentUsed = calculatePowerUsed(ship);
-  const newUsed = currentUsed + ((item as any).powerDraw || 0);
+  const newUsed = currentUsed + equipData.powerDraw;
   if (newUsed > capacity) {
     return {
       success: false,

@@ -25,6 +25,7 @@ export const STARTING_SKILLS = {
 } as const;
 
 // Skill XP System
+export const STARTING_SKILL_XP = 100; // XP per skill at game start
 export const SKILL_XP_THRESHOLDS = [100, 250, 500, 1000];
 export const XP_BASE_SUCCESS = 5;
 export const XP_BASE_FAIL = 2;
@@ -293,3 +294,28 @@ export const HUB_EVENT_CHANCE = 0.15; // 15% chance when at hub
 export const LOUNGE_EVENT_CHANCE = 0.25; // 25% chance when in lounge
 export const MEDICAL_EVENT_CHANCE = 0.10; // 10% chance when healing
 export const DOCK_EVENT_CHANCE = 0.10; // 10% chance at dock
+
+// ============================================
+// ADDITIONAL CONSTANTS (extracted from gameStore)
+// ============================================
+
+// Default cargo capacity
+export const DEFAULT_CARGO_CAPACITY = 10;
+
+// Recovery thresholds for returning to active status
+export const RECOVERY_HP_THRESHOLD = 80;
+export const RECOVERY_STAMINA_THRESHOLD = 70;
+export const RECOVERY_SANITY_THRESHOLD = 70;
+
+// Travel time calculation
+export const DAYS_PER_10_AU = 10; // ~1 day per 10 AU
+
+// Station recovery rates
+export const STATION_HP_RECOVERY = 10; // HP per day for resting crew
+export const STATION_STAMINA_BONUS = 30; // Extra stamina for resting crew
+export const STATION_SANITY_BONUS = 20; // Extra sanity for resting crew
+
+// Settings defaults
+export const DEFAULT_MIN_CREW_HP_PERCENT = 50;
+export const DEFAULT_MIN_CREW_STAMINA = 20;
+export const DEFAULT_MIN_CREW_SANITY = 20;

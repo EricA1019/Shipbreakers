@@ -9,11 +9,12 @@
  * - This module provides normalization to support importing legacy wrapper saves.
  */
 
-import type { CrewMember, GameState } from '../types';
+import type { CrewMember, GameState, Item, ItemFlags, EquipmentData } from '../types';
 import { REACTORS } from '../game/data/reactors';
+import { createDefaultItemFlags } from '../game/factories';
 
 export const STORE_STORAGE_KEY = 'ship-breakers-store-v1';
-export const SAVE_SCHEMA_VERSION = 1;
+export const SAVE_SCHEMA_VERSION = 2; // Bumped for item flags system
 
 export type PersistedStoreBlob = {
   state: unknown;
@@ -79,7 +80,58 @@ export function needsMigration(state: Partial<GameState>): boolean {
   if (state.playerShip && !(state.playerShip as any).purchasedRooms) return true;
   if (state.playerShip && !(state.playerShip as any).gridBounds) return true;
 
+  // Check if items need flag migration
+  if (state.inventory?.some((item: any) => !item.flags)) return true;
+  if (state.crewRoster?.some((c: CrewMember) => c.inventory?.some((item: any) => !item.flags))) return true;
+
   return false;
+}
+
+/**
+ * Migrate an old item to the new flag system
+ * Infers flags from legacy property presence
+ */
+export function migrateItemToFlagSystem(item: any): Item {
+  // If already migrated, return as-is
+  if (item.flags) return item as Item;
+
+  // Infer flags from legacy properties
+  const hasSlotType = item.slotType !== undefined && item.slotType !== null;
+  const flags: ItemFlags = createDefaultItemFlags({
+    equippable: hasSlotType,
+    passive: hasSlotType && (item.powerDraw === 0 || item.powerDraw === undefined),
+    powered: hasSlotType && item.powerDraw > 0,
+  });
+
+  // Nest equipment data if equippable
+  const equipment: EquipmentData | undefined = hasSlotType
+    ? {
+        slotType: item.slotType,
+        tier: item.tier ?? 1,
+        powerDraw: item.powerDraw ?? 0,
+        effects: item.effects ?? [],
+        compatibleRoomTypes: item.compatibleRoomTypes,
+      }
+    : undefined;
+
+  return {
+    id: item.id,
+    name: item.name,
+    description: item.description || 'No description',
+    itemType: item.itemType || 'misc',
+    rarity: item.rarity || 'common',
+    category: item.category,
+    value: item.value || 0,
+    manufacturer: item.manufacturer || 'Unknown',
+    flags,
+    equipment,
+    // Keep legacy fields for backward compatibility
+    slotType: item.slotType,
+    tier: item.tier,
+    powerDraw: item.powerDraw,
+    effects: item.effects,
+    compatibleRoomTypes: item.compatibleRoomTypes,
+  };
 }
 
 export function applyBasicMigrations(state: GameState): Partial<GameState> {
@@ -175,6 +227,33 @@ export function applyBasicMigrations(state: GameState): Partial<GameState> {
     if (Object.keys(shipUpdates).length > 0) {
       updates.playerShip = { ...(state.playerShip as any), ...shipUpdates };
     }
+  }
+
+  // Migrate items to flag system
+  if (state.inventory && state.inventory.some((item: any) => !item.flags)) {
+    updates.inventory = state.inventory.map(migrateItemToFlagSystem);
+  }
+
+  // Migrate crew inventory items to flag system
+  if (state.crewRoster && state.crewRoster.some((c) => c.inventory?.some((item: any) => !item.flags))) {
+    const migratedRoster = state.crewRoster.map((c) => {
+      if (c.inventory && c.inventory.length > 0 && c.inventory.some((item: any) => !item.flags)) {
+        return {
+          ...c,
+          inventory: c.inventory.map(migrateItemToFlagSystem),
+        };
+      }
+      return c;
+    });
+    updates.crewRoster = migratedRoster as any;
+  }
+
+  // Migrate current run items to flag system
+  if (state.currentRun && state.currentRun.collectedLoot.some((item: any) => !item.flags)) {
+    updates.currentRun = {
+      ...state.currentRun,
+      collectedLoot: state.currentRun.collectedLoot.map(migrateItemToFlagSystem),
+    };
   }
 
   return updates;

@@ -23,8 +23,12 @@ Ship Breakers is a roguelike salvage game built with React, TypeScript, and Zust
 │  │                    State Layer                          │ │
 │  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────┐ │ │
 │  │  │  gameStore  │  │ modalStore  │  │    Services     │ │ │
-│  │  │  (zustand)  │  │  (zustand)  │  │   (pure fns)    │ │ │
-│  │  └─────────────┘  └─────────────┘  └─────────────────┘ │ │
+│  │  │  (composes  │  │  (zustand)  │  │   (pure fns)    │ │ │
+│  │  │   slices)   │  │             │  │                 │ │ │
+│  │  └──────┬──────┘  └─────────────┘  └─────────────────┘ │ │
+│  │         │                                                │ │
+│  │         └──> 6 Feature Slices (crew, economy, salvage,  │ │
+│  │              ship, events, core) organized by domain     │ │
 │  └─────────────────────────────────────────────────────────┘ │
 │                            │                                 │
 │                            ▼                                 │
@@ -48,6 +52,111 @@ src/
 │   ├── ui/               # Reusable UI (buttons, modals, panels)
 │   ├── game/             # Game-specific (ShipGrid, RoomCard)
 │   └── debug/            # Dev tools (DebugOverlay)
+├── stores/               # State management
+│   ├── gameStore.ts      # Main store (composes slices)
+│   ├── modalStore.ts     # Modal system state
+│   └── slices/           # Feature slices (crew, economy, salvage, etc.)
+├── game/                 # Game logic and data
+│   ├── constants.ts      # Balance values, formulas, pricing
+│   ├── calculations.ts   # Pure calculation functions
+│   ├── factories.ts      # Default object creators
+│   ├── data/             # Static game data
+│   ├── systems/          # Game systems (event, crew, slot mgmt)
+│   └── wasm/             # WASM bridge for procedural generation
+├── services/             # Pure business logic functions
+├── types/                # TypeScript type definitions
+├── utils/                # Utility functions (math, crew helpers)
+└── hooks/                # React hooks
+
+## State Management Architecture
+
+### Slice-Based Store Pattern
+
+The game uses Zustand with a **slice pattern** to organize state management. Previously a 2,223-line monolith, `gameStore.ts` has been refactored into 6 feature slices (~140 lines of composition).
+
+**Benefits:**
+- **Maintainability**: Each slice focuses on a single domain (crew, economy, etc.)
+- **Scalability**: Easy to add new features without touching unrelated code
+- **Testability**: Slices can be tested in isolation
+- **Performance**: Better code splitting and lazy loading potential
+
+### Feature Slices
+
+Each slice follows this pattern:
+
+```typescript
+// Slice state interface
+export interface SliceState {
+  // State properties
+}
+
+// Slice actions interface
+export interface SliceActions {
+  // Action methods
+}
+
+// Slice creator
+export const createSlice: StateCreator<GameState, [], [], SliceState & SliceActions> = (set, get) => ({
+  // Initial state
+  // Action implementations
+});
+```
+
+**Available Slices:**
+
+1. **crewSlice.ts** (~500 lines)
+   - Crew roster management
+   - Hiring system
+   - Skill progression and XP
+   - Crew inventory and position tracking
+   - Injury/death system
+   - Relationships between crew members
+
+2. **economySlice.ts** (~250 lines)
+   - Credits and fuel management
+   - Provisions system (food, drink, luxury items)
+   - License management and upgrades
+   - Shore leave system
+   - Station services (refueling, resupplying)
+
+3. **salvageSlice.ts** (~1,100 lines)
+   - Wreck generation and management
+   - Salvage run state machine
+   - Room salvaging operations
+   - Loot collection and cargo management
+   - Auto-salvage system
+   - Emergency evacuation
+
+4. **shipSlice.ts** (~150 lines)
+   - Player ship state
+   - Equipment installation/uninstallation
+   - Ship room purchases and sales (Phase 13 expansion)
+   - Ship naming
+
+5. **eventsSlice.ts** (~50 lines)
+   - Active event state
+   - Event choice resolution
+   - Event chain management
+   - Event flags for persistent world state
+
+6. **coreSlice.ts** (~250 lines)
+   - Game initialization and reset
+   - Game settings
+   - Player stats tracking
+   - Day/time progression
+
+### Cross-Slice Communication
+
+Slices can call actions from other slices via Zustand's `get()`:
+
+```typescript
+export const createSalvageSlice: StateCreator<GameState> = (set, get) => ({
+  returnToStation: () => {
+    // ... salvage logic ...
+    get().dailyMarketRefresh(); // Call crew slice action
+  },
+});
+```
 │
 ├── game/                 # Game logic (non-React)
 │   ├── data/             # Static data definitions

@@ -1,4 +1,18 @@
-import type { Item } from "../../types";
+import type { Item, ItemFlags } from "../../types";
+
+/**
+ * Default flags for equipment items - all are equippable, sellable, and storable
+ */
+const defaultEquipmentFlags: ItemFlags = {
+  equippable: true,
+  sellable: true,
+  storable: true,
+  consumable: false,
+  questItem: false,
+  carryable: false,
+  passive: true,
+  powered: true,
+};
 
 export const EQUIPMENT: Record<string, Item> = {
   "cutting-torch": {
@@ -13,6 +27,7 @@ export const EQUIPMENT: Record<string, Item> = {
     effects: [{ type: "skill_bonus", value: 1, skill: "technical" }],
     manufacturer: "Scrapyard Solutions",
     value: 300,
+    flags: defaultEquipmentFlags,
   },
   "hull-welder": {
     id: "hull-welder",
@@ -26,6 +41,7 @@ export const EQUIPMENT: Record<string, Item> = {
     effects: [{ type: "hazard_resist", value: 10, hazard: "mechanical" }],
     manufacturer: "Forge Collective",
     value: 900,
+    flags: defaultEquipmentFlags,
   },
   "hazard-scanner": {
     id: "hazard-scanner",
@@ -39,6 +55,7 @@ export const EQUIPMENT: Record<string, Item> = {
     effects: [{ type: "scan_range", value: 1 }],
     manufacturer: "Rustbelt Mining",
     value: 1200,
+    flags: defaultEquipmentFlags,
   },
   "loot-detector": {
     id: "loot-detector",
@@ -52,6 +69,7 @@ export const EQUIPMENT: Record<string, Item> = {
     effects: [{ type: "loot_bonus", value: 12 }],
     manufacturer: "Forge Collective",
     value: 3500,
+    flags: defaultEquipmentFlags,
   },
   "auto-doc": {
     id: "auto-doc",
@@ -65,6 +83,7 @@ export const EQUIPMENT: Record<string, Item> = {
     effects: [{ type: "heal_rate", value: 5 }],
     manufacturer: "Medicus Ltd.",
     value: 1400,
+    flags: defaultEquipmentFlags,
   },
   "trauma-kit": {
     id: "trauma-kit",
@@ -78,6 +97,7 @@ export const EQUIPMENT: Record<string, Item> = {
     effects: [{ type: "heal_rate", value: 10 }],
     manufacturer: "Medicus Ltd.",
     value: 500,
+    flags: defaultEquipmentFlags,
   },
   "point-defense": {
     id: "point-defense",
@@ -91,6 +111,7 @@ export const EQUIPMENT: Record<string, Item> = {
     effects: [{ type: "hazard_resist", value: 15, hazard: "combat" }],
     manufacturer: "Titan Industries",
     value: 4000,
+    flags: defaultEquipmentFlags,
   },
   "armor-plating": {
     id: "armor-plating",
@@ -104,6 +125,7 @@ export const EQUIPMENT: Record<string, Item> = {
     effects: [{ type: "hazard_resist", value: 10, hazard: "combat" }],
     manufacturer: "Titan Industries",
     value: 1800,
+    flags: defaultEquipmentFlags,
   },
   "nav-computer": {
     id: "nav-computer",
@@ -117,6 +139,7 @@ export const EQUIPMENT: Record<string, Item> = {
     effects: [{ type: "fuel_efficiency", value: 7 }],
     manufacturer: "Rustbelt Mining",
     value: 1600,
+    flags: defaultEquipmentFlags,
   },
   "fuel-optimizer": {
     id: "fuel-optimizer",
@@ -130,6 +153,7 @@ export const EQUIPMENT: Record<string, Item> = {
     effects: [{ type: "fuel_efficiency", value: 15 }],
     manufacturer: "Forge Collective",
     value: 4500,
+    flags: defaultEquipmentFlags,
   },
   "cargo-expander": {
     id: "cargo-expander",
@@ -143,6 +167,7 @@ export const EQUIPMENT: Record<string, Item> = {
     effects: [],
     manufacturer: "Scrapyard Solutions",
     value: 1200,
+    flags: defaultEquipmentFlags,
   },
   "workbench-kit": {
     id: "workbench-kit",
@@ -156,6 +181,7 @@ export const EQUIPMENT: Record<string, Item> = {
     effects: [{ type: "skill_bonus", value: 1, skill: "technical" }],
     manufacturer: "Forge Collective",
     value: 3000,
+    flags: defaultEquipmentFlags,
   },
   "scout-beacon": {
     id: "scout-beacon",
@@ -169,6 +195,7 @@ export const EQUIPMENT: Record<string, Item> = {
     effects: [{ type: "scan_range", value: 1 }],
     manufacturer: "Rustbelt Mining",
     value: 250,
+    flags: defaultEquipmentFlags,
   },
   "advanced-sensor": {
     id: "advanced-sensor",
@@ -185,6 +212,7 @@ export const EQUIPMENT: Record<string, Item> = {
     ],
     manufacturer: "Zero Point Industries",
     value: 20000,
+    flags: defaultEquipmentFlags,
   },
   "med-facility": {
     id: "med-facility",
@@ -198,6 +226,7 @@ export const EQUIPMENT: Record<string, Item> = {
     effects: [{ type: "heal_rate", value: 15 }],
     manufacturer: "Medicus Ltd.",
     value: 9000,
+    flags: defaultEquipmentFlags,
   },
   "salvage-magnet": {
     id: "salvage-magnet",
@@ -211,6 +240,7 @@ export const EQUIPMENT: Record<string, Item> = {
     effects: [{ type: "loot_bonus", value: 20 }],
     manufacturer: "Forge Collective",
     value: 8000,
+    flags: defaultEquipmentFlags,
   },
   "prototype-core": {
     id: "prototype-core",
@@ -227,6 +257,7 @@ export const EQUIPMENT: Record<string, Item> = {
     ],
     manufacturer: "Zero Point Industries",
     value: 50000,
+    flags: defaultEquipmentFlags,
   },
   // Phase 13: Ship Expansion Equipment
   "crew-bunk-mk1": {
@@ -241,6 +272,7 @@ export const EQUIPMENT: Record<string, Item> = {
     effects: [{ type: "crew_capacity", value: 1 }],
     value: 2500,
     manufacturer: "HabTech",
+    flags: defaultEquipmentFlags,
   },
   "cargo-expander-mk1": {
     id: "cargo-expander-mk1",
@@ -254,6 +286,7 @@ export const EQUIPMENT: Record<string, Item> = {
     effects: [{ type: "cargo_capacity", value: 2 }],
     value: 1500,
     manufacturer: "HaulCo",
+    flags: defaultEquipmentFlags,
   },
   "recovery-suite-mk1": {
     id: "recovery-suite-mk1",
@@ -269,6 +302,7 @@ export const EQUIPMENT: Record<string, Item> = {
       { type: "sanity_recovery", value: 15 }
     ],
     value: 3500,
+    flags: defaultEquipmentFlags,
     manufacturer: "MediSys",
   },
 };

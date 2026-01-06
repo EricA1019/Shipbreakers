@@ -14,6 +14,8 @@ import type {
   Wreck,
   Ship,
   ShipLayout,
+  Item,
+  EquipmentData,
 } from './index';
 import { SKILL_HAZARD_MAP } from '../game/constants';
 
@@ -36,6 +38,33 @@ export function isSkillType(value: string): value is SkillType {
  */
 export function getSkillForHazardType(hazardType: HazardType): SkillType {
   return SKILL_HAZARD_MAP[hazardType] as SkillType;
+}
+
+/**
+ * Type guard for items with equipment data
+ */
+export function hasEquipmentData(item: Item): item is Item & { equipment: EquipmentData } {
+  return item.flags?.equippable === true && item.equipment !== undefined;
+}
+
+/**
+ * Get equipment data from an item (with fallback to legacy fields)
+ */
+export function getEquipmentData(item: Item): EquipmentData | null {
+  if (item.equipment) {
+    return item.equipment;
+  }
+  // Fallback to legacy flat fields during migration
+  if (item.slotType) {
+    return {
+      slotType: item.slotType,
+      tier: item.tier ?? 1,
+      powerDraw: item.powerDraw ?? 0,
+      effects: item.effects ?? [],
+      compatibleRoomTypes: item.compatibleRoomTypes,
+    };
+  }
+  return null;
 }
 
 /**

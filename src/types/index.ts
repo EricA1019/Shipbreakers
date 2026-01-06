@@ -180,22 +180,72 @@ export interface CrewMember {
 // Backwards-compatible alias until rest of codebase migrates
 export type Crew = CrewMember;
 
+/**
+ * Item behavior flags - explicit declarations of what an item can do
+ * Replaces implicit property-presence checks for cleaner type safety
+ */
+export interface ItemFlags {
+  /** Can be installed in ship equipment slots */
+  equippable: boolean;
+  /** Can be sold to vendors */
+  sellable: boolean;
+  /** Can be stored in cargo/inventory */
+  storable: boolean;
+  /** Consumable on use (removed from inventory) */
+  consumable: boolean;
+  /** Quest/story item (cannot be sold or dropped) */
+  questItem: boolean;
+  /** Crew can carry this during salvage */
+  carryable: boolean;
+  /** Provides passive effects when installed */
+  passive: boolean;
+  /** Requires power when installed */
+  powered: boolean;
+}
+
+/**
+ * Equipment-specific data (only present if flags.equippable is true)
+ */
+export interface EquipmentData {
+  slotType: SlotType;
+  tier: 1 | 2 | 3 | 4 | 5;
+  powerDraw: number; // 0 = passive, 1+ = active draw
+  effects: ItemEffect[];
+  compatibleRoomTypes?: string[]; // Room types where this can be installed
+}
+
+/**
+ * Unified Item type - represents both salvage loot and ship equipment
+ * Uses flags to determine behavior instead of property presence
+ */
 export interface Item {
+  // Identity
   id: string;
   name: string;
-  category?: LootCategory; // Optional for pure equipment
-  value: number;
-  rarity: LootRarity;
-  itemType: ItemType;
-  manufacturer: string;
   description: string;
   
-  // Equipment fields (unified)
+  // Classification
+  itemType: ItemType;
+  rarity: LootRarity;
+  category?: LootCategory; // Origin category (where it was salvaged from)
+  
+  // Value
+  value: number;
+  manufacturer: string;
+  
+  // Behavior flags (explicit)
+  flags: ItemFlags;
+  
+  // Equipment data (only relevant if flags.equippable)
+  equipment?: EquipmentData;
+  
+  // Legacy fields for backward compatibility during migration
+  // TODO: Remove these after full migration
   slotType?: SlotType;
   tier?: 1 | 2 | 3 | 4 | 5;
-  powerDraw?: number; // 0 = passive, 1.. = active draw
+  powerDraw?: number;
   effects?: ItemEffect[];
-  compatibleRoomTypes?: string[]; // Room types where this can be installed (undefined = sell-only)
+  compatibleRoomTypes?: string[];
 }
 
 // Alias for backward compatibility during refactor
@@ -203,9 +253,10 @@ export type Loot = Item;
 
 /**
  * Type guard to check if an Item is equippable on the player ship
+ * Now checks flags instead of property presence
  */
 export function isEquippable(item: Item): boolean {
-  return item.slotType !== undefined && item.slotType !== null;
+  return item.flags?.equippable ?? (item.slotType !== undefined && item.slotType !== null);
 }
 
 export interface Room {

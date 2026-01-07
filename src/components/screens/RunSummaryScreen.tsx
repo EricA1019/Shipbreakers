@@ -8,7 +8,10 @@ import { useAudio } from "../../hooks/useAudio";
 import type { ScreenProps } from "../../types";
 
 export default function RunSummaryScreen({ onNavigate }: ScreenProps) {
-  const { currentRun } = useGameStore((s) => ({ currentRun: s.currentRun }));
+  const { currentRun, playerShip } = useGameStore((s) => ({
+    currentRun: s.currentRun,
+    playerShip: s.playerShip,
+  }));
   const audio = useAudio();
 
   useEffect(() => {
@@ -42,6 +45,13 @@ export default function RunSummaryScreen({ onNavigate }: ScreenProps) {
     (sum, val) => sum + (typeof val === "number" ? val : 0),
     0,
   );
+
+  const shipCondition =
+    playerShip && typeof (playerShip as any).condition === "number"
+      ? Math.round((playerShip as any).condition)
+      : playerShip
+        ? 100
+        : null;
 
   const onReturn = () => {
     // Show completion summary
@@ -132,6 +142,16 @@ export default function RunSummaryScreen({ onNavigate }: ScreenProps) {
                 { label: "Total Loot Value", value: `+${total.toLocaleString()}₵`, positive: true },
                 { label: "Auto-Salvage Bonus", value: "+0₵", positive: true },
                 { label: "Fuel Cost", value: `-${currentRun.stats?.fuelSpent ?? 0} fuel`, negative: true },
+                ...(shipCondition === null
+                  ? []
+                  : [
+                      {
+                        label: "Ship Condition",
+                        value: `${shipCondition}%`,
+                        positive: shipCondition >= 80,
+                        negative: shipCondition < 50,
+                      },
+                    ]),
                 { label: "Hazards Encountered", value: 0 },
                 { label: "Crew Injuries", value: 0 },
                 { label: "Efficiency Rating", value: `${efficiency}%`, positive: efficiency >= 80 },

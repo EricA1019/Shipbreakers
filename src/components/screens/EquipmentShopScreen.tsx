@@ -42,15 +42,26 @@ export const EquipmentShopScreen: React.FC<ScreenProps> = ({ onNavigate }) => {
 
   useEffect(() => {
     (async () => {
-      const s = await wasmBridge.generateShopStock(day, licenseTier);
-      const all = getAllEquipment();
-      const mapped: Item[] = s.map((x: any) => {
-        const found =
-          all.find((a) => a.tier === x.tier) ||
-          all[Math.floor(Math.random() * all.length)];
-        return { ...x, ...found } as Item;
-      });
-      setStock(mapped);
+      try {
+        const s = await wasmBridge.generateShopStock(day, licenseTier);
+        const all = getAllEquipment();
+        const mapped: Item[] = (Array.isArray(s) ? s : []).map((x: any, idx: number) => {
+          const found = all.find((a) => a.tier === x?.tier) ?? (all.length ? all[Math.floor(Math.random() * all.length)] : undefined);
+
+          // Spread `found` only if present to avoid runtime crash.
+          const merged = {
+            ...(found ?? {}),
+            ...(x ?? {}),
+            // Ensure we always have a stable React key.
+            id: (x as any)?.id ?? (found as any)?.id ?? `shop-${day}-${licenseTier}-${idx}`,
+          };
+
+          return merged as Item;
+        });
+        setStock(mapped);
+      } catch {
+        setStock([]);
+      }
     })();
   }, [day, licenseTier, forceRefresh]);
 
@@ -135,7 +146,8 @@ export const EquipmentShopScreen: React.FC<ScreenProps> = ({ onNavigate }) => {
                   />
                 </div>
               ))
-            : stock.map((it: Item) => (
+            : stock.length > 0
+              ? stock.map((it: Item) => (
                 <div
                   key={it.id}
                   className="bg-black/26 border border-white/8 rounded-xl p-4 hover:border-amber-400 hover:bg-amber-500/4 transition"
@@ -160,7 +172,12 @@ export const EquipmentShopScreen: React.FC<ScreenProps> = ({ onNavigate }) => {
                     description="Add to equipment inventory"
                   />
                 </div>
-              ))}
+              ))
+              : (
+                <div className="col-span-full text-center text-zinc-500 text-sm py-8">
+                  No equipment stock available.
+                </div>
+              )}
         </div>
       </IndustrialPanel>
 

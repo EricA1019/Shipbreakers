@@ -108,6 +108,7 @@ export function generateCrewMember(
     lastName: overrides?.lastName || nameData.lastName,
     name: overrides?.name || nameData.name,
     isPlayer: overrides?.isPlayer || false,
+    position: { location: 'station' },
     background,
     traits,
     stats: overrides?.stats || { movement: { multiplier: 1 } },

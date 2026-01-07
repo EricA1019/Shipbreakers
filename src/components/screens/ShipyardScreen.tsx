@@ -18,6 +18,8 @@ import { useAudio } from "../../hooks/useAudio";
 import { ShipExpansionService } from "../../services/ShipExpansionService";
 import { ROOM_PURCHASE_OPTIONS } from "../../game/data/roomPurchases";
 import { hasShipLayout } from "../../types";
+import { REPAIR_COST_PER_POINT } from "../../game/constants";
+import { clamp } from "../../utils/mathUtils";
 
 /**
  * Type guard for PlayerShipRoom
@@ -55,6 +57,9 @@ export const ShipyardScreen: React.FC<ScreenProps> = ({ onNavigate }) => {
   const uninstallItemFromShip = useGameStore((s) => s.uninstallItemFromShip);
   const purchaseRoom = useGameStore((s) => s.purchaseRoom);
   const sellRoom = useGameStore((s) => s.sellRoom);
+  const repairShipAtYard = useGameStore(
+    (s) => (s as any).repairShipAtYard as (() => { success: boolean; cost: number; reason?: string }) | undefined,
+  );
   const addToast = useUiStore((s) => s.addToast);
   const audio = useAudio();
 
@@ -115,6 +120,28 @@ export const ShipyardScreen: React.FC<ScreenProps> = ({ onNavigate }) => {
   const powerUsed = calculatePowerUsed(playerShip);
   const powerCapacity = getShipPowerCapacity(playerShip);
   const isOver = isOverPowerBudget(playerShip);
+
+  const hullCondition =
+    typeof (playerShip as any).condition === "number"
+      ? (playerShip as any).condition
+      : 100;
+  const hullMissing = Math.max(0, 100 - clamp(hullCondition, 0, 100));
+  const roomDamageTotal = (playerShip.rooms || []).reduce((sum, r: any) => {
+    const dmg = typeof r.damage === "number" ? r.damage : 0;
+    return sum + clamp(dmg, 0, 100);
+  }, 0);
+  let installedMissing = 0;
+  playerShip.grid.flat().forEach((room: any) => {
+    if (!room || !Array.isArray(room.slots)) return;
+    room.slots.forEach((slot: any) => {
+      const installed = slot?.installedItem;
+      if (!installed) return;
+      const cond = typeof installed.condition === "number" ? installed.condition : 100;
+      installedMissing += Math.max(0, 100 - clamp(cond, 0, 100));
+    });
+  });
+  const totalRepairPoints = hullMissing + roomDamageTotal + installedMissing;
+  const fullRepairCost = Math.ceil(totalRepairPoints * REPAIR_COST_PER_POINT);
 
   const openManage = (roomId: string, slotId: string) => {
     audio.playClick();
@@ -217,6 +244,13 @@ export const ShipyardScreen: React.FC<ScreenProps> = ({ onNavigate }) => {
               value={`${powerUsed}/${powerCapacity}`} 
               variant={isOver ? "red" : "cyan"}
             />
+            <StatChip
+              label="HULL COND"
+              value={`${Math.round(clamp(hullCondition, 0, 100))}%`}
+              variant={
+                hullCondition < 50 ? "red" : hullCondition < 80 ? "amber" : "cyan"
+              }
+            />
             <StatChip 
               label="CREDITS" 
               value={`${(credits / 1000).toFixed(1)}K`} 
@@ -225,6 +259,58 @@ export const ShipyardScreen: React.FC<ScreenProps> = ({ onNavigate }) => {
           </div>
         </div>
       </IndustrialPanel>
+
+      {/* Repair Bay */}
+      {activeTab === "equipment" && (
+        <div className="mt-4">
+          <IndustrialPanel
+            title="REPAIR BAY"
+            subtitle="HULL · ROOMS · INSTALLED EQUIPMENT"
+          >
+            <div className="flex items-center justify-between gap-4">
+              <div className="text-sm text-zinc-400">
+                Full repair restores hull condition, removes room damage, and refurbishes installed modules.
+              </div>
+              <IndustrialButton
+                icon="wrench"
+                title={
+                  totalRepairPoints > 0
+                    ? `Full Repair (${fullRepairCost.toLocaleString()} CR)`
+                    : "Full Repair"
+                }
+                description={
+                  totalRepairPoints > 0
+                    ? `${Math.round(totalRepairPoints)} condition points`
+                    : "No repairs needed"
+                }
+                variant="primary"
+                disabled={
+                  !repairShipAtYard ||
+                  totalRepairPoints <= 0 ||
+                  credits < fullRepairCost
+                }
+                onClick={() => {
+                  if (!repairShipAtYard) return;
+                  const res = repairShipAtYard();
+                  if (!res.success) {
+                    audio.playError();
+                    addToast({
+                      message: res.reason || "Repair failed",
+                      type: "error",
+                    });
+                    return;
+                  }
+                  audio.playSuccess();
+                  addToast({
+                    message: `Ship repaired (-${res.cost.toLocaleString()} CR)`,
+                    type: "success",
+                  });
+                }}
+              />
+            </div>
+          </IndustrialPanel>
+        </div>
+      )}
 
       <div className="grid grid-cols-3 gap-4">
         {/* Ship grid - left side */}

@@ -3,6 +3,8 @@ export const STARTING_FUEL = 100;
 export const STARTING_TIME = 20;
 export const STARTING_HP = 100;
 
+import economy from "./data/economy.json";
+
 // Phase 7: Power / Equipment constants
 export const STARTING_POWER_CAPACITY = 3; // Salvaged Reactor
 export const REACTOR_POWER_TIERS = [3, 5, 8, 12, 20];
@@ -10,11 +12,8 @@ export const EQUIPMENT_DROP_RATE = 0.12; // 12% per room
 export const SHOP_STOCK_SIZE = 6; // items per day
 export const SHIPYARD_BASE_FEE = 100; // CR
 export const SHIPYARD_UNINSTALL_FEE = 50; // CR
-export const LICENSE_FEE_DISCOUNTS: Record<string, number> = {
-  basic: 0,
-  standard: 0.25,
-  premium: 0.5,
-};
+export const LICENSE_FEE_DISCOUNTS: Record<string, number> =
+  economy.licenseFeeDiscounts;
 
 // Starting skill levels (all 2 for prototype)
 export const STARTING_SKILLS = {
@@ -46,12 +45,20 @@ export const SKILL_HAZARD_MAP: Record<string, keyof typeof STARTING_SKILLS> = {
 };
 
 // Rarity multipliers
-export const RARITY_MULTIPLIERS = {
+const rarityMultipliersSchema: {
+  common: number;
+  uncommon: number;
+  rare: number;
+  legendary: number;
+} = {
   common: 1.0,
   uncommon: 1.5,
   rare: 2.5,
   legendary: 5.0,
-} as const;
+};
+
+export const RARITY_MULTIPLIERS: typeof rarityMultipliersSchema =
+  economy.rarityMultipliers;
 
 // Time cost per rarity (in time units)
 export const RARITY_TIME_COST = {
@@ -85,9 +92,9 @@ export const MVP_GOAL = 10000; // prototype goal
 export const TIER_ROOM_BASE = 3; // rooms = base + tier
 
 // Station Services
-export const FUEL_PRICE = 10; // CR per unit
-export const HEALING_COST = 50; // CR per treatment
-export const HEALING_AMOUNT = 10; // HP restored per treatment
+export const FUEL_PRICE = economy.fuelPrice; // CR per unit
+export const HEALING_COST = economy.healingCost; // CR per treatment
+export const HEALING_AMOUNT = economy.healingAmount; // HP restored per treatment
 
 // Efficiency rating thresholds
 export const EFFICIENCY_THRESHOLDS = {
@@ -189,12 +196,20 @@ export const TRAVEL_EVENT_CHANCE = 0.4;
 export const SALVAGE_EVENT_CHANCE = 0.2;
 export const DAILY_EVENT_CHANCE = 0.15;
 
-export const PROVISION_PRICES = {
+const provisionPricesSchema: {
+  food: number;
+  water: number;
+  beer: number;
+  wine: number;
+} = {
   food: 5,
   water: 3,
   beer: 15,
   wine: 25,
 };
+
+export const PROVISION_PRICES: typeof provisionPricesSchema =
+  economy.provisionPrices;
 
 export const STARTING_FOOD = 10;
 export const STARTING_DRINK = 10;
@@ -207,19 +222,14 @@ export const CREW_PER_QUARTERS = 1;
 export const BASE_CARGO_SLOTS = 4;
 export const CARGO_SLOTS_PER_CARGO_ROOM = 4;
 
-export const ROOM_SELL_MULTIPLIER = 0.5;
-export const DAMAGE_SELL_PENALTY = 1.0; // 100% penalty at 100% damage
+export const ROOM_SELL_MULTIPLIER = economy.roomSellMultiplier;
+export const DAMAGE_SELL_PENALTY = economy.damageSellPenalty; // 100% penalty at 100% damage
 
-export const ROOM_BASE_COSTS: Record<string, number> = {
-  engine: 8000,
-  medbay: 6000,
-  quarters: 5000,
-  armory: 5000,
-  workshop: 4000,
-  cargo: 3000,
-  bridge: 10000,
-  lounge: 3000,
-};
+// Phase 16: Repair pricing (credits per condition/damage point)
+export const REPAIR_COST_PER_POINT: number =
+  (economy as any).repairCostPerPoint ?? 10;
+
+export const ROOM_BASE_COSTS: Record<string, number> = economy.roomBaseCosts;
 
 export const SHIP_EXPANSION_SCALING = 0.25; // +25% cost per existing room
 

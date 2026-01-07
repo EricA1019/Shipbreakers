@@ -181,6 +181,13 @@ export const createCrewSlice: StateCreator<
   },
 
   createCaptain: ({ firstName, lastName, lockedTrait, chosenTrait }) => {
+    // Character creation previously only replaced the crew roster, which left
+    // the rest of the game state (including playerShip) uninitialized.
+    const init = (get() as any).initializeGame;
+    if (typeof init === 'function') {
+      init();
+    }
+
     const captain = generateCaptain(
       firstName,
       lastName,
@@ -193,10 +200,13 @@ export const createCrewSlice: StateCreator<
       selectedCrewId: captain.id,
       isNewGame: false,
     }));
-    (get() as any).dailyMarketRefresh?.();
   },
 
   debugSkipCharacterCreation: () => {
+    const init = (get() as any).initializeGame;
+    if (typeof init === 'function') {
+      init();
+    }
     set({ isNewGame: false });
   },
 

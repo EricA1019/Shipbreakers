@@ -52,7 +52,18 @@ export function hasEquipmentData(item: Item): item is Item & { equipment: Equipm
  */
 export function getEquipmentData(item: Item): EquipmentData | null {
   if (item.equipment) {
-    return item.equipment;
+    // During migration, some items may still carry legacy flat fields alongside
+    // nested equipment data. Prefer explicit legacy values when present so that
+    // overrides remain consistent (e.g. tests or older saves).
+    return {
+      ...item.equipment,
+      slotType: item.slotType ?? item.equipment.slotType,
+      tier: item.tier ?? item.equipment.tier,
+      powerDraw: item.powerDraw ?? item.equipment.powerDraw,
+      effects: item.effects ?? item.equipment.effects,
+      compatibleRoomTypes:
+        item.compatibleRoomTypes ?? item.equipment.compatibleRoomTypes,
+    };
   }
   // Fallback to legacy flat fields during migration
   if (item.slotType) {

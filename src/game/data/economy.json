@@ -1,0 +1,36 @@
+{
+  "fuelPrice": 10,
+  "healingCost": 50,
+  "healingAmount": 10,
+  "licenseFeeDiscounts": {
+    "basic": 0,
+    "standard": 0.25,
+    "premium": 0.5
+  },
+  "rarityMultipliers": {
+    "common": 1.0,
+    "uncommon": 1.5,
+    "rare": 2.5,
+    "legendary": 5.0
+  },
+  "provisionPrices": {
+    "food": 5,
+    "water": 3,
+    "beer": 15,
+    "wine": 25
+  },
+  "roomBaseCosts": {
+    "engine": 8000,
+    "medbay": 6000,
+    "quarters": 5000,
+    "armory": 5000,
+    "workshop": 4000,
+    "cargo": 3000,
+    "bridge": 10000,
+    "lounge": 3000
+  },
+  "roomSellMultiplier": 0.5,
+  "damageSellPenalty": 1.0
+
+  ,"repairCostPerPoint": 10
+}

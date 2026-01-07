@@ -11,10 +11,12 @@
 
 import type { CrewMember, GameState, Item, ItemFlags, EquipmentData } from '../types';
 import { REACTORS } from '../game/data/reactors';
+import { initializePlayerShip } from '../game/data/playerShip';
+import { EQUIPMENT } from '../game/data/equipment';
 import { createDefaultItemFlags } from '../game/factories';
 
 export const STORE_STORAGE_KEY = 'ship-breakers-store-v1';
-export const SAVE_SCHEMA_VERSION = 2; // Bumped for item flags system
+export const SAVE_SCHEMA_VERSION = 3; // Phase 16: condition + task assignments
 
 export type PersistedStoreBlob = {
   state: unknown;
@@ -67,6 +69,7 @@ export function extractRawGameState(data: unknown): GameState | null {
 }
 
 export function needsMigration(state: Partial<GameState>): boolean {
+  if (!state.playerShip) return true;
   if (typeof state.cargoSwapPending === 'undefined') return true;
 
   if (state.crewRoster?.some((c: CrewMember) => !c.inventory)) return true;
@@ -83,6 +86,22 @@ export function needsMigration(state: Partial<GameState>): boolean {
   // Check if items need flag migration
   if (state.inventory?.some((item: any) => !item.flags)) return true;
   if (state.crewRoster?.some((c: CrewMember) => c.inventory?.some((item: any) => !item.flags))) return true;
+
+  // Migrate current run items to flag system
+  if (state.currentRun && state.currentRun.collectedLoot?.some((item: any) => !item.flags)) return true;
+
+  // Phase 16: condition defaults
+  if (state.playerShip && typeof (state.playerShip as any).condition === 'undefined') return true;
+  if (state.playerShip && Array.isArray((state.playerShip as any).rooms)) {
+    const rooms = (state.playerShip as any).rooms;
+    if (rooms.some((r: any) => typeof r.condition === 'undefined')) return true;
+  }
+  if (state.inventory?.some((item: any) => typeof item.condition === 'undefined')) return true;
+  if (state.crewRoster?.some((c: CrewMember) => c.inventory?.some((item: any) => typeof item.condition === 'undefined'))) return true;
+  if (state.currentRun && state.currentRun.collectedLoot?.some((item: any) => typeof item.condition === 'undefined')) return true;
+
+  // Phase 16: run assignments
+  if (state.currentRun && typeof (state.currentRun as any).assignments === 'undefined') return true;
 
   return false;
 }
@@ -136,6 +155,21 @@ export function migrateItemToFlagSystem(item: any): Item {
 
 export function applyBasicMigrations(state: GameState): Partial<GameState> {
   const updates: Partial<GameState> = {};
+
+  // Some legacy/new-game flows could produce a save without a player ship.
+  // Ensure we always have a functional starter ship so the Shipyard is usable.
+  if (!state.playerShip) {
+    const ship = initializePlayerShip('player-ship');
+    const engineRoom = ship.grid.flat().find((r: any) => r?.roomType === 'engine') as any;
+    const medbayRoom = ship.grid.flat().find((r: any) => r?.roomType === 'medbay') as any;
+    if (engineRoom?.slots?.[0]) {
+      engineRoom.slots[0].installedItem = EQUIPMENT['cutting-torch'];
+    }
+    if (medbayRoom?.slots?.[0]) {
+      medbayRoom.slots[0].installedItem = EQUIPMENT['trauma-kit'];
+    }
+    updates.playerShip = ship as any;
+  }
 
   if (typeof state.cargoSwapPending === 'undefined') {
     updates.cargoSwapPending = null;
@@ -208,6 +242,12 @@ export function applyBasicMigrations(state: GameState): Partial<GameState> {
   // Ship expansion defaults
   if (state.playerShip) {
     const shipUpdates: any = {};
+
+    // Phase 16: ship condition default
+    if (typeof (state.playerShip as any).condition === 'undefined') {
+      shipUpdates.condition = 100;
+    }
+
     if (!(state.playerShip as any).purchasedRooms) {
       shipUpdates.purchasedRooms = [];
     }
@@ -217,10 +257,23 @@ export function applyBasicMigrations(state: GameState): Partial<GameState> {
     if ((state.playerShip as any).rooms) {
       const rooms = (state.playerShip as any).rooms;
       const roomsUpdated = rooms.map((r: any) => {
-        if (typeof r.damage === 'undefined') return { ...r, damage: 0 };
+        const nextDamage = typeof r.damage === 'undefined' ? 0 : r.damage;
+        const nextCondition =
+          typeof r.condition === 'number'
+            ? r.condition
+            : Math.max(0, Math.min(100, 100 - nextDamage));
+
+        if (typeof r.damage === 'undefined' || typeof r.condition === 'undefined') {
+          return { ...r, damage: nextDamage, condition: nextCondition };
+        }
         return r;
       });
-      if (roomsUpdated.some((r: any, i: number) => r.damage !== rooms[i].damage)) {
+      if (
+        roomsUpdated.some(
+          (r: any, i: number) =>
+            r.damage !== rooms[i].damage || r.condition !== rooms[i].condition
+        )
+      ) {
         shipUpdates.rooms = roomsUpdated;
       }
     }
@@ -232,6 +285,15 @@ export function applyBasicMigrations(state: GameState): Partial<GameState> {
   // Migrate items to flag system
   if (state.inventory && state.inventory.some((item: any) => !item.flags)) {
     updates.inventory = state.inventory.map(migrateItemToFlagSystem);
+  }
+
+  // Phase 16: default item condition
+  if (state.inventory && state.inventory.some((item: any) => typeof item.condition === 'undefined')) {
+    const baseInventory = (updates.inventory ?? state.inventory) as any[];
+    updates.inventory = baseInventory.map((item: any) => ({
+      ...item,
+      condition: typeof item.condition === 'number' ? item.condition : 100,
+    }));
   }
 
   // Migrate crew inventory items to flag system
@@ -248,12 +310,58 @@ export function applyBasicMigrations(state: GameState): Partial<GameState> {
     updates.crewRoster = migratedRoster as any;
   }
 
+  // Phase 16: default crew item condition
+  if (state.crewRoster && state.crewRoster.some((c) => c.inventory?.some((item: any) => typeof item.condition === 'undefined'))) {
+    const baseRoster = (updates.crewRoster ?? state.crewRoster) as any[];
+    updates.crewRoster = baseRoster.map((c: any) => {
+      if (!Array.isArray(c.inventory) || c.inventory.length === 0) return c;
+      if (!c.inventory.some((it: any) => typeof it.condition === 'undefined')) return c;
+      return {
+        ...c,
+        inventory: c.inventory.map((it: any) => ({
+          ...it,
+          condition: typeof it.condition === 'number' ? it.condition : 100,
+        })),
+      };
+    });
+  }
+
   // Migrate current run items to flag system
   if (state.currentRun && state.currentRun.collectedLoot.some((item: any) => !item.flags)) {
     updates.currentRun = {
       ...state.currentRun,
       collectedLoot: state.currentRun.collectedLoot.map(migrateItemToFlagSystem),
     };
+  }
+
+  // Phase 16: default run loot condition + assignments
+  if (state.currentRun) {
+    const baseRun: any = (updates.currentRun ?? state.currentRun) as any;
+    let didChange = false;
+    let nextRun: any = baseRun;
+
+    if (
+      Array.isArray(baseRun.collectedLoot) &&
+      baseRun.collectedLoot.some((it: any) => typeof it.condition === 'undefined')
+    ) {
+      didChange = true;
+      nextRun = {
+        ...nextRun,
+        collectedLoot: baseRun.collectedLoot.map((it: any) => ({
+          ...it,
+          condition: typeof it.condition === 'number' ? it.condition : 100,
+        })),
+      };
+    }
+
+    if (typeof baseRun.assignments === 'undefined') {
+      didChange = true;
+      nextRun = { ...nextRun, assignments: {} };
+    }
+
+    if (didChange) {
+      updates.currentRun = nextRun;
+    }
   }
 
   return updates;

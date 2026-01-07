@@ -8,10 +8,12 @@ import { useAudio } from "../../hooks/useAudio";
 import type { ScreenProps } from "../../types";
 
 export default function SellScreen({ onNavigate }: ScreenProps) {
-  const { currentRun, credits, sellAllLoot, inventory } = useGameStore((s) => ({
+  const { currentRun, credits, sellAllLoot, sellRunLootItem, sellItem, inventory } = useGameStore((s) => ({
     currentRun: s.currentRun,
     credits: s.credits,
     sellAllLoot: s.sellAllLoot,
+    sellRunLootItem: s.sellRunLootItem,
+    sellItem: s.sellItem,
     inventory: s.inventory || [],
   }));
 
@@ -25,29 +27,6 @@ export default function SellScreen({ onNavigate }: ScreenProps) {
   const runTotal = runLoot.reduce((s, l) => s + l.value, 0);
   
   const inventoryTotal = inventory.reduce((s, i) => s + (i.value || 0), 0);
-
-  const sellItem = (itemId: string, value: number, fromRun: boolean) => {
-    audio.playSuccess();
-    useGameStore.setState((state) => {
-      const newCredits = state.credits + value;
-      
-      if (fromRun) {
-        const run = state.currentRun;
-        if (!run) return state;
-        const remaining = run.collectedLoot.filter((l) => l.id !== itemId);
-        return {
-          credits: newCredits,
-          currentRun: { ...run, collectedLoot: remaining },
-        } as any;
-      } else {
-        const remaining = (state.inventory || []).filter((i) => i.id !== itemId);
-        return {
-          credits: newCredits,
-          inventory: remaining,
-        } as any;
-      }
-    });
-  };
 
   return (
     <div className="max-w-[1000px] mx-auto space-y-4">
@@ -81,7 +60,10 @@ export default function SellScreen({ onNavigate }: ScreenProps) {
                   </div>
                 </div>
                 <button
-                  onClick={() => sellItem(it.id, it.value, true)}
+                  onClick={() => {
+                    audio.playSuccess();
+                    sellRunLootItem(it.id);
+                  }}
                   className="bg-amber-500/15 border border-amber-500 text-amber-400 px-3 py-1.5 text-xs uppercase tracking-wide rounded-md hover:bg-amber-500/25 transition font-['Orbitron'] font-bold"
                 >
                   Sell
@@ -121,7 +103,10 @@ export default function SellScreen({ onNavigate }: ScreenProps) {
                   </div>
                 </div>
                 <button
-                  onClick={() => sellItem(it.id, it.value || 0, false)}
+                  onClick={() => {
+                    audio.playSuccess();
+                    sellItem(it.id);
+                  }}
                   className="bg-zinc-800 border border-zinc-600 text-zinc-300 px-3 py-1.5 text-xs uppercase tracking-wide rounded-md hover:bg-zinc-700 transition font-['Orbitron'] font-bold"
                 >
                   Sell

@@ -58,6 +58,17 @@ export function createMockLoot(overrides: Partial<Loot> = {}): Loot {
     itemType: 'material',
     manufacturer: 'TestCorp',
     description: 'A test item',
+    condition: 100,
+    flags: {
+      equippable: false,
+      sellable: true,
+      storable: true,
+      consumable: false,
+      questItem: false,
+      carryable: true,
+      passive: false,
+      powered: false,
+    },
     ...overrides,
   };
 }
@@ -76,6 +87,24 @@ export function createMockEquipment(overrides: Partial<Item> = {}): Item {
     powerDraw: 1,
     effects: [],
     value: 250,
+    manufacturer: 'TestCorp',
+    condition: 100,
+    flags: {
+      equippable: true,
+      sellable: true,
+      storable: true,
+      consumable: false,
+      questItem: false,
+      carryable: true,
+      passive: false,
+      powered: true,
+    },
+    equipment: {
+      slotType: 'engineering',
+      tier: 1,
+      powerDraw: 1,
+      effects: [],
+    },
     ...overrides,
   };
 }

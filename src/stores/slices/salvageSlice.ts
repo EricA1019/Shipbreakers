@@ -18,15 +18,15 @@ import type {
   RunState,
   Loot,
   Item,
+  CrewTask,
+  PlayerShip,
 } from '../../types';
 import {
   generateAvailableWrecks,
 } from '../../game/wreckGenerator';
 import {
   STARTING_TIME,
-  FUEL_COST_PER_AU,
   SCAN_COST,
-  PILOTING_FUEL_REDUCTION_PER_LEVEL,
   RARITY_TIME_COST,
   SKILL_HAZARD_MAP,
   XP_BASE_SUCCESS,
@@ -50,6 +50,7 @@ import {
   damageOnFail,
   calculateLootValue,
 } from '../../game/hazardLogic';
+import { calculateDaysSpent, calculateTravelCost } from '../../game/calculations';
 import { getActiveEffects } from '../../game/systems/slotManager';
 import { pickEventByTrigger } from '../../game/systems/EventManager';
 import {
@@ -70,6 +71,81 @@ import {
   processWorkTogether,
   calculateRelationshipMorale,
 } from '../../services/relationshipService';
+import { clamp } from '../../utils/mathUtils';
+import { isPlayerShipRoom } from '../../types/utils';
+
+function getCondition(value: unknown): number {
+  return typeof value === 'number' ? clamp(value, 0, 100) : 100;
+}
+
+function applyTravelWearInPlace(ship: PlayerShip, distance: number): void {
+  const hullWear = distance * 0.5;
+  const roomWear = distance * 0.2;
+  const itemWear = distance * 0.3;
+
+  (ship as any).condition = clamp(getCondition((ship as any).condition) - hullWear, 0, 100);
+
+  // Prefer authoritative room list when present
+  const rooms = (ship as any).rooms;
+  if (Array.isArray(rooms)) {
+    for (const r of rooms) {
+      const currentDamage = typeof r.damage === 'number' ? r.damage : 0;
+      const nextDamage = clamp(currentDamage + roomWear, 0, 100);
+      r.damage = nextDamage;
+      r.condition = clamp(100 - nextDamage, 0, 100);
+    }
+  }
+
+  // Keep grid rooms consistent and apply item wear to installed equipment
+  for (const cell of ship.grid.flat()) {
+    if (isPlayerShipRoom(cell)) {
+      const currentDamage = typeof cell.damage === 'number' ? cell.damage : 0;
+      const nextDamage = clamp(currentDamage + roomWear, 0, 100);
+      cell.damage = nextDamage;
+      (cell as any).condition = clamp(100 - nextDamage, 0, 100);
+
+      for (const slot of cell.slots) {
+        const installed = slot.installedItem as any;
+        if (!installed) continue;
+        installed.condition = clamp(getCondition(installed.condition) - itemWear, 0, 100);
+      }
+    }
+  }
+}
+
+function applyRepairWorkInPlace(ship: PlayerShip, repairPoints: number): void {
+  if (repairPoints <= 0) return;
+
+  (ship as any).condition = clamp(getCondition((ship as any).condition) + repairPoints, 0, 100);
+
+  // Heal the most damaged rooms first.
+  const rooms = (ship as any).rooms;
+  if (Array.isArray(rooms) && rooms.length > 0) {
+    const sorted = [...rooms].sort((a: any, b: any) => (b.damage ?? 0) - (a.damage ?? 0));
+    let remaining = repairPoints;
+    for (const r of sorted) {
+      if (remaining <= 0) break;
+      const currentDamage = typeof r.damage === 'number' ? r.damage : 0;
+      if (currentDamage <= 0) continue;
+      const delta = Math.min(currentDamage, remaining);
+      const nextDamage = clamp(currentDamage - delta, 0, 100);
+      r.damage = nextDamage;
+      r.condition = clamp(100 - nextDamage, 0, 100);
+      remaining -= delta;
+    }
+  }
+
+  // Repair installed equipment condition a bit
+  const itemRepair = repairPoints * 0.5;
+  for (const cell of ship.grid.flat()) {
+    if (!isPlayerShipRoom(cell)) continue;
+    for (const slot of cell.slots) {
+      const installed = slot.installedItem as any;
+      if (!installed) continue;
+      installed.condition = clamp(getCondition(installed.condition) + itemRepair * 0.1, 0, 100);
+    }
+  }
+}
 
 // Auto-salvage types (keeping in this slice for now)
 export interface AutoSalvageRules {
@@ -116,9 +192,13 @@ export interface SalvageSliceActions {
   
   // Run management
   startRun: (wreckId: string) => void;
-  travelToWreck: (wreckId: string) => void;
+  travelToWreck: (wreckId: string, opts?: { suppressEvents?: boolean }) => void;
   returnToStation: () => void;
   emergencyEvacuate: () => void;
+
+  // Phase 16: Automated run planning/resolution
+  setRunCrewTask: (crewId: string, task: CrewTask) => void;
+  resolveAssignedRun: (opts?: { speed?: 1 | 2 }) => Promise<void>;
   
   // Salvage operations
   salvageRoom: (roomId: string) => { success: boolean; damage: number };
@@ -130,6 +210,7 @@ export interface SalvageSliceActions {
   
   // Loot management
   sellAllLoot: () => void;
+  sellRunLootItem: (itemId: string) => void;
   sellItem: (itemId: string) => void;
   handleCargoSwap: (dropItemId: string) => void;
   cancelCargoSwap: () => void;
@@ -190,42 +271,36 @@ export const createSalvageSlice: StateCreator<
       return roster.find((c) => c.id === selected) ?? roster[0];
     };
     const piloting = getActiveCrew()?.skills.piloting ?? 0;
-    const reduction = Math.max(
-      0,
-      1 - piloting * PILOTING_FUEL_REDUCTION_PER_LEVEL
-    );
-    const activeEffects = getActiveEffects(get().playerShip as any);
-    const fuelEfficiency =
-      activeEffects
-        .filter((e: any) => e.type === 'fuel_efficiency')
-        .reduce((s: number, e: any) => s + e.value, 0) / 100;
-    const finalReduction = Math.max(0, reduction * (1 - fuelEfficiency));
-    const travelCost = Math.max(
-      1,
-      Math.ceil(wreck.distance * FUEL_COST_PER_AU * finalReduction)
-    );
+    const ship = get().playerShip as any;
+    const activeEffects = ship ? getActiveEffects(ship) : [];
+    const travelCost = calculateTravelCost(wreck.distance, piloting, activeEffects as any);
     if (get().fuel < travelCost * 2) return;
 
-    set((state) => ({
-      fuel: state.fuel - travelCost,
+    const defaultAssignments: Record<string, CrewTask> = {};
+    for (const c of get().crewRoster || []) {
+      defaultAssignments[c.id] = c.status === 'active' ? 'salvage' : 'rest';
+    }
+
+    set(() => ({
       currentRun: {
         wreckId: wreck.id,
         status: 'traveling',
         timeRemaining: STARTING_TIME,
         collectedLoot: [],
+        assignments: defaultAssignments,
         stats: {
           roomsAttempted: 0,
           roomsSucceeded: 0,
           roomsFailed: 0,
           damageTaken: 0,
-          fuelSpent: travelCost,
+          fuelSpent: 0,
           xpGained: { technical: 0, combat: 0, salvage: 0, piloting: 0 },
         },
       },
     }));
   },
 
-  travelToWreck: (wreckId: string) => {
+  travelToWreck: (wreckId: string, opts) => {
     const wreck = get().availableWrecks.find((w) => w.id === wreckId);
     if (!wreck) return;
 
@@ -247,36 +322,114 @@ export const createSalvageSlice: StateCreator<
       return roster.find((c) => c.id === selected) ?? roster[0];
     };
     const piloting = getActiveCrew()?.skills.piloting ?? 0;
-    const reduction = Math.max(
-      0,
-      1 - piloting * PILOTING_FUEL_REDUCTION_PER_LEVEL
-    );
-    const activeEffects = getActiveEffects(get().playerShip as any);
-    const fuelEfficiency =
-      activeEffects
-        .filter((e: any) => e.type === 'fuel_efficiency')
-        .reduce((s: number, e: any) => s + e.value, 0) / 100;
-    const finalReduction = Math.max(0, reduction * (1 - fuelEfficiency));
-    const travelCost = Math.max(
-      1,
-      Math.ceil(wreck.distance * FUEL_COST_PER_AU * finalReduction)
-    );
+    const ship = get().playerShip as any;
+    const activeEffects = ship ? getActiveEffects(ship) : [];
+    const travelCost = calculateTravelCost(wreck.distance, piloting, activeEffects as any);
 
     set((state) => ({
-      fuel: state.fuel - travelCost,
+      fuel: Math.max(0, state.fuel - travelCost),
       currentRun: state.currentRun
-        ? { ...state.currentRun, status: 'salvaging' }
+        ? {
+            ...state.currentRun,
+            status: 'salvaging',
+            stats: {
+              ...state.currentRun.stats,
+              fuelSpent: state.currentRun.stats.fuelSpent + travelCost,
+            },
+          }
         : null,
       crewRoster: (state.crewRoster || []).map((c) => ({
         ...c,
         position: { location: 'wreck' as const },
       })),
+      playerShip: state.playerShip
+        ? (() => {
+            const ship = state.playerShip as any;
+            applyTravelWearInPlace(ship, wreck.distance);
+            return ship;
+          })()
+        : state.playerShip,
     }));
 
-    if (Math.random() < TRAVEL_EVENT_CHANCE) {
+    if (!opts?.suppressEvents && Math.random() < TRAVEL_EVENT_CHANCE) {
       const ev = pickEventByTrigger('travel', get() as any);
       if (ev) set({ activeEvent: ev });
     }
+  },
+
+  setRunCrewTask: (crewId: string, task: CrewTask) => {
+    set((state) => {
+      if (!state.currentRun) return {};
+      const next = { ...(state.currentRun.assignments ?? {}) };
+      next[crewId] = task;
+      return {
+        currentRun: {
+          ...state.currentRun,
+          assignments: next,
+        },
+      };
+    });
+  },
+
+  resolveAssignedRun: async (opts) => {
+    const run = get().currentRun;
+    if (!run) return;
+    const wreck = get().availableWrecks.find((w) => w.id === run.wreckId);
+    if (!wreck) return;
+
+    // Travel to the wreck (fuel + wear), but suppress modal events during auto-resolution.
+    (get() as any).travelToWreck(run.wreckId, { suppressEvents: true });
+
+    const assignments = (get().currentRun?.assignments ?? {}) as Record<string, CrewTask>;
+    const salvageCrewIds = new Set(
+      Object.entries(assignments)
+        .filter(([, t]) => (t ?? 'salvage') === 'salvage')
+        .map(([id]) => id)
+    );
+    const repairCrew = (get().crewRoster || []).filter((c) => assignments[c.id] === 'repair');
+    const restCrewIds = new Set(
+      (get().crewRoster || []).filter((c) => assignments[c.id] === 'rest').map((c) => c.id)
+    );
+
+    // Mark rest crew as resting so station recovery logic applies after return.
+    if (restCrewIds.size > 0) {
+      set((state) => ({
+        crewRoster: (state.crewRoster || []).map((c) =>
+          restCrewIds.has(c.id)
+            ? { ...c, status: 'resting' as any, currentJob: 'resting' as any }
+            : c
+        ),
+      }));
+    }
+
+    // Run auto-salvage using only salvage-assigned crew.
+    if (salvageCrewIds.size > 0) {
+      const rules: AutoSalvageRules = {
+        maxHazardLevel: 5,
+        priorityRooms: ['any'],
+        stopOnInjury: true,
+        stopOnLowStamina: get().settings?.minCrewStamina ?? 20,
+        stopOnLowSanity: get().settings?.minCrewSanity ?? 20,
+      };
+      await (get() as any).runAutoSalvage(rules, opts?.speed ?? 2);
+    }
+
+    // Apply repair work based on technical skill.
+    if (repairCrew.length > 0 && get().playerShip) {
+      const repairPoints = repairCrew.reduce(
+        (sum, c) => sum + (c.skills?.technical ?? 0) * 3,
+        0
+      );
+      set((state) => {
+        if (!state.playerShip) return {};
+        const ship = state.playerShip as any;
+        applyRepairWorkInPlace(ship, repairPoints);
+        return { playerShip: ship };
+      });
+    }
+
+    // Return to station immediately (Phase 16 automation)
+    (get() as any).returnToStation();
   },
 
   cutIntoRoom: (roomId: string) => {
@@ -427,7 +580,8 @@ export const createSalvageSlice: StateCreator<
 
     if (roll < Math.max(0, successChance)) {
       success = true;
-      const activeEffects = getActiveEffects(get().playerShip as any);
+      const ship = get().playerShip as any;
+      const activeEffects = ship ? getActiveEffects(ship) : [];
       let adjustedItem = {
         ...item,
         value: Math.round(
@@ -590,22 +744,11 @@ export const createSalvageSlice: StateCreator<
     }
 
     const piloting = get().crew.skills.piloting ?? 0;
-    const reduction = Math.max(
-      0,
-      1 - piloting * PILOTING_FUEL_REDUCTION_PER_LEVEL
-    );
-    const activeEffects = getActiveEffects(get().playerShip as any);
-    const fuelEfficiency =
-      activeEffects
-        .filter((e: any) => e.type === 'fuel_efficiency')
-        .reduce((s: number, e: any) => s + e.value, 0) / 100;
-    const finalReduction = Math.max(0, reduction * (1 - fuelEfficiency));
-    const returnCost = Math.max(
-      1,
-      Math.ceil(wreck.distance * FUEL_COST_PER_AU * finalReduction)
-    );
+    const ship = get().playerShip as any;
+    const activeEffects = ship ? getActiveEffects(ship) : [];
+    const returnCost = calculateTravelCost(wreck.distance, piloting, activeEffects as any);
 
-    const daysSpent = Math.max(1, Math.ceil(wreck.distance / 10));
+    const daysSpent = calculateDaysSpent(wreck.distance);
 
     const crewCount = (get().crewRoster || []).length;
     const dailyFood = DAILY_FOOD_PER_CREW * crewCount;
@@ -666,6 +809,13 @@ export const createSalvageSlice: StateCreator<
         ...c,
         position: { location: 'station' as const },
       })),
+      playerShip: state.playerShip
+        ? (() => {
+            const ship = state.playerShip as any;
+            applyTravelWearInPlace(ship, wreck.distance);
+            return ship;
+          })()
+        : state.playerShip,
     }));
 
     const roster = get().crewRoster || [];
@@ -846,6 +996,44 @@ export const createSalvageSlice: StateCreator<
     }));
   },
 
+  sellRunLootItem: (itemId: string) => {
+    const run = get().currentRun;
+    if (!run) return;
+    const item = run.collectedLoot.find((i) => i.id === itemId);
+    if (!item) return;
+
+    const remaining = run.collectedLoot.filter((i) => i.id !== itemId);
+    const wreck = get().availableWrecks.find((w) => w.id === run.wreckId);
+    const clearRun = remaining.length === 0;
+
+    set((state) => ({
+      credits: state.credits + item.value,
+      currentRun: clearRun
+        ? null
+        : {
+            ...run,
+            collectedLoot: remaining,
+          },
+      availableWrecks: clearRun && wreck
+        ? state.availableWrecks.map((w) =>
+            w.id === run.wreckId
+              ? { ...w, stripped: w.rooms.every((r) => r.looted) }
+              : w
+          )
+        : state.availableWrecks,
+      stats: {
+        ...state.stats,
+        totalCreditsEarned: state.stats.totalCreditsEarned + item.value,
+        totalWrecksCleared: state.stats.totalWrecksCleared + (clearRun ? 1 : 0),
+        totalItemsCollected: state.stats.totalItemsCollected + 1,
+        mostValuableItem:
+          item.value > (state.stats.mostValuableItem?.value ?? 0)
+            ? { name: item.name, value: item.value }
+            : state.stats.mostValuableItem,
+      },
+    }));
+  },
+
   sellItem: (itemId: string) => {
     const item = get().inventory.find((i) => i.id === itemId);
     if (!item) return;
@@ -1000,9 +1188,15 @@ export const createSalvageSlice: StateCreator<
         }
       }
 
+      const runAssignments = (run as any)?.assignments as Record<string, CrewTask> | undefined;
+      const salvageCrewRoster = (state.crewRoster || []).filter((c) => {
+        const task = runAssignments?.[c.id] ?? 'salvage';
+        return task === 'salvage';
+      });
+
       const crewSelection = selectBestCrewForRoom(
         nextRoom,
-        state.crewRoster,
+        salvageCrewRoster,
         state.settings
       );
 

@@ -1,6 +1,7 @@
 import type { ShipLayout } from "../../types";
 
 type WasmModule = {
+  default?: (module_or_path?: unknown) => Promise<unknown>;
   generate_wreck?: (tier: number, mass: string, seed: string) => any;
   generate_ship_name?: (seed: string) => string;
 };
@@ -19,13 +20,14 @@ class WasmBridge {
       // The path may vary depending on build output; adjust if necessary
       // Attempt dynamic import without letting bundler statically analyze the path
       try {
-        // Use Function to avoid static analysis by bundlers
-        // eslint-disable-next-line no-new-func
-        const dynamicImport = new Function("p", "return import(p)");
-        const mod = await (
-          dynamicImport("../../../game-logic/pkg") as Promise<any>
-        ).catch(() => null);
-        this.module = (mod as WasmModule) || null;
+        const mod = await import("../../../game-logic/pkg/game_logic.js").catch(
+          () => null,
+        );
+        const loaded = (mod as WasmModule) || null;
+        if (loaded?.default && typeof loaded.default === "function") {
+          await loaded.default();
+        }
+        this.module = loaded;
       } catch (err) {
         this.module = null;
       }

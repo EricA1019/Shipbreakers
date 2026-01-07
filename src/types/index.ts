@@ -232,6 +232,9 @@ export interface Item {
   // Value
   value: number;
   manufacturer: string;
+
+  // Phase 16: Durability/Condition (0-100). Optional for backward compatibility.
+  condition?: number;
   
   // Behavior flags (explicit)
   flags: ItemFlags;
@@ -359,6 +362,10 @@ export interface PlayerShipRoom extends GridRoom {
   roomType: PlayerRoomType;
   slots: ItemSlot[];
   damage: number; // 0-100% damage
+
+  // Phase 16: Condition is the inverse of damage (0-100). Optional for backward compatibility.
+  // Code should treat missing condition as (100 - damage).
+  condition?: number;
 }
 
 export interface ReactorModule {
@@ -376,6 +383,9 @@ export interface PlayerShip extends Ship {
   cargoUsed: number;
   hp: number;
   maxHp: number;
+
+  // Phase 16: Ship overall condition (0-100). Optional for backward compatibility.
+  condition?: number;
 
   // Flattened rooms array for convenient access (derived from grid)
   rooms: PlayerShipRoom[];
@@ -441,7 +451,13 @@ export interface RunState {
   timeRemaining: number;
   collectedLoot: Loot[]; // Unified storage for all items (equipment and materials)
   stats: RunStats;
+
+  // Phase 16: Pre-arrival crew task assignments for automated resolution.
+  assignments?: Record<string, CrewTask>;
 }
+
+// Phase 16: Crew task assignment
+export type CrewTask = "salvage" | "repair" | "rest";
 
 export interface PlayerStats {
   totalCreditsEarned: number;

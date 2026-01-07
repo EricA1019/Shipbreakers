@@ -19,6 +19,8 @@ import {
   uninstallItem,
   getShipyardFee,
 } from '../../game/systems/slotManager';
+import { REPAIR_COST_PER_POINT } from '../../game/constants';
+import { clamp } from '../../utils/mathUtils';
 
 /**
  * Ship slice state interface
@@ -45,6 +47,9 @@ export interface ShipSliceActions {
     position: GridPosition
   ) => { success: boolean; reason?: string };
   sellRoom: (roomId: string) => { success: boolean; reason?: string };
+
+  // Phase 16: Repairs
+  repairShipAtYard: () => { success: boolean; cost: number; reason?: string };
 }
 
 /**
@@ -193,5 +198,65 @@ export const createShipSlice: StateCreator<
     }));
 
     return { success: true };
+  },
+
+  repairShipAtYard: () => {
+    const state = get();
+    const ship = state.playerShip;
+    if (!ship) return { success: false, cost: 0, reason: 'No ship' };
+
+    const hullCondition =
+      typeof (ship as any).condition === 'number' ? (ship as any).condition : 100;
+    const hullMissing = Math.max(0, 100 - hullCondition);
+
+    // Rooms: damage is authoritative; condition (if present) should be inverse.
+    const roomDamageTotal = (ship.rooms || []).reduce((sum: number, r: any) => {
+      const damage = typeof r.damage === 'number' ? r.damage : 0;
+      return sum + clamp(damage, 0, 100);
+    }, 0);
+
+    // Installed equipment condition
+    let equipmentMissing = 0;
+    ship.grid.flat().forEach((room: any) => {
+      if (!room || !Array.isArray(room.slots)) return;
+      room.slots.forEach((slot: any) => {
+        const installed = slot?.installedItem;
+        if (!installed) return;
+        const cond =
+          typeof installed.condition === 'number' ? installed.condition : 100;
+        equipmentMissing += Math.max(0, 100 - clamp(cond, 0, 100));
+      });
+    });
+
+    const totalPoints = hullMissing + roomDamageTotal + equipmentMissing;
+    const cost = Math.ceil(totalPoints * REPAIR_COST_PER_POINT);
+
+    if (totalPoints <= 0) {
+      return { success: false, cost: 0, reason: 'No repairs needed' };
+    }
+
+    if (state.credits < cost) {
+      return { success: false, cost, reason: 'Insufficient credits' };
+    }
+
+    // Apply repairs
+    (ship as any).condition = 100;
+    ship.rooms.forEach((r: any) => {
+      r.damage = 0;
+      r.condition = 100;
+    });
+    ship.grid.flat().forEach((room: any) => {
+      if (!room || !Array.isArray(room.slots)) return;
+      room.slots.forEach((slot: any) => {
+        if (slot?.installedItem) slot.installedItem.condition = 100;
+      });
+    });
+
+    set((s) => ({
+      credits: s.credits - cost,
+      playerShip: { ...ship },
+    }));
+
+    return { success: true, cost };
   },
 });

@@ -218,12 +218,35 @@ export const createEconomySlice: StateCreator<
     const crewCount = (state.crewRoster || []).length;
     const beerNeed = opt.beerPerCrew ? crewCount * opt.beerPerCrew : 0;
 
+    const currentLuxuryDrink =
+      typeof state.luxuryDrink === 'number' ? state.luxuryDrink : 0;
+    const currentBeer = typeof state.beer === 'number' ? state.beer : 0;
+    const currentWine = typeof state.wine === 'number' ? state.wine : 0;
+
     if (state.credits < opt.cost) return;
-    if (beerNeed > 0 && state.luxuryDrink < beerNeed) return;
+
+    // Back-compat: older saves/tests used beer+wine; newer uses luxuryDrink.
+    // For party, allow consumption from any of these pools.
+    let remainingNeed = beerNeed;
+    let nextLuxuryDrink = currentLuxuryDrink;
+    let nextBeer = currentBeer;
+    let nextWine = currentWine;
+
+    if (remainingNeed > 0) {
+      const consume = (available: number) => {
+        const used = Math.min(available, remainingNeed);
+        remainingNeed -= used;
+        return available - used;
+      };
+
+      nextLuxuryDrink = consume(nextLuxuryDrink);
+      nextBeer = consume(nextBeer);
+      nextWine = consume(nextWine);
+
+      if (remainingNeed > 0) return;
+    }
 
     const nextCredits = state.credits - opt.cost;
-    const nextLuxury =
-      beerNeed > 0 ? state.luxuryDrink - beerNeed : state.luxuryDrink;
 
     const roster = state.crewRoster.map((c: any) => ({
       ...c,
@@ -242,7 +265,9 @@ export const createEconomySlice: StateCreator<
 
     set({
       credits: nextCredits,
-      luxuryDrink: nextLuxury,
+      luxuryDrink: nextLuxuryDrink,
+      ...(typeof state.beer === 'number' ? { beer: nextBeer } : {}),
+      ...(typeof state.wine === 'number' ? { wine: nextWine } : {}),
       crewRoster: roster,
       crew:
         roster.find((c: any) => c.id === state.selectedCrewId) ?? roster[0],
